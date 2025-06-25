@@ -181,3 +181,66 @@ nav li a {
   color: #1a1a1a;
   font-weight: 600;
 }
+.cookie-banner {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  color: #333;
+  width: 90%;
+  max-width: 800px;
+  padding: 2rem;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+  border-radius: 10px;
+  z-index: 9999;
+  display: none;
+}
+
+.cookie-content p {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+}
+
+.cookie-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-outline,
+.btn-solid {
+  padding: 0.75rem 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.btn-outline {
+  background: #fff;
+  border: 2px solid #2255ff;
+  color: #2255ff;
+}
+
+.btn-outline:hover {
+  background: #2255ff;
+  color: #fff;
+}
+
+.btn-solid {
+  background: #2255ff;
+  color: #fff;
+  border: none;
+}
+
+.btn-solid:hover {
+  background: #0033cc;
+}
+
+.cookie-link {
+  color: #2255ff;
+  text-decoration: underline;
+}
