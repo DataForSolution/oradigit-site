@@ -170,10 +170,15 @@ nav {
 nav ul {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;       /* prevent wrapping */
   gap: 1.5rem;              /* tighter spacing */
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+nav li {
+  white-space: nowrap;     /* prevent multi-line text */
 }
 
 nav li a {
