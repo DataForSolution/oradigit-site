@@ -26,17 +26,17 @@ header {
   height: 70px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 2rem;
+  justify-content: center;
+  padding: 0 1rem;
 }
+
 .header-container {
+  width: 100%;
   max-width: 1300px;
-  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2rem;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 .logo-container {
@@ -53,72 +53,46 @@ header {
 
 .logo-text {
   font-weight: 700;
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   color: #1a1a1a;
 }
+
 /* Navigation Styles */
 nav {
   flex-grow: 1;
+  display: flex;
+  justify-content: center;
 }
 
-nav ul,
 .nav-links {
+  list-style: none;
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;
-  gap: 0.65rem;                    /* tighter spacing */
+  gap: 1.1rem;
   margin: 0;
   padding: 0;
-  list-style: none;
 }
 
-nav li,
 .nav-links li {
   margin: 0;
   white-space: nowrap;
 }
 
-nav li a,
-.nav-links li a {
-  display: inline-block;           /* ensures horizontal layout */
-  font-size: 0.74rem;              /* slightly smaller for subtlety */
-  font-weight: 300;                /* lighter font */
-  color: #333333;
-  text-decoration: none;
-  letter-spacing: 0.2px;
-  line-height: 1.1;
-  padding: 2px 0;
-  transition: color 0.3s;
-}
-.nav-links {
-  list-style: none;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1.5rem; /* increased from 0.75rem for clarity */
-  margin: 0 auto;
-  padding: 0;
-  flex-grow: 1;
-}
-
 .nav-links li a {
   text-decoration: none;
   color: #444;
-  font-size: 0.85rem;  /* increased from 0.76rem */
-  font-weight: 400;    /* slightly bolder */
-  letter-spacing: 0.25px;
-  line-height: 1;
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
   padding: 4px 0;
   transition: color 0.3s;
 }
 
-
-nav li a:hover,
 .nav-links li a:hover {
   color: #1a53ff;
   border-bottom: 2px solid #1a53ff;
 }
-
 
 /* Right Header Buttons */
 .header-right {
@@ -215,7 +189,7 @@ h2 {
 }
 
 .service-list li:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Footer */
