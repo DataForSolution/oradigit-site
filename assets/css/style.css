@@ -170,8 +170,8 @@ nav {
 nav ul {
   display: flex;
   align-items: center;
-  flex-wrap: nowrap;       /* prevent wrapping */
-  gap: 1.5rem;              /* tighter spacing */
+  flex-wrap: nowrap;
+  gap: 1rem;           /* reduced from 1.5rem to 1rem */
   list-style: none;
   margin: 0;
   padding: 0;
