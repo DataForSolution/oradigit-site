@@ -180,18 +180,19 @@ nav ul {
 nav li {
   white-space: nowrap;     /* prevent multi-line text */
 }
-
 nav li a {
   text-decoration: none;
-  color: #333333;
-  font-weight: 300;         /* lighter than normal */
-  font-size: 0.85rem;       /* smaller font size */
+  color: #555555;        /* softer dark gray */
+  font-weight: 300;      /* light weight */
+  font-size: 0.78rem;    /* smaller size */
+  letter-spacing: 0.3px; /* slight spacing for elegance */
   transition: color 0.3s ease;
 }
 
 nav li a:hover {
   color: #1a53ff;
 }
+
 
 /* Cookie Consent Banner Refined */
 .cookie-banner {
