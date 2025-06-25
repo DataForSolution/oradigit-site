@@ -245,6 +245,13 @@ nav li a {
   font-family: 'Inter', sans-serif;
 }
 
+.main-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #ddd;
+  padding: 0.75rem 0;
+  font-family: 'Inter', sans-serif;
+}
+
 .header-container {
   max-width: 1300px;
   margin: 0 auto;
@@ -252,48 +259,49 @@ nav li a {
   align-items: center;
   justify-content: space-between;
   padding: 0 2rem;
+  gap: 2rem;
 }
 
 .logo-container {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .logo-icon {
-  height: 38px;
+  height: 40px;
 }
 
 .logo-text {
   font-weight: 700;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   color: #1a1a1a;
 }
 
 .main-nav {
   flex-grow: 1;
-  display: flex;
-  justify-content: center;
 }
 
 .nav-links {
   list-style: none;
   display: flex;
-  gap: 2rem;
+  justify-content: center;
+  gap: 2.5rem;
   margin: 0;
   padding: 0;
 }
 
-.nav-links a {
+.nav-links li a {
   text-decoration: none;
   color: #1a1a1a;
   font-weight: 500;
-  font-size: 0.95rem;
-  transition: color 0.3s ease;
+  font-size: 1rem;
+  padding: 4px 0;
 }
 
-.nav-links a:hover,
-.nav-links a.active {
+.nav-links li a:hover,
+.nav-links li a.active {
   color: #3366ff;
   border-bottom: 2px solid #3366ff;
 }
@@ -301,7 +309,8 @@ nav li a {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
+  white-space: nowrap;
 }
 
 .auth-link {
@@ -311,15 +320,18 @@ nav li a {
 }
 
 .divider {
-  color: #888;
+  color: #aaa;
 }
 
 .search-btn {
   background: none;
   border: none;
   cursor: pointer;
+  padding: 4px;
 }
 
 .search-btn img {
   height: 20px;
+  width: 20px;
+  display: block;
 }
