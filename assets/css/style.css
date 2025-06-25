@@ -167,20 +167,27 @@ header .container {
 nav {
   flex-grow: 1;
 }
-
 nav ul {
   display: flex;
-  gap: 2rem;
+  align-items: center;
+  gap: 1.5rem;              /* tighter spacing */
   list-style: none;
-  padding-left: 0;
   margin: 0;
+  padding: 0;
 }
 
 nav li a {
   text-decoration: none;
-  color: #1a1a1a;
-  font-weight: 600;
+  color: #333333;
+  font-weight: 400;         /* normal weight */
+  font-size: 0.92rem;       /* smaller size for neat appearance */
+  transition: color 0.3s ease;
 }
+
+nav li a:hover {
+  color: #1a53ff;
+}
+
 /* Cookie Consent Banner Refined */
 .cookie-banner {
   position: fixed;
