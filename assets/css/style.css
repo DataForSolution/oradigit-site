@@ -181,66 +181,60 @@ nav li a {
   color: #1a1a1a;
   font-weight: 600;
 }
+/* Cookie Consent Banner */
 .cookie-banner {
   position: fixed;
-  bottom: 30px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: #fff;
-  color: #333;
-  width: 90%;
-  max-width: 800px;
+  background-color: #fff;
+  color: #1a1a1a;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
   padding: 2rem;
-  box-shadow: 0 0 20px rgba(0,0,0,0.2);
-  border-radius: 10px;
+  width: 90%;
+  max-width: 600px;
   z-index: 9999;
-  display: none;
-}
-
-.cookie-content p {
+  border-radius: 8px;
   font-size: 1rem;
   line-height: 1.6;
-  margin-bottom: 1.5rem;
+}
+
+.cookie-banner p {
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.cookie-banner a {
+  color: #007acc;
+  text-decoration: underline;
 }
 
 .cookie-buttons {
   display: flex;
+  justify-content: flex-end;
   gap: 1rem;
+  margin-top: 1.5rem;
   flex-wrap: wrap;
 }
 
-.btn-outline,
-.btn-solid {
-  padding: 0.75rem 1.5rem;
-  font-weight: bold;
-  cursor: pointer;
-  border-radius: 5px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-}
-
-.btn-outline {
-  background: #fff;
-  border: 2px solid #2255ff;
-  color: #2255ff;
-}
-
-.btn-outline:hover {
-  background: #2255ff;
-  color: #fff;
-}
-
-.btn-solid {
-  background: #2255ff;
-  color: #fff;
+.cookie-buttons button {
+  padding: 0.6rem 1.4rem;
   border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
 }
 
-.btn-solid:hover {
-  background: #0033cc;
+.cookie-buttons .accept {
+  background-color: #1a53ff;
+  color: #fff;
 }
 
-.cookie-link {
-  color: #2255ff;
-  text-decoration: underline;
+.cookie-buttons .manage {
+  background-color: transparent;
+  border: 1px solid #1a53ff;
+  color: #1a53ff;
 }
