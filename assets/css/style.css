@@ -171,21 +171,23 @@ nav ul {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
-  gap: 1rem;           /* reduced from 1.5rem to 1rem */
   list-style: none;
-  margin: 0;
   padding: 0;
+  margin: 0;
+  gap: 0.65rem; /* Tight spacing between items */
 }
 
 nav li {
-  white-space: nowrap;     /* prevent multi-line text */
+  margin: 0; /* Ensure no extra space from LI */
 }
+
 nav li a {
-  text-decoration: none;
-  color: #555555;        /* softer dark gray */
-  font-weight: 300;      /* light weight */
-  font-size: 0.78rem;    /* smaller size */
-  letter-spacing: 0.3px; /* slight spacing for elegance */
+  display: block;
+  padding: 0;  /* Remove any side padding */
+  font-size: 0.78rem;
+  font-weight: 300;
+  color: #555555;
+  letter-spacing: 0.2px;
   transition: color 0.3s ease;
 }
 
