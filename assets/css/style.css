@@ -29,14 +29,14 @@ header {
   justify-content: space-between;
   padding: 0.5rem 2rem;
 }
-
 .header-container {
   max-width: 1300px;
   margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
+  padding: 0 2rem;
+  gap: 2rem;
 }
 
 .logo-container {
@@ -90,6 +90,28 @@ nav li a,
   padding: 2px 0;
   transition: color 0.3s;
 }
+.nav-links {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem; /* increased from 0.75rem for clarity */
+  margin: 0 auto;
+  padding: 0;
+  flex-grow: 1;
+}
+
+.nav-links li a {
+  text-decoration: none;
+  color: #444;
+  font-size: 0.85rem;  /* increased from 0.76rem */
+  font-weight: 400;    /* slightly bolder */
+  letter-spacing: 0.25px;
+  line-height: 1;
+  padding: 4px 0;
+  transition: color 0.3s;
+}
+
 
 nav li a:hover,
 .nav-links li a:hover {
