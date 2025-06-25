@@ -121,5 +121,40 @@
       </div>
     </div>
   </footer>
+ <div id="cookie-consent" class="cookie-banner">
+  <div class="cookie-content">
+    <p>
+      We use cookies to give you the best possible experience. Some are essential for site functionality; others help us understand usage to improve the site.
+      You may also opt in to cookies for targeting purposes. Click <strong>“Accept All Cookies”</strong> to proceed, or <strong>“Manage my preferences”</strong> to customize.
+      <a href="#" class="cookie-link">Cookie Notice</a>
+    </p>
+    <div class="cookie-buttons">
+      <button id="manage-prefs" class="btn-outline">Manage my preferences</button>
+      <button id="accept-cookies" class="btn-solid">Accept All Cookies</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const banner = document.getElementById("cookie-consent");
+    const acceptBtn = document.getElementById("accept-cookies");
+    const manageBtn = document.getElementById("manage-prefs");
+
+    if (!localStorage.getItem("cookiesAccepted")) {
+      banner.style.display = "block";
+    }
+
+    acceptBtn.addEventListener("click", function () {
+      localStorage.setItem("cookiesAccepted", "true");
+      banner.style.display = "none";
+    });
+
+    manageBtn.addEventListener("click", function () {
+      alert("Preference management coming soon.");
+    });
+  });
+</script>
+
