@@ -184,8 +184,8 @@ nav li {
 nav li a {
   text-decoration: none;
   color: #333333;
-  font-weight: 400;         /* normal weight */
-  font-size: 0.92rem;       /* smaller size for neat appearance */
+  font-weight: 300;         /* lighter than normal */
+  font-size: 0.85rem;       /* smaller font size */
   transition: color 0.3s ease;
 }
 
