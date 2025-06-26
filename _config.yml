@@ -1,0 +1,44 @@
+title: OraDigit
+description: >-
+  OraDigit – Anchored in Trust. Driven by Data.
+baseurl: "" # root of the domain
+url: "https://www.oradigit.com"
+
+markdown: kramdown
+theme: minima
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+
+nav:
+  - title: "Overview"
+    url: "#overview"
+  - title: "Our Approach"
+    url: "#approach"
+  - title: "Labs"
+    url: "#labs"
+  - title: "Case Studies"
+    url: "#case-studies"
+  - title: "Our Insights"
+    url: "#insights"
+  - title: "Our People"
+    url: "#people"
+  - title: "Contact Us"
+    url: "/contact/"
+  - title: "Sign In"
+    url: "/login"
+  - title: "Subscribe"
+    url: "/subscribe"
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: "default"
