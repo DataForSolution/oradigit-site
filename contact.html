@@ -1,145 +1,46 @@
 ---
 layout: default
-title: Home
+title: Contact
+permalink: /contact/
 ---
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Contact Us | OraDigit</title>
-  <link rel="stylesheet" href="assets/css/style.css" />
-  <style>
-    .contact-section {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 3rem 1rem;
-    }
+<section class="contact-section">
+  <h1>Contact Us</h1>
+  <p>
+    Thank you for your interest. Please fill out the form below to inquire about our work at OraDigit.
+    Required fields are marked with an asterisk (*).
+  </p>
 
-    .contact-section h1 {
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 1.5rem;
-    }
+  <form action="#" method="post">
+    <div class="form-group">
+      <label class="form-label">Type of Inquiry*</label>
+      <div class="checkbox-group">
+        <label><input type="checkbox" name="inquiry[]" value="general" /> General inquiries</label>
+        <label><input type="checkbox" name="inquiry[]" value="press" /> Press inquiries</label>
+        <label><input type="checkbox" name="inquiry[]" value="speaking" /> Speaking requests</label>
+      </div>
+    </div>
 
-    .contact-section p {
-      font-size: 1.05rem;
-      margin-bottom: 1.5rem;
-      color: #333;
-    }
+    <div class="form-group">
+      <label class="form-label" for="name">Name*</label>
+      <input type="text" id="name" name="name" required />
+    </div>
 
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
+    <div class="form-group">
+      <label class="form-label" for="email">Email*</label>
+      <input type="email" id="email" name="email" required />
+    </div>
 
-    .form-label {
-      font-weight: 500;
-      margin-bottom: 0.5rem;
-      display: block;
-    }
+    <div class="form-group">
+      <label class="form-label" for="message">Message</label>
+      <textarea id="message" name="message"></textarea>
+    </div>
 
-    .checkbox-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-top: 0.5rem;
-    }
+    <p class="privacy-note">
+      By submitting this form, you agree that we may process your information in accordance with our
+      <a href="#">privacy policy</a>. Your information may be stored securely and handled with care and respect.
+    </p>
 
-    .checkbox-group label {
-      display: flex;
-      align-items: center;
-      font-weight: 400;
-      gap: 0.5rem;
-    }
-
-    input[type="text"],
-    input[type="email"],
-    textarea {
-      width: 100%;
-      padding: 0.75rem;
-      font-size: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-
-    textarea {
-      resize: vertical;
-      height: 120px;
-    }
-
-    .privacy-note {
-      font-size: 0.9rem;
-      color: #666;
-      margin: 1rem 0;
-    }
-
-    .submit-btn {
-      background-color: #2a4bff;
-      color: white;
-      padding: 0.85rem 2rem;
-      font-size: 1rem;
-      font-weight: 600;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .submit-btn:hover {
-      background-color: #1a3be3;
-    }
-  </style>
-</head>
-<body>
-  <header class="main-header">
-    <!-- Include the same nav bar structure here if needed -->
-  </header>
-
-  <main>
-    <section class="contact-section">
-      <h1>Contact Us</h1>
-      <p>
-        Thank you for your interest. Please fill out the form below to inquire about our work at OraDigit.
-        Required fields are marked with an asterisk (*).
-      </p>
-
-      <form action="#" method="post">
-        <div class="form-group">
-          <label class="form-label">Type of Inquiry*</label>
-          <div class="checkbox-group">
-            <label><input type="checkbox" name="inquiry[]" value="general" /> General inquiries</label>
-            <label><input type="checkbox" name="inquiry[]" value="press" /> Press inquiries</label>
-            <label><input type="checkbox" name="inquiry[]" value="speaking" /> Speaking requests</label>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="name">Name*</label>
-          <input type="text" id="name" name="name" required />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="email">Email*</label>
-          <input type="email" id="email" name="email" required />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label" for="message">Message</label>
-          <textarea id="message" name="message"></textarea>
-        </div>
-
-        <p class="privacy-note">
-          By submitting this form, you agree that we may process your information in accordance with our
-          <a href="#">privacy policy</a>. Your information may be stored securely and handled with care and respect.
-        </p>
-
-        <button type="submit" class="submit-btn">Submit</button>
-      </form>
-    </section>
-  </main>
-
-  <footer>
-    <!-- Your existing footer if any -->
-  </footer>
-</body>
-</html>
+    <button type="submit" class="submit-btn">Submit</button>
+  </form>
+</section>
