@@ -47,10 +47,10 @@ header {
 }
 
 .logo-icon {
-  height: 36px;
-  vertical-align: middle;
+  height: 42px;         /* increase size */
+  width: auto;
+  object-fit: contain;
 }
-
 .logo-text {
   font-weight: 700;
   font-size: 1.1rem;
