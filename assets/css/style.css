@@ -45,9 +45,8 @@ header {
   gap: 0.5rem;
   flex-shrink: 0;
 }
-
 .logo-icon {
-  height: 42px;         /* increase size */
+  height: 56px;
   width: auto;
   object-fit: contain;
 }
