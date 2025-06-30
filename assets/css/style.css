@@ -45,15 +45,25 @@ header {
   gap: 0.5rem;
   flex-shrink: 0;
 }
+.vertical-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.25rem;
+}
+
 .logo-icon {
-  height: 56px;
+  height: 52px;
   width: auto;
   object-fit: contain;
 }
+
 .logo-text {
+  font-size: 1.2rem;
   font-weight: 700;
-  font-size: 1.1rem;
   color: #1a1a1a;
+  text-decoration: none;
 }
 
 /* Navigation Styles */
