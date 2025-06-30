@@ -17,7 +17,6 @@ description: Anchored in Trust. Driven by Data.
 <section class="light">
   <div class="container">
     <h2>How We Help</h2>
-    <p>Whether you’re scaling your data strategy or deploying machine learning in production, OraDigit is your trusted partner for AI transformation.</p>
     <ul class="service-list">
       <li><strong>AI Strategy</strong><br>Align business goals with data-driven execution.</li>
       <li><strong>Custom ML Models</strong><br>Deploy NLP, CV, or predictive models tailored to your use case.</li>
@@ -27,7 +26,7 @@ description: Anchored in Trust. Driven by Data.
   </div>
 </section>
 
-<!-- Value Section -->
+<!-- Why OraDigit -->
 <section>
   <div class="container">
     <h2>Why OraDigit?</h2>
@@ -40,6 +39,28 @@ description: Anchored in Trust. Driven by Data.
   </div>
 </section>
 
+<!-- Blog Teasers -->
+<section class="light">
+  <div class="container">
+    <h2>Insights & Articles</h2>
+    <p>Explore our latest thinking on AI strategy, data platforms, and applied machine learning.</p>
+    <ul class="service-list">
+      <li><strong>Deploying LLMs Responsibly</strong><br><a href="/blog/deploying-llms/">Read More →</a></li>
+      <li><strong>Data Governance in AI Projects</strong><br><a href="/blog/data-governance/">Read More →</a></li>
+      <li><strong>MLOps vs DevOps: What’s Different?</strong><br><a href="/blog/mlops-vs-devops/">Read More →</a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- Meet the Team Preview -->
+<section>
+  <div class="container">
+    <h2>Meet the People Behind OraDigit</h2>
+    <p>We’re a team of engineers, data scientists, and strategists passionate about solving hard problems through innovation and integrity.</p>
+    <a href="/about/" class="btn">About Us</a>
+  </div>
+</section>
+
 <!-- CTA Contact -->
 <section class="light">
   <div class="container">
@@ -48,3 +69,69 @@ description: Anchored in Trust. Driven by Data.
     <a href="/contact/" class="btn">Contact Us</a>
   </div>
 </section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <div class="footer-columns">
+      <div class="footer-about">
+        <img src="assets/logo.png" alt="OraDigit Logo" style="height: 35px; margin-bottom: 0.5rem;">
+        <h3>OraDigit</h3>
+        <p>Anchored in Trust. Driven by Data.<br>AI & Data Solutions for Smarter Business Decisions.</p>
+      </div>
+      <div class="footer-links">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="/overview/">Overview</a></li>
+          <li><a href="/labs/">Labs</a></li>
+          <li><a href="/insights/">Insights</a></li>
+          <li><a href="/contact/">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-contact">
+        <h4>Contact</h4>
+        <p>Email: <a href="mailto:admin@oradigit.com">admin@oradigit.com</a></p>
+        <p>Lanham, Maryland, USA</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2024 OraDigit. All rights reserved.</p>
+    </div>
+  </div>
+</footer>
+
+<!-- Cookie Consent -->
+<div id="cookie-consent" class="cookie-banner">
+  <div class="cookie-content">
+    <p>
+      We use cookies to give you the best possible experience. Some are essential for site functionality; others help us understand usage to improve the site.
+      You may also opt in to cookies for targeting purposes. Click <strong>“Accept All Cookies”</strong> to proceed, or <strong>“Manage my preferences”</strong> to customize.
+      <a href="#" class="cookie-link">Cookie Notice</a>
+    </p>
+    <div class="cookie-buttons">
+      <button id="manage-prefs" class="btn-outline">Manage my preferences</button>
+      <button id="accept-cookies" class="btn-solid">Accept All Cookies</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const banner = document.getElementById("cookie-consent");
+    const acceptBtn = document.getElementById("accept-cookies");
+    const manageBtn = document.getElementById("manage-prefs");
+
+    if (!localStorage.getItem("cookiesAccepted")) {
+      banner.style.display = "block";
+    }
+
+    acceptBtn.addEventListener("click", function () {
+      localStorage.setItem("cookiesAccepted", "true");
+      banner.style.display = "none";
+    });
+
+    manageBtn.addEventListener("click", function () {
+      alert("Preference management coming soon.");
+    });
+  });
+</script>
