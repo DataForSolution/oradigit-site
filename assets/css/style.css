@@ -310,8 +310,10 @@ footer {
 }
 
 .footer-logo {
-  height: 40px;
-  margin-bottom: 0.5rem;
+  max-width: 140px;
+  height: auto;
+  object-fit: contain;
+  margin-bottom: 1rem;
 }
 
 .subscribe-form {
