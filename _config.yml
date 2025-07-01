@@ -6,6 +6,7 @@ url: "https://www.oradigit.com"
 
 markdown: kramdown
 theme: minima
+
 exclude:
   - README.md
   - Gemfile
@@ -13,19 +14,24 @@ exclude:
   - node_modules
   - vendor
 
+include:
+  - _includes
+  - _layouts
+
+# Updated navigation for real page routing
 nav:
   - title: "Overview"
-    url: "#overview"
+    url: "/overview/"
   - title: "Our Approach"
-    url: "#approach"
+    url: "/approach/"
   - title: "Labs"
-    url: "#labs"
+    url: "/labs/"
   - title: "Case Studies"
-    url: "#case-studies"
+    url: "/case-studies/"
   - title: "Our Insights"
-    url: "#insights"
+    url: "/insights/"
   - title: "Our People"
-    url: "#people"
+    url: "/people/"
   - title: "Contact Us"
     url: "/contact/"
   - title: "Sign In"
