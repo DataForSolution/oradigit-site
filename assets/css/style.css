@@ -691,6 +691,7 @@ footer {
   text-decoration: underline;
 }
 /* Insights Page Styles */
+/* Insights Page */
 .insights-hero {
   background-color: #f1f8fc;
   padding: 4rem 1rem;
@@ -727,16 +728,21 @@ footer {
   line-height: 1.7;
   max-width: 850px;
   margin: 0 auto 1.5rem;
+  text-align: left;
 }
 
-.insight-link {
-  display: inline-block;
-  color: #1a53ff;
+.read-more {
+  text-align: left;
+  max-width: 850px;
+  margin: 0 auto;
+}
+
+.read-more a {
   font-weight: 600;
+  color: #1a53ff;
   text-decoration: none;
-  margin-top: 0.5rem;
 }
 
-.insight-link:hover {
+.read-more a:hover {
   text-decoration: underline;
 }
