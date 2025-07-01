@@ -535,3 +535,63 @@ footer {
   font-size: 1.05rem;
   margin-top: 2rem;
 }
+/* Approach Page Styles */
+.approach-hero {
+  background-color: #f1f8fc;
+  padding: 4rem 1rem;
+  text-align: center;
+}
+
+.approach-hero h1 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.approach-hero .lead {
+  font-size: 1.2rem;
+  color: #444;
+  max-width: 750px;
+  margin: 0 auto;
+}
+
+.approach-section {
+  background-color: #ffffff;
+  padding: 3.5rem 1rem;
+}
+
+.approach-section h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #222;
+}
+
+.approach-section p {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  max-width: 850px;
+  margin: 0 auto 2rem;
+}
+
+.approach-principles {
+  list-style: none;
+  padding: 0;
+  margin: 2rem auto 0;
+  max-width: 1000px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  font-size: 1rem;
+  color: #222;
+}
+
+.approach-principles li {
+  line-height: 1.6;
+}
+
+.learn-more {
+  text-align: center;
+  font-size: 1rem;
+  margin-top: 2rem;
+}
