@@ -5,42 +5,69 @@ permalink: /contact/
 ---
 
 <section class="contact-section">
-  <h1>Contact Us</h1>
-  <p>
-    Thank you for your interest. Please fill out the form below to inquire about our work at OraDigit.
-    Required fields are marked with an asterisk (*).
-  </p>
-
-  <form action="#" method="post">
-    <div class="form-group">
-      <label class="form-label">Type of Inquiry*</label>
-      <div class="checkbox-group">
-        <label><input type="checkbox" name="inquiry[]" value="general" /> General inquiries</label>
-        <label><input type="checkbox" name="inquiry[]" value="press" /> Press inquiries</label>
-        <label><input type="checkbox" name="inquiry[]" value="speaking" /> Speaking requests</label>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label" for="name">Name*</label>
-      <input type="text" id="name" name="name" required />
-    </div>
-
-    <div class="form-group">
-      <label class="form-label" for="email">Email*</label>
-      <input type="email" id="email" name="email" required />
-    </div>
-
-    <div class="form-group">
-      <label class="form-label" for="message">Message</label>
-      <textarea id="message" name="message"></textarea>
-    </div>
-
-    <p class="privacy-note">
-      By submitting this form, you agree that we may process your information in accordance with our
-      <a href="#">privacy policy</a>. Your information may be stored securely and handled with care and respect.
+  <div class="contact-card">
+    <h1>Contact Us</h1>
+    <p>
+      Thank you for your interest. Please fill out the form below to inquire about our work at OraDigit.
+      Required fields are marked with an asterisk (*).
     </p>
 
-    <button type="submit" class="submit-btn">Submit</button>
-  </form>
+    <form action="#" method="post" class="contact-form">
+      <!-- Inquiry Type -->
+      <div class="form-group">
+        <label class="form-label">Type of Inquiry*</label>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="inquiry[]" value="general" /> General inquiries</label>
+          <label><input type="checkbox" name="inquiry[]" value="press" /> Press inquiries</label>
+          <label><input type="checkbox" name="inquiry[]" value="speaking" /> Speaking requests</label>
+        </div>
+      </div>
+
+      <!-- Name -->
+      <div class="form-group">
+        <label class="form-label" for="name">Name*</label>
+        <input type="text" id="name" name="name" required />
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label class="form-label" for="email">Email*</label>
+        <input type="email" id="email" name="email" required />
+      </div>
+
+      <!-- Organization -->
+      <div class="form-group">
+        <label class="form-label" for="org">Organization</label>
+        <input type="text" id="org" name="org" />
+      </div>
+
+      <!-- Subject -->
+      <div class="form-group">
+        <label class="form-label" for="subject">Subject*</label>
+        <input type="text" id="subject" name="subject" required />
+      </div>
+
+      <!-- Message -->
+      <div class="form-group">
+        <label class="form-label" for="message">Message*</label>
+        <textarea id="message" name="message" required></textarea>
+      </div>
+
+      <!-- Security Validation -->
+      <div class="form-group">
+        <label class="form-label" for="validation">Security validation*</label>
+        <input type="text" id="validation" name="validation" required />
+      </div>
+
+      <!-- Privacy Notice -->
+      <p class="privacy-note">
+        OraDigit is committed to protecting your information. Your information will be used in accordance with the applicable data privacy law,
+        our internal policies and our <a href="#">privacy policy</a>. As OraDigit may operate globally, your information may be stored and processed in countries
+        outside your country of residence. Wherever it is processed, we will handle it with care and respect for your privacy.
+      </p>
+
+      <!-- Submit -->
+      <button type="submit" class="submit-btn">Submit</button>
+    </form>
+  </div>
 </section>

@@ -393,3 +393,86 @@ footer {
   color: #666;
   margin-top: 2rem;
 }
+.contact-section {
+  background-color: #f7f9fc;
+  padding: 4rem 1rem;
+}
+
+.contact-card {
+  background: white;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem;
+  border-radius: 10px;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.08);
+}
+
+.contact-card h1 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.contact-card p {
+  font-size: 1.05rem;
+  margin-bottom: 1.8rem;
+  color: #333;
+}
+
+.contact-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.contact-form .form-label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.95rem;
+}
+
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  padding: 0.8rem;
+  font-size: 0.95rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.contact-form textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.privacy-note {
+  font-size: 0.88rem;
+  color: #555;
+  margin: 1.8rem 0 1rem;
+  line-height: 1.6;
+}
+
+.privacy-note a {
+  color: #0033cc;
+  text-decoration: underline;
+}
+
+.submit-btn {
+  padding: 0.9rem 2rem;
+  background-color: #1a53ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.submit-btn:hover {
+  background-color: #0033cc;
+}
