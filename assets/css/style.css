@@ -476,3 +476,62 @@ footer {
 .submit-btn:hover {
   background-color: #0033cc;
 }
+/* Overview Page Styles */
+.overview-hero {
+  background-color: #f9fbfd;
+  padding: 4rem 1rem;
+  text-align: center;
+}
+
+.overview-hero h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+
+.overview-hero .lead {
+  font-size: 1.2rem;
+  color: #444;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.overview-section {
+  background-color: #ffffff;
+  padding: 3.5rem 1rem;
+  color: #222;
+}
+
+.overview-section h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.overview-section p {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  max-width: 850px;
+  margin: 0 auto;
+}
+
+.overview-capabilities {
+  list-style: none;
+  margin: 2rem auto 0;
+  padding: 0;
+  max-width: 900px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  font-size: 1rem;
+}
+
+.overview-capabilities li {
+  line-height: 1.6;
+}
+
+.learn-more {
+  text-align: center;
+  font-size: 1.05rem;
+  margin-top: 2rem;
+}
