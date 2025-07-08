@@ -746,3 +746,29 @@ footer {
 .read-more a:hover {
   text-decoration: underline;
 }
+.legal-page {
+  background-color: #ffffff;
+  padding: 4rem 1rem;
+}
+
+.legal-page h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+}
+
+.legal-page h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.legal-page p,
+.legal-page li {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #333;
+  max-width: 850px;
+  margin: 0 auto 1rem;
+}
