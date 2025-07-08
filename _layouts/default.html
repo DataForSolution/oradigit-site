@@ -15,5 +15,39 @@
     {{ content }}
   </main>
   {% include footer.html %}
+<!-- Cookie Consent Banner -->
+<div id="cookie-consent" class="cookie-banner">
+  <div class="cookie-content">
+    <p>
+      We use cookies to enhance your experience and analyze traffic. You can accept all cookies or manage your preferences.
+      See our <a href="/cookies/">Cookie Policy</a> for details.
+    </p>
+    <div class="cookie-buttons">
+      <button id="accept-cookies" class="btn-solid">Accept All Cookies</button>
+      <button id="manage-prefs" class="btn-outline">Manage Preferences</button>
+    </div>
+  </div>
+</div>
+ <!-- Cookie Script -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const banner = document.getElementById("cookie-consent");
+      const acceptBtn = document.getElementById("accept-cookies");
+      const manageBtn = document.getElementById("manage-prefs");
+
+      if (!localStorage.getItem("cookiesAccepted")) {
+        banner.style.display = "block";
+      }
+
+      acceptBtn.addEventListener("click", function () {
+        localStorage.setItem("cookiesAccepted", "true");
+        banner.style.display = "none";
+      });
+
+      manageBtn.addEventListener("click", function () {
+        alert("Detailed preference management coming soon.");
+      });
+    });
+  </script>
 </body>
 </html>
