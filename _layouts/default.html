@@ -30,24 +30,30 @@
 </div>
  <!-- Cookie Script -->
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const banner = document.getElementById("cookie-consent");
-      const acceptBtn = document.getElementById("accept-cookies");
-      const manageBtn = document.getElementById("manage-prefs");
+  document.addEventListener("DOMContentLoaded", function () {
+    const banner = document.getElementById("cookie-consent");
+    const acceptBtn = document.getElementById("accept-cookies");
+    const manageBtn = document.getElementById("manage-prefs");
 
-      if (!localStorage.getItem("cookiesAccepted")) {
-        banner.style.display = "block";
-      }
+    const cookieAccepted = localStorage.getItem("cookiesAccepted");
 
-      acceptBtn.addEventListener("click", function () {
-        localStorage.setItem("cookiesAccepted", "true");
-        banner.style.display = "none";
-      });
+    // Only show banner on the homepage AND only if not accepted
+    const isHomePage = window.location.pathname === "/" || window.location.pathname === "/index.html";
 
-      manageBtn.addEventListener("click", function () {
-        alert("Detailed preference management coming soon.");
-      });
+    if (isHomePage && !cookieAccepted) {
+      banner.style.display = "block";
+    }
+
+    acceptBtn.addEventListener("click", function () {
+      localStorage.setItem("cookiesAccepted", "true");
+      banner.style.display = "none";
     });
-  </script>
+
+    manageBtn.addEventListener("click", function () {
+      alert("Preference management coming soon.");
+    });
+  });
+</script>
+
 </body>
 </html>
