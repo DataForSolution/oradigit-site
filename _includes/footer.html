@@ -5,11 +5,18 @@
     <div class="footer-column">
       <img src="/assets/logo.png" alt="OraDigit Logo" class="footer-logo">
       <h3>Subscribe</h3>
-      <p>Stay up to date with our latest insights and updates.</p>
-      <form class="subscribe-form" action="#" method="POST">
-        <input type="email" placeholder="Email address" required>
-        <button type="submit">Submit</button>
-      </form>
+<p>Stay up to date with our latest insights and updates.</p>
+<form action="https://buttondown.email/api/emails/embed-subscribe/oradigit" method="post" target="popupwindow"
+      onsubmit="window.open('https://buttondown.email/oradigit', 'popupwindow')"
+      class="subscribe-form" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+  <input type="email" name="email" placeholder="Email address" required
+         style="flex: 1; min-width: 200px; padding: 0.6rem; border: 2px solid #000; border-radius: 6px;">
+  <button type="submit"
+          style="padding: 0.6rem 1rem; background-color: #1a53ff; color: white; border: none; border-radius: 6px; font-weight: bold;">
+    Submit
+  </button>
+</form>
+
     </div>
 
    <!-- Column 2: Navigation Links -->
@@ -27,6 +34,7 @@
     <li><a href="/ethics-report/">Ethics & Commitments</a></li>
     <li><a href="/workplace-policy/">Workplace Policy</a></li>
     <li><a href="/subscribe/">Subscribe</a></li>
+
 
  </ul>
 </div>
