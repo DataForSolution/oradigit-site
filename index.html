@@ -109,6 +109,22 @@ description: Advancing Radiology, Imaging, and Nuclear Medicine through AI-Power
       <button id="manage-prefs" class="btn-outline">Manage Preferences</button>
     </div>
   </div>
+  <div id="cookie-modal" class="cookie-modal">
+  <div class="modal-content">
+    <h3>Manage Your Cookie Preferences</h3>
+    <form id="cookie-form">
+      <label><input type="checkbox" disabled checked> Essential Cookies (Always Active)</label>
+      <label><input type="checkbox" id="analytics-cookies"> Analytics Cookies</label>
+      <label><input type="checkbox" id="marketing-cookies"> Marketing Cookies</label>
+
+      <div class="modal-actions">
+        <button type="button" id="save-cookies" class="btn-solid">Save Preferences</button>
+        <button type="button" id="close-modal" class="btn-outline">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 </div>
 
 <!-- Cookie Script -->
@@ -126,9 +142,31 @@ description: Advancing Radiology, Imaging, and Nuclear Medicine through AI-Power
       localStorage.setItem("cookiesAccepted", "true");
       banner.style.display = "none";
     });
-
     manageBtn.addEventListener("click", function () {
-      alert("Preference management coming soon.");
+  const modal = document.getElementById("cookie-modal");
+  modal.style.display = "flex";
+});
+const modal = document.getElementById("cookie-modal");
+const closeModal = document.getElementById("close-modal");
+const savePrefs = document.getElementById("save-cookies");
+
+closeModal.addEventListener("click", () => {
+  modal.style.display = "none";
+});
+
+savePrefs.addEventListener("click", () => {
+  const analytics = document.getElementById("analytics-cookies").checked;
+  const marketing = document.getElementById("marketing-cookies").checked;
+
+  const preferences = {
+    analytics: analytics,
+    marketing: marketing
+  };
+
+  localStorage.setItem("cookiePreferences", JSON.stringify(preferences));
+  modal.style.display = "none";
+  banner.style.display = "none";
+});
+
     });
-  });
 </script>
