@@ -34,6 +34,53 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 </script>
+  <!-- …your existing page content… -->
+
+  <!-- Chatbot Widget -->
+  <div id="chatbot-container">
+    <button id="chatbot-toggle" aria-label="Chat with us!">💬</button>
+    <div id="chatbot-box" class="hidden">
+      <div id="chatbot-header">OraDigit Assistant</div>
+      <div id="chatbot-messages"></div>
+      <input id="chatbot-input" placeholder="Ask me anything…" autocomplete="off" />
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const CHAT_URL = "https://chatgptquery-5oghy3c5lq-uc.a.run.app";
+      const toggleBtn = document.getElementById('chatbot-toggle');
+      const box = document.getElementById('chatbot-box');
+      const input = document.getElementById('chatbot-input');
+      const messages = document.getElementById('chatbot-messages');
+
+      toggleBtn.addEventListener('click', () => box.classList.toggle('hidden'));
+
+      input.addEventListener('keydown', async e => {
+        if (e.key !== 'Enter') return;
+        const prompt = input.value.trim();
+        if (!prompt) return;
+        messages.innerHTML += `<div><strong>You:</strong> ${prompt}</div>`;
+        input.value = '';
+        messages.scrollTop = messages.scrollHeight;
+
+        try {
+          const res = await fetch(CHAT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+          });
+          const { reply } = await res.json();
+          messages.innerHTML += `<div><strong>Assistant:</strong> ${reply}</div>`;
+          messages.scrollTop = messages.scrollHeight;
+        } catch (err) {
+          messages.innerHTML += `<div style="color:red;"><strong>Error:</strong> ${err.message}</div>`;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
 
 
 </body>
