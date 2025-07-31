@@ -35,6 +35,7 @@
   };
 </script>
   <!-- …your existing page content… -->
+ 
   <!-- Chatbot Widget -->
   <div id="chatbot-container">
     <button id="chatbot-toggle" aria-label="Chat with us!">💬</button>
@@ -48,10 +49,11 @@
   <script>
     (function() {
       const CHAT_URL = "https://us-central1-oradigit-ce343.cloudfunctions.net/chatGPTQuery";
+
       const toggleBtn = document.getElementById('chatbot-toggle');
-      const box = document.getElementById('chatbot-box');
-      const input = document.getElementById('chatbot-input');
-      const messages = document.getElementById('chatbot-messages');
+      const box       = document.getElementById('chatbot-box');
+      const input     = document.getElementById('chatbot-input');
+      const messages  = document.getElementById('chatbot-messages');
 
       toggleBtn.addEventListener('click', () => {
         box.classList.toggle('hidden');
@@ -69,19 +71,26 @@
         try {
           const res = await fetch(CHAT_URL, {
             method: 'POST',
+            mode: 'cors',                        // explicitly request CORS
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify({ prompt }),
           });
+
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`HTTP ${res.status}: ${text}`);
+          }
+
           const { reply } = await res.json();
           messages.innerHTML += `<div><strong>Assistant:</strong> ${reply}</div>`;
           messages.scrollTop = messages.scrollHeight;
         } catch (err) {
+          console.error(err);
           messages.innerHTML += `<div style="color:red;"><strong>Error:</strong> ${err.message}</div>`;
+          messages.scrollTop = messages.scrollHeight;
         }
       });
     })();
   </script>
 </body>
 </html>
-
- 
