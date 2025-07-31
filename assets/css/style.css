@@ -863,13 +863,17 @@ footer {
   gap: 1rem;
   margin-top: 1.5rem;
 }
-/* Chatbot Widget */
+/* Chatbot Widget Container */
 #chatbot-container {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 9999;
+  bottom: 20px;      /* distance from bottom of viewport */
+  right: 20px;       /* distance from right of viewport */
+  width: 320px;      /* match your box width */
+  z-index: 9999;     
+  /* establish positioning context */
 }
+
+/* Toggle Button */
 #chatbot-toggle {
   background-color: #2a4bff;
   color: #fff;
@@ -880,11 +884,15 @@ footer {
   font-size: 24px;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  transition: background-color 0.3s;
+  position: relative; 
+  z-index: 101;       /* ensure it sits above the box */
 }
-#chatbot-toggle:hover { background-color: #1a3be3; }
 
+/* Chat Window */
 #chatbot-box {
+  position: absolute;  
+  bottom: 60px;         /* 50px button height + 10px gap */
+  right: 0;
   width: 320px;
   max-height: 400px;
   background: #fff;
@@ -894,10 +902,15 @@ footer {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  margin-bottom: 10px;
+  margin: 0;            /* remove previous margin-bottom */
 }
-.hidden { display: none; }
 
+/* Hide when toggled off */
+.hidden {
+  display: none;
+}
+
+/* Header */
 #chatbot-header {
   background-color: #2a4bff;
   color: #fff;
@@ -905,12 +918,16 @@ footer {
   text-align: center;
   font-weight: bold;
 }
+
+/* Messages area */
 #chatbot-messages {
   flex: 1;
   padding: 10px;
   overflow-y: auto;
   font-size: 0.9rem;
 }
+
+/* Input field */
 #chatbot-input {
   border: none;
   border-top: 1px solid #ddd;
