@@ -36,7 +36,7 @@
 </script>
   <!-- …your existing page content… -->
  
-    <!-- Chatbot Widget -->
+   <!-- Chatbot Widget -->
   <div id="chatbot-container">
     <button id="chatbot-toggle" aria-label="Chat with us!">💬</button>
     <div id="chatbot-box" class="hidden">
@@ -51,47 +51,53 @@
 
   <script>
     (function() {
-      const CHAT_URL  = "https://auth.oradigit.com/chat";
-        console.log("🛠  Inside widget—CHAT_URL is:", CHAT_URL);
+      // 🔧 DEBUG: log here, inside the IIFE
+      const CHAT_URL = "https://auth.oradigit.com/chat";
+      console.log("🛠 Widget loaded—CHAT_URL =", CHAT_URL);
+
       const toggleBtn = document.getElementById('chatbot-toggle');
       const box       = document.getElementById('chatbot-box');
       const input     = document.getElementById('chatbot-input');
       const sendBtn   = document.getElementById('chatbot-send');
       const messages  = document.getElementById('chatbot-messages');
 
-      // Open/close widget
+      // 1) Toggle widget
       toggleBtn.addEventListener('click', () => {
         box.classList.toggle('hidden');
       });
 
-      // Shared send logic
+      // 2) Shared send logic
       async function sendMessage() {
         const prompt = input.value.trim();
         if (!prompt) return;
+
         messages.innerHTML += `<div><strong>You:</strong> ${prompt}</div>`;
         input.value = ''; messages.scrollTop = messages.scrollHeight;
 
         try {
           const res = await fetch(CHAT_URL, {
             method: 'POST',
-            headers:  { 'Content-Type': 'application/json' },
-            body:     JSON.stringify({ prompt })
+            mode:   'cors',
+            headers:{ 'Content-Type':'application/json' },
+            body:   JSON.stringify({ prompt })
           });
+          console.log("🛠 fetch status:", res.status);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const { reply } = await res.json();
           messages.innerHTML += `<div><strong>Assistant:</strong> ${reply}</div>`;
           messages.scrollTop = messages.scrollHeight;
         } catch (err) {
+          console.error("🛠 chat error:", err);
           messages.innerHTML += `<div style="color:red;"><strong>Error:</strong> ${err.message}</div>`;
           messages.scrollTop = messages.scrollHeight;
         }
       }
 
-      // Enter key
+      // 3) Send on Enter
       input.addEventListener('keydown', e => {
         if (e.key === 'Enter') sendMessage();
       });
-      // Click button
+      // 4) Send on button click
       sendBtn.addEventListener('click', sendMessage);
     })();
   </script>
