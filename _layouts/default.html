@@ -36,109 +36,64 @@
 </script>
   <!-- …your existing page content… -->
  
-  <!-- Chatbot Widget -->
+    <!-- Chatbot Widget -->
   <div id="chatbot-container">
     <button id="chatbot-toggle" aria-label="Chat with us!">💬</button>
     <div id="chatbot-box" class="hidden">
       <div id="chatbot-header">OraDigit Assistant</div>
       <div id="chatbot-messages"></div>
-      <input id="chatbot-input" placeholder="Ask me anything…" autocomplete="off" />
+      <div id="chatbot-controls" style="display:flex; gap:0.5em; padding:0.5em;">
+        <input id="chatbot-input" placeholder="Ask me anything…" autocomplete="off" style="flex:1;"/>
+        <button id="chatbot-send">Send</button>
+      </div>
     </div>
   </div>
 
   <script>
     (function() {
-      const CHAT_URL = "/chat";
-
-
+      const CHAT_URL  = "https://auth.oradigit.com/chat";
       const toggleBtn = document.getElementById('chatbot-toggle');
       const box       = document.getElementById('chatbot-box');
       const input     = document.getElementById('chatbot-input');
+      const sendBtn   = document.getElementById('chatbot-send');
       const messages  = document.getElementById('chatbot-messages');
 
+      // Open/close widget
       toggleBtn.addEventListener('click', () => {
         box.classList.toggle('hidden');
       });
 
-      input.addEventListener('keydown', async (e) => {
-        if (e.key !== 'Enter') return;
+      // Shared send logic
+      async function sendMessage() {
         const prompt = input.value.trim();
         if (!prompt) return;
-
         messages.innerHTML += `<div><strong>You:</strong> ${prompt}</div>`;
-        input.value = '';
-        messages.scrollTop = messages.scrollHeight;
+        input.value = ''; messages.scrollTop = messages.scrollHeight;
 
         try {
           const res = await fetch(CHAT_URL, {
             method: 'POST',
-            mode: 'cors',                        // explicitly request CORS
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt }),
+            headers:  { 'Content-Type': 'application/json' },
+            body:     JSON.stringify({ prompt })
           });
-
-          if (!res.ok) {
-            const text = await res.text();
-            throw new Error(`HTTP ${res.status}: ${text}`);
-          }
-
-          const { reply } = await res.json();
-          messages.innerHTML += `<div><strong>Assistant:</strong> ${reply}</div>`;
-          messages.scrollTop = messages.scrollHeight;
-        } catch (err) {
-          console.error(err);
-          messages.innerHTML += `<div style="color:red;"><strong>Error:</strong> ${err.message}</div>`;
-          messages.scrollTop = messages.scrollHeight;
-        }
-      });
-    })();
-  </script>
-  <!-- Chatbot Widget -->
-  <div id="chatbot-container">
-    <button id="chatbot-toggle" aria-label="Chat with us!">💬</button>
-    <div id="chatbot-box" class="hidden">
-      <div id="chatbot-header">OraDigit Assistant</div>
-      <div id="chatbot-messages"></div>
-      <input id="chatbot-input" placeholder="Ask me anything…" autocomplete="off" />
-    </div>
-  </div>
-
-  <script>
-    (function() {
-      const CHAT_URL = "/chat";  // same‐origin rewrite
-
-      const toggleBtn = document.getElementById('chatbot-toggle');
-      const box       = document.getElementById('chatbot-box');
-      const input     = document.getElementById('chatbot-input');
-      const messages  = document.getElementById('chatbot-messages');
-
-      toggleBtn.addEventListener('click', () => box.classList.toggle('hidden'));
-
-      input.addEventListener('keydown', async (e) => {
-        if (e.key !== 'Enter') return;
-        const prompt = input.value.trim();
-        if (!prompt) return;
-        messages.innerHTML += `<div><strong>You:</strong> ${prompt}</div>`;
-        input.value = '';
-        messages.scrollTop = messages.scrollHeight;
-
-        try {
-          const res = await fetch(CHAT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
-          });
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-          }
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const { reply } = await res.json();
           messages.innerHTML += `<div><strong>Assistant:</strong> ${reply}</div>`;
           messages.scrollTop = messages.scrollHeight;
         } catch (err) {
           messages.innerHTML += `<div style="color:red;"><strong>Error:</strong> ${err.message}</div>`;
+          messages.scrollTop = messages.scrollHeight;
         }
+      }
+
+      // Enter key
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') sendMessage();
       });
+      // Click button
+      sendBtn.addEventListener('click', sendMessage);
     })();
   </script>
 </body>
 </html>
+
