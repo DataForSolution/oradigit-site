@@ -37,13 +37,17 @@
   <!-- …your existing page content… -->
  
    <!-- Chatbot Widget -->
+    <!-- Chatbot Widget -->
   <div id="chatbot-container">
     <button id="chatbot-toggle" aria-label="Chat with us!">💬</button>
     <div id="chatbot-box" class="hidden">
       <div id="chatbot-header">OraDigit Assistant</div>
       <div id="chatbot-messages"></div>
       <div id="chatbot-controls" style="display:flex; gap:0.5em; padding:0.5em;">
-        <input id="chatbot-input" placeholder="Ask me anything…" autocomplete="off" style="flex:1;"/>
+        <input id="chatbot-input"
+               placeholder="Ask me anything…"
+               autocomplete="off"
+               style="flex:1;"/>
         <button id="chatbot-send">Send</button>
       </div>
     </div>
@@ -51,7 +55,7 @@
 
   <script>
     (function() {
-      // 🔧 DEBUG: log here, inside the IIFE
+      // Use your Firebase‐hosted function on your custom domain
       const CHAT_URL = "https://auth.oradigit.com/chat";
       console.log("🛠 Widget loaded—CHAT_URL =", CHAT_URL);
 
@@ -61,25 +65,26 @@
       const sendBtn   = document.getElementById('chatbot-send');
       const messages  = document.getElementById('chatbot-messages');
 
-      // 1) Toggle widget
+      // 1) Toggle the chat window
       toggleBtn.addEventListener('click', () => {
         box.classList.toggle('hidden');
       });
 
-      // 2) Shared send logic
+      // 2) Common send logic
       async function sendMessage() {
         const prompt = input.value.trim();
         if (!prompt) return;
 
         messages.innerHTML += `<div><strong>You:</strong> ${prompt}</div>`;
-        input.value = ''; messages.scrollTop = messages.scrollHeight;
+        input.value = '';
+        messages.scrollTop = messages.scrollHeight;
 
         try {
           const res = await fetch(CHAT_URL, {
-            method: 'POST',
-            mode:   'cors',
-            headers:{ 'Content-Type':'application/json' },
-            body:   JSON.stringify({ prompt })
+            method:  'POST',
+            mode:    'cors',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ prompt })
           });
           console.log("🛠 fetch status:", res.status);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -88,7 +93,8 @@
           messages.scrollTop = messages.scrollHeight;
         } catch (err) {
           console.error("🛠 chat error:", err);
-          messages.innerHTML += `<div style="color:red;"><strong>Error:</strong> ${err.message}</div>`;
+          messages.innerHTML +=
+            `<div style="color:red;"><strong>Error:</strong> ${err.message}</div>`;
           messages.scrollTop = messages.scrollHeight;
         }
       }
@@ -103,4 +109,3 @@
   </script>
 </body>
 </html>
-
