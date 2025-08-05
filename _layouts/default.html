@@ -79,12 +79,17 @@
       // 1) Toggle the chat window
       toggleBtn.addEventListener('click', () => {
         box.classList.toggle('hidden');
+        gtag('event', 'chatbot_open', { widget: 'ora-digit-assistant' });
       });
 
       // 2) Common send logic
       async function sendMessage() {
         const prompt = input.value.trim();
         if (!prompt) return;
+        gtag('event', 'chatbot_send', {
+        prompt_length: prompt.length,
+        widget: 'assistant'
+      });
 
         messages.innerHTML += `<div><strong>You:</strong> ${prompt}</div>`;
         input.value = '';
@@ -100,10 +105,18 @@
           console.log("🛠 fetch status:", res.status);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const { reply } = await res.json();
+          gtag('event', 'chatbot_reply', {
+          reply_length: reply.length,
+          widget: 'assistant'
+        });
           messages.innerHTML += `<div><strong>Assistant:</strong> ${reply}</div>`;
           messages.scrollTop = messages.scrollHeight;
         } catch (err) {
           console.error("🛠 chat error:", err);
+          gtag('event', 'chatbot_error', {
+          error_message: err.message,
+          widget: 'assistant'
+        });
           messages.innerHTML +=
             `<div style="color:red;"><strong>Error:</strong> ${err.message}</div>`;
           messages.scrollTop = messages.scrollHeight;
