@@ -8,82 +8,78 @@
   <link rel="icon" href="{{ '/assets/logo.png' | relative_url }}" type="image/png">
   <link rel="stylesheet" href="{{ '/assets/css/style.css?v=2' | relative_url }}">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-   <!-- Google tag (gtag.js) with Consent Mode -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-FKVXD8061R"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){ dataLayer.push(arguments); }
-
-  // 1) Set default consent state to denied until user acts
-  gtag('consent', 'default', {
-    'analytics_storage': 'denied'
-  });
-
-  // 2) Load GA
-  gtag('js', new Date());
-  gtag('config', 'G-FKVXD8061R', {
-    send_page_view: true
-  });
-</script>
-<!-- Osano CookieConsent -->
-<link rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
-<script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js"></script>
-
-<script>
-  window.addEventListener("load", function(){
-    window.cookieconsent.initialise({
-      palette: {
-        popup:  { background: "#2a2a2a" },
-        button: { background: "#4e503b" }
-      },
-      theme: "classic",
-      type:  "opt-in",         // require explicit consent
-      content: {
-        message: "We use analytics cookies to improve your experience. Do you accept?",
-        dismiss: "Accept all",
-        deny:    "Decline",
-        link:    "Learn more",
-        href:    "/privacy"
-      },
-      // 1) When banner first appears or is reloaded
-      onInitialise: function(status) {
-        gtag('consent','default', {
-          'analytics_storage': status === 'allow' ? 'granted' : 'denied'
-        });
-      },
-      // 2) When user changes their choice
-      onStatusChange: function(status) {
-        gtag('consent','update', {
-          'analytics_storage': status === 'allow' ? 'granted' : 'denied'
-        });
-      }
-    });
-  });
-</script>
-  <!-- Google Tag Manager -->
+   <!-- 1) Google Tag Manager (Head snippet) -->
   <script>
-    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-      new Date().getTime(),event:'gtm.js'});
+    (function(w,d,s,l,i){
+      w[l]=w[l]||[]; w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
       var f=d.getElementsByTagName(s)[0],
-          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+          j=d.createElement(s), dl=l!='dataLayer'?'&l='+l:'';
       j.async=true;
       j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;
       f.parentNode.insertBefore(j,f);
     })(window,document,'script','dataLayer','GT-PJWHFQQ4');
   </script>
   <!-- End Google Tag Manager -->
-</head>
 
+  <!-- 2) Google tag (gtag.js) with Consent Mode -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-FKVXD8061R"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+
+    // Default to denied until user consents
+    gtag('consent','default',{ 'analytics_storage':'denied' });
+
+    // Load GA4
+    gtag('js', new Date());
+    gtag('config','G-FKVXD8061R',{ send_page_view:true });
+  </script>
+
+  <!-- 3) Osano CookieConsent banner -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function(){
+      window.cookieconsent.initialise({
+        palette: {
+          popup:  { background: "#2a2a2a" },
+          button: { background: "#4e503b" }
+        },
+        theme: "classic",
+        type:  "opt-in",
+        content: {
+          message: "We use analytics cookies to improve your experience. Do you accept?",
+          dismiss: "Accept all",
+          deny:    "Decline",
+          link:    "Learn more",
+          href:    "/privacy"
+        },
+        onInitialise: function(status) {
+          gtag('consent','default',{
+            'analytics_storage': status==='allow'?'granted':'denied'
+          });
+        },
+        onStatusChange: function(status) {
+          gtag('consent','update',{
+            'analytics_storage': status==='allow'?'granted':'denied'
+          });
+        }
+      });
+    });
+  </script>
+
+</head>
 <body>
-  <body>
-  <!-- Google Tag Manager (noscript) -->
+  <!-- 4) Google Tag Manager (noscript fallback) -->
   <noscript>
     <iframe src="https://www.googletagmanager.com/ns.html?id=GT-PJWHFQQ4"
-            height="0" width="0" style="display:none;visibility:hidden"></iframe>
+            height="0" width="0"
+            style="display:none;visibility:hidden"></iframe>
   </noscript>
   <!-- End Google Tag Manager (noscript) -->
-  <!-- …rest of your body… -->
+
+  <!-- …rest of your body content… -->
 
   {% include navigation.html %}
   <main class="page-content">
