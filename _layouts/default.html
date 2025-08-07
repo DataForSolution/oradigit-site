@@ -57,11 +57,11 @@
 <!-- 1) Back to Top Button Styles -->
 <style>
   #backToTop {
-    display: none;              /* Hidden by default */
+    display: none;             /* Hidden until scroll */
     position: fixed;
-    bottom: 90px;               /* Above chatbot at 20px */
-    right: 20px;
-    z-index: 10001;             /* Above everything */
+    bottom: 20px;              /* 20px from bottom */
+    left: 20px;                /* 20px from left, avoids chatbot */
+    z-index: 10001;            /* Above everything */
     width: 40px;
     height: 40px;
     border: none;
@@ -72,6 +72,7 @@
     cursor: pointer;
     align-items: center;
     justify-content: center;
+    display: flex;             /* center arrow */
   }
   #backToTop:hover {
     background-color: #0056b3;
@@ -87,12 +88,12 @@
     const backToTop = document.getElementById('backToTop');
     if (!backToTop) return;
 
-    // Show or hide the button based on scroll position
+    // Show or hide based on scroll
     window.addEventListener('scroll', () => {
       backToTop.style.display = window.scrollY > 300 ? 'flex' : 'none';
     });
 
-    // Smooth scroll to top when clicked
+    // Smooth scroll to top
     backToTop.addEventListener('click', (e) => {
       e.preventDefault();
       window.scrollTo({ top: 0, behavior: 'smooth' });
