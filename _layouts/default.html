@@ -27,8 +27,8 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){ dataLayer.push(arguments); }
 
-    // Default to denied until user consents
-    gtag('consent','default',{ 'analytics_storage':'denied' });
+    // Start with analytics denied until user consents
+    gtag('consent','default',{ analytics_storage:'denied' });
 
     // Load GA4
     gtag('js', new Date());
@@ -40,7 +40,13 @@
         href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js"></script>
   <script>
-    document.addEventListener("DOMContentLoaded", function(){
+    console.log("🛠 CookieConsent loaded:", !!window.cookieconsent);
+    window.addEventListener("load", function() {
+      if (!window.cookieconsent) {
+        console.error("CookieConsent library not found!");
+        return;
+      }
+      console.log("🛠 Initializing CookieConsent…");
       window.cookieconsent.initialise({
         palette: {
           popup:  { background: "#2a2a2a" },
@@ -56,13 +62,15 @@
           href:    "/privacy"
         },
         onInitialise: function(status) {
+          console.log("🛠 Cookie status:", status);
           gtag('consent','default',{
-            'analytics_storage': status==='allow'?'granted':'denied'
+            analytics_storage: status === 'allow' ? 'granted' : 'denied'
           });
         },
         onStatusChange: function(status) {
+          console.log("🛠 Cookie status changed to:", status);
           gtag('consent','update',{
-            'analytics_storage': status==='allow'?'granted':'denied'
+            analytics_storage: status === 'allow' ? 'granted' : 'denied'
           });
         }
       });
