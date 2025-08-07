@@ -54,24 +54,52 @@
     {{ content }}
   </main>
   {% include footer.html %}
- <!-- Back to Top Button -->
+<!-- 1) Back to Top Button Styles -->
+<style>
+  #backToTop {
+    display: none;              /* Hidden by default */
+    position: fixed;
+    bottom: 90px;               /* Above chatbot at 20px */
+    right: 20px;
+    z-index: 10001;             /* Above everything */
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+  #backToTop:hover {
+    background-color: #0056b3;
+  }
+</style>
+
+<!-- 2) Back to Top Button -->
 <button id="backToTop" title="Back to Top">↑</button>
 
+<!-- 3) Back to Top Script -->
 <script>
-  // Show/hide back to top button
-  const backToTop = document.getElementById("backToTop");
+  document.addEventListener('DOMContentLoaded', () => {
+    const backToTop = document.getElementById('backToTop');
+    if (!backToTop) return;
 
-  window.onscroll = function () {
-    if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
-      backToTop.style.display = "block";
-    } else {
-      backToTop.style.display = "none";
-    }
-  };
+    // Show or hide the button based on scroll position
+    window.addEventListener('scroll', () => {
+      backToTop.style.display = window.scrollY > 300 ? 'flex' : 'none';
+    });
 
-  backToTop.onclick = function () {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+    // Smooth scroll to top when clicked
+    backToTop.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+</script>
+
 </script>
   <!-- …your existing page content… -->
  
