@@ -18,6 +18,12 @@ body {
   margin: 0 auto;
   padding: 2rem 0;
 }
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
 
 /* Header Styles */
 header {
@@ -933,4 +939,145 @@ footer {
   border-top: 1px solid #ddd;
   padding: 10px;
   outline: none;
+}
+/* Chatbot Widget */
+#chatbot-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  z-index: 9999;
+}
+#chatbot-toggle {
+  background: #1a53ff;
+  color: #fff;
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+#chatbot-box {
+  display: none;
+  position: absolute;
+  bottom: 60px;
+  right: 0;
+  width: 320px;
+  max-height: 400px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  flex-direction: column;
+  overflow: hidden;
+}
+#chatbot-box:not(.hidden) { display: flex; }
+#chatbot-header {
+  background: #1a53ff;
+  color: #fff;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+#chatbot-messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+}
+#chatbot-input {
+  border: none;
+  border-top: 1px solid #ddd;
+  padding: 10px;
+  outline: none;
+}
+.hidden {
+  display: none !important;
+}
+<style>
+  /* Back-to-top arrow styling */
+  #back-to-top {
+    position: fixed;
+    bottom: 90px;    /* raise it above the chatbot at 20px */
+    right: 20px;     /* same right margin as the chatbot */
+    z-index: 10001;  /* above chatbot’s 9999 */
+    cursor: pointer;
+    pointer-events: auto;
+  }
+</style>
+/* NAVIGATION */
+.main-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.nav-links {
+  display: flex;
+  gap: 1rem;
+}
+.mobile-menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+}
+
+/* MEDIUM SCREENS (tablets) */
+@media (max-width: 768px) {
+  .nav-links {
+    position: absolute;
+    top: 60px;    /* adjust to nav height */
+    right: 0;
+    background: white;
+    flex-direction: column;
+    width: 200px;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+  }
+  .nav-links.open {
+    transform: translateX(0);
+  }
+  .mobile-menu-toggle {
+    display: block;
+  }
+
+  /* Stack hero text */
+  .hero .container {
+    text-align: center;
+  }
+  .hero h1 {
+    font-size: 2rem;
+  }
+}
+
+/* SMALL SCREENS (phones) */
+@media (max-width: 480px) {
+  /* Make service-list stack */
+  .service-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  /* Shrink headings */
+  h1 {
+    font-size: 1.75rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  /* Adjust padding on sections */
+  section {
+    padding: 2rem 0;
+  }
+
+  /* Forms full-width */
+  form input,
+  form textarea,
+  form button {
+    width: 100%;
+  }
 }

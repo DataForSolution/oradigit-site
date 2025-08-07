@@ -7,7 +7,8 @@
 </div>
 
    <nav class="main-nav">
-  <ul class="nav-links">
+     <button id="mobileMenuToggle" class="mobile-menu-toggle" aria-label="Toggle menu">☰</button>
+  <ul class="nav-links" id="navLinks">
     <li><a href="/overview/">Overview</a></li>
     <li><a href="/approach/">Our Approach</a></li>
     <li><a href="/labs/">Labs</a></li>
@@ -27,4 +28,12 @@
 </div>
 
   </div>
+  <script>
+  const toggle = document.getElementById('mobileMenuToggle');
+  const links  = document.getElementById('navLinks');
+  toggle.addEventListener('click', () => {
+    links.classList.toggle('open');
+  });
+</script>
+
 </header>
