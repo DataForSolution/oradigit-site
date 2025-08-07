@@ -1084,19 +1084,3 @@ footer {
     width: 100%;
   }
 }
-/* ─── Full-Width, Medium-Height Video Preview ─── */
-.video-preview-section {
-  width: 100%;
-  margin: 2rem 0;      /* vertical spacing above & below */
-  padding: 0;
-  background: none;
-}
-
-.video-preview {
-  display: block;
-  width: 100%;
-  height: 50vh;        /* medium height: 50% of viewport height */
-  object-fit: cover;   /* crop/scale to fill the rectangle */
-  border-radius: 0;    /* remove rounding for full-bleed look */
-  box-shadow: none;    /* optional: remove shadow if you want a cleaner band */
-}
