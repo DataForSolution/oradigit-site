@@ -126,6 +126,24 @@ description: Advancing Radiology, Imaging, and Nuclear Medicine through AI-Power
 </div>
 
 </div>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const acceptBtn  = document.getElementById('cookie-accept');
+    const declineBtn = document.getElementById('cookie-decline');
+
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', () => {
+        gtag('consent','update',{ analytics_storage:'granted' });
+      });
+    }
+    if (declineBtn) {
+      declineBtn.addEventListener('click', () => {
+        gtag('consent','update',{ analytics_storage:'denied' });
+      });
+    }
+  });
+</script>
+
 
 <!-- Cookie Script -->
 <script>
