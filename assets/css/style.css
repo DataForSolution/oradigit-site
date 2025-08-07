@@ -1084,3 +1084,23 @@ footer {
     width: 100%;
   }
 }
+/* ─── Video Preview Section ─── */
+.video-preview-section {
+  padding: 2rem 0;
+  background: none;
+}
+
+.video-preview-section .container {
+  /* match your normal page width */
+  max-width: 1100px;
+}
+
+.video-preview {
+  display: block;
+  width: 100%;
+  max-width: 800px;    /* caps the width so it doesn’t overwhelm the page */
+  height: auto;
+  margin: 0 auto;      /* center it */
+  border-radius: 8px;  /* optional soft corners */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
