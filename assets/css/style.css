@@ -893,6 +893,9 @@ footer {
   position: relative; 
   z-index: 101;       /* ensure it sits above the box */
 }
+ #chatbot-toggle:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}
 
 /* Chat Window */
 #chatbot-box {
