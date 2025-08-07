@@ -104,8 +104,27 @@
 </script>
   <!-- …your existing page content… -->
  
-   <!-- Chatbot Widget -->
+  
     <!-- Chatbot Widget -->
+   <!-- Chatbot Send-Button Styles -->
+<style>
+  #chatbot-send {
+    background-color: #007bff;      /* blue */
+    color: #fff;                    /* white text */
+    border: none;
+    padding: 0.5em 1em;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  #chatbot-send:hover {
+    background-color: #0056b3;      /* darker blue on hover */
+  }
+  #chatbot-send:active {
+    background-color: #28a745;      /* green while clicked */
+  }
+</style>
+
   <div id="chatbot-container">
     <button id="chatbot-toggle" aria-label="Chat with us!">💬</button>
     <div id="chatbot-box" class="hidden">
