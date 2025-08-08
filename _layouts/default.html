@@ -214,5 +214,40 @@
       sendBtn.addEventListener('click', sendMessage);
     })();
   </script>
+ <script>
+  // Mobile hamburger toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const mainNav = document.getElementById('primary-nav');
+  if (navToggle && mainNav) {
+    navToggle.addEventListener('click', () => {
+      const isOpen = mainNav.classList.toggle('open');
+      navToggle.setAttribute('aria-expanded', String(isOpen));
+    });
+  }
+
+  // Keyboard/accessibility for dropdowns
+  document.querySelectorAll('.has-dropdown').forEach(group => {
+    const btn = group.querySelector('.dropdown-toggle');
+    const menu = group.querySelector('.dropdown-menu');
+    if (!btn || !menu) return;
+
+    btn.addEventListener('click', (e) => {
+      // On desktop this isn’t needed, but on mobile it gives a tap-to-open feel
+      e.preventDefault();
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!expanded));
+      // On mobile, menus are inline so no show/hide needed
+    });
+
+    // Close on Escape
+    group.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        btn.setAttribute('aria-expanded', 'false');
+        btn.blur();
+      }
+    });
+  });
+</script>
+
 </body>
 </html>

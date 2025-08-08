@@ -1,39 +1,100 @@
-<header class="main-header">
+<header class="main-header" role="banner">
   <div class="header-container">
+    <!-- Logo -->
     <div class="logo-container">
-  <a href="{{ '/' | relative_url }}" aria-label="OraDigit Home" class="logo-link">
-    <img src="{{ '/assets/logo.png' | relative_url }}" alt="OraDigit Logo" class="logo-icon">
-  </a>
-</div>
+      <a href="{{ '/' | relative_url }}" aria-label="OraDigit Home" class="logo-link">
+        <img src="{{ '/assets/logo.png' | relative_url }}" alt="OraDigit Logo" class="logo-icon">
+        <span class="logo-text">OraDigit</span>
+      </a>
+    </div>
 
-   <nav class="main-nav">
-     <button id="mobileMenuToggle" class="mobile-menu-toggle" aria-label="Toggle menu">☰</button>
-  <ul class="nav-links" id="navLinks">
-    <li><a href="/overview/">Overview</a></li>
-    <li><a href="/approach/">Our Approach</a></li>
-    <li><a href="/labs/">Labs</a></li>
-    <li><a href="/case-studies/">Case Studies</a></li>
-    <li><a href="/insights/">Our Insights</a></li>
-    <li><a href="/people/">Our People</a></li>
-    <li><a href="/contact/">Contact Us</a></li>
-    <li><a href="/careers/">Careers</a></li>
+    <!-- Mobile hamburger -->
+    <button id="mobileMenuToggle" class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
 
-  </ul>
-  </nav>
-<div class="header-right">
-  <a href="https://auth.oradigit.com" class="auth-link" target="_blank" rel="noopener">Sign In</a>
-  <span class="divider">|</span>
-  <a href="/subscribe/" class="auth-link">Subscribe</a>
+    <!-- Primary Nav -->
+    <nav class="main-nav" role="navigation" aria-label="Primary">
+      <ul class="nav-links" id="navLinks">
+        <!-- About -->
+        <li class="has-dropdown">
+          <button class="dropdown-toggle" aria-expanded="false">About</button>
+          <ul class="dropdown-menu">
+            <li><a href="/overview/">Overview</a></li>
+            <li><a href="/approach/">Our Approach</a></li>
+            <li><a href="/people/">Our People</a></li>
+          </ul>
+        </li>
 
-</div>
+        <!-- Solutions -->
+        <li class="has-dropdown">
+          <button class="dropdown-toggle" aria-expanded="false">Solutions</button>
+          <ul class="dropdown-menu">
+            <li><a href="/labs/">Labs</a></li>
+            <li><a href="/case-studies/">Case Studies</a></li>
+            <li><a href="/roadmap/">Business Growth Roadmap</a></li><!-- new -->
+            <!-- Future: <li><a href="/services/">Services & Packages</a></li> -->
+          </ul>
+        </li>
 
+        <!-- Insights -->
+        <li class="has-dropdown">
+          <button class="dropdown-toggle" aria-expanded="false">Insights</button>
+          <ul class="dropdown-menu">
+            <li><a href="/insights/">Our Insights</a></li>
+            <!-- Future: <li><a href="/blog/">Blog</a></li> -->
+          </ul>
+        </li>
+
+        <!-- Careers / Contact remain top-level for clarity -->
+        <li><a href="/careers/">Careers</a></li>
+        <li><a href="/contact/">Contact Us</a></li>
+      </ul>
+    </nav>
+
+    <!-- Right header actions -->
+    <div class="header-right">
+      <a href="https://auth.oradigit.com" class="auth-link" target="_blank" rel="noopener">Sign In</a>
+      <span class="divider">|</span>
+      <a href="/subscribe/" class="auth-link">Subscribe</a>
+      <a href="/contact/" class="btn-cta">Book Consultation</a>
+      <button class="search-btn" aria-label="Search">
+        <img src="{{ '/assets/search.svg' | relative_url }}" alt="Search Icon">
+      </button>
+    </div>
   </div>
-  <script>
-  const toggle = document.getElementById('mobileMenuToggle');
-  const links  = document.getElementById('navLinks');
-  toggle.addEventListener('click', () => {
-    links.classList.toggle('open');
-  });
-</script>
 
+  <!-- Minimal JS (kept inline like your current file) -->
+  <script>
+    // Mobile toggle
+    const toggle = document.getElementById('mobileMenuToggle');
+    const links  = document.getElementById('navLinks');
+    if (toggle && links) {
+      toggle.addEventListener('click', () => {
+        const isOpen = links.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+      });
+    }
+
+    // Dropdown buttons (for keyboard + mobile tap)
+    document.querySelectorAll('.has-dropdown').forEach(group => {
+      const btn = group.querySelector('.dropdown-toggle');
+      const menu = group.querySelector('.dropdown-menu');
+      if (!btn || !menu) return;
+
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const expanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!expanded));
+        // On desktop we reveal via CSS :hover/:focus-within
+        // On mobile the menu is inline, so always visible in the column layout.
+      });
+
+      // Close on Escape
+      group.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          btn.setAttribute('aria-expanded', 'false');
+          btn.blur();
+        }
+      });
+    });
+  </script>
 </header>
