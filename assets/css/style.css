@@ -1133,3 +1133,49 @@ footer {
     width: 100%;
   }
 }
+/* --- Nav readability & spacing fixes --- */
+.nav-links { 
+  list-style: none; 
+  display: flex; 
+  align-items: center; 
+  gap: 1.8rem;           /* more spacing between items */
+  margin: 0; 
+  padding: 0;
+}
+
+.nav-links > li > a,
+.dropdown-toggle {
+  font-size: 1rem;       /* larger text */
+  font-weight: 500;
+  color: #1a1a1a;
+  text-decoration: none;
+  padding: 8px 0;
+  letter-spacing: .2px;
+}
+
+.nav-links > li > a:hover,
+.dropdown-toggle:hover {
+  color: #1a53ff;
+}
+
+/* Active/selected link */
+.nav-links a.active,
+.nav-links a[aria-current="page"],
+.has-dropdown > .dropdown-toggle[aria-expanded="true"] {
+  color: #1a53ff;
+  border-bottom: 2px solid #1a53ff;
+}
+
+/* Remove any unexpected list bullets in some browsers */
+.nav-links, .dropdown-menu { list-style: none; }
+
+/* Make sure visited links don’t turn purple */
+.nav-links a:visited { color: #1a1a1a; }
+.nav-links a.active:visited { color: #1a53ff; }
+
+/* Keep header tidy */
+.logo-text { display: none; }        /* hides any leftover label just in case */
+.search-btn { display: none; }       /* remove non-working search icon */
+
+/* Optional: slightly taller header for breathing room */
+header.main-header { min-height: 72px; }

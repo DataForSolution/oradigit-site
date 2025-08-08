@@ -1,10 +1,9 @@
 <header class="main-header" role="banner">
   <div class="header-container">
-    <!-- Logo -->
+    <!-- Logo (icon only) -->
     <div class="logo-container">
       <a href="{{ '/' | relative_url }}" aria-label="OraDigit Home" class="logo-link">
         <img src="{{ '/assets/logo.png' | relative_url }}" alt="OraDigit Logo" class="logo-icon">
-        <span class="logo-text">OraDigit</span>
       </a>
     </div>
 
@@ -30,8 +29,7 @@
           <ul class="dropdown-menu">
             <li><a href="/labs/">Labs</a></li>
             <li><a href="/case-studies/">Case Studies</a></li>
-            <li><a href="/roadmap/">Business Growth Roadmap</a></li><!-- new -->
-            <!-- Future: <li><a href="/services/">Services & Packages</a></li> -->
+            <li><a href="/roadmap/">Business Growth Roadmap</a></li>
           </ul>
         </li>
 
@@ -40,29 +38,23 @@
           <button class="dropdown-toggle" aria-expanded="false">Insights</button>
           <ul class="dropdown-menu">
             <li><a href="/insights/">Our Insights</a></li>
-            <!-- Future: <li><a href="/blog/">Blog</a></li> -->
           </ul>
         </li>
 
-        <!-- Careers / Contact remain top-level for clarity -->
         <li><a href="/careers/">Careers</a></li>
         <li><a href="/contact/">Contact Us</a></li>
       </ul>
     </nav>
 
-    <!-- Right header actions -->
+    <!-- Right header actions (no search icon) -->
     <div class="header-right">
       <a href="https://auth.oradigit.com" class="auth-link" target="_blank" rel="noopener">Sign In</a>
       <span class="divider">|</span>
       <a href="/subscribe/" class="auth-link">Subscribe</a>
       <a href="/contact/" class="btn-cta">Book Consultation</a>
-      <button class="search-btn" aria-label="Search">
-        <img src="{{ '/assets/search.svg' | relative_url }}" alt="Search Icon">
-      </button>
     </div>
   </div>
 
-  <!-- Minimal JS (kept inline like your current file) -->
   <script>
     // Mobile toggle
     const toggle = document.getElementById('mobileMenuToggle');
@@ -74,26 +66,22 @@
       });
     }
 
-    // Dropdown buttons (for keyboard + mobile tap)
+    // Dropdown buttons
     document.querySelectorAll('.has-dropdown').forEach(group => {
       const btn = group.querySelector('.dropdown-toggle');
-      const menu = group.querySelector('.dropdown-menu');
-      if (!btn || !menu) return;
-
+      if (!btn) return;
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         const expanded = btn.getAttribute('aria-expanded') === 'true';
         btn.setAttribute('aria-expanded', String(!expanded));
-        // On desktop we reveal via CSS :hover/:focus-within
-        // On mobile the menu is inline, so always visible in the column layout.
       });
+    });
 
-      // Close on Escape
-      group.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-          btn.setAttribute('aria-expanded', 'false');
-          btn.blur();
-        }
+    // Active state: mark clicked item as active (simple client-side)
+    document.querySelectorAll('.nav-links a').forEach(a => {
+      a.addEventListener('click', () => {
+        document.querySelectorAll('.nav-links a').forEach(el => el.classList.remove('active'));
+        a.classList.add('active');
       });
     });
   </script>
