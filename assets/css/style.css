@@ -240,7 +240,7 @@ footer {
   font-size: 0.85rem;
   color: #666;
 }
-
+/* Cookie Consent Banner */
 /* Cookie Consent Banner */
 .cookie-banner {
   position: fixed;
@@ -284,19 +284,35 @@ footer {
   font-size: 1rem;
   border: none;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-.cookie-buttons .manage {
+/* Manage Preferences Button */
+.cookie-buttons .btn-outline {
   background: transparent;
   color: #0033cc;
   border: 1.5px solid #0033cc;
 }
 
-.cookie-buttons .accept {
-  background: #1a53ff;
-  color: white;
+.cookie-buttons .btn-outline:hover {
+  background: #e6f0ff;
 }
+
+/* Accept Cookies Button - Bright Blue Theme */
+.cookie-buttons .btn-solid {
+  background: #007bff; /* bright blue */
+  color: #ffffff;
+}
+
+.cookie-buttons .btn-solid:hover {
+  background: #0056b3; /* darker blue on hover */
+  transform: scale(1.05);
+}
+
+.cookie-buttons .btn-solid:active {
+  background: #28a745 !important; /* green when clicked */
+}
+
 .footer-grid {
   background: #f9f9f9;
   padding: 3rem 1rem;
