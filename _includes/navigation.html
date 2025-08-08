@@ -85,4 +85,28 @@
       });
     });
   </script>
+<script>
+  // Mark current page link as active (works for /careers/, /contact/, etc.)
+  (function() {
+    const curPath = location.pathname.replace(/\/$/, '') || '/';
+    document.querySelectorAll('.nav-links a[href]').forEach(a => {
+      const href = a.getAttribute('href');
+      if (!href) return;
+      const normalized = href.replace(/\/$/, '');
+      if (normalized === curPath) {
+        a.classList.add('active');
+        a.setAttribute('aria-current', 'page');
+      }
+    });
+
+    // When clicking in-page anchors, highlight them until navigation changes
+    document.querySelectorAll('.nav-links a[href^="#"]').forEach(a => {
+      a.addEventListener('click', () => {
+        document.querySelectorAll('.nav-links a').forEach(el => el.classList.remove('active'));
+        a.classList.add('active');
+      });
+    });
+  })();
+</script>
+
 </header>
