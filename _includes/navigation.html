@@ -8,13 +8,14 @@
     </div>
 
     <!-- Mobile hamburger -->
-    <button id="mobileMenuToggle" class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <button
+      id="mobileMenuToggle"
+      class="mobile-menu-toggle"
+      aria-label="Toggle menu"
+      aria-expanded="false"
+      aria-controls="navLinks">☰</button>
 
-<nav class="main-nav" role="navigation" aria-label="Primary">
-  <ul class="nav-links" id="navLinks">
-    
-
-    <!-- Primary Nav -->
+    <!-- Primary Nav (single instance) -->
     <nav class="main-nav" role="navigation" aria-label="Primary">
       <ul class="nav-links" id="navLinks">
         <!-- About -->
@@ -50,7 +51,7 @@
       </ul>
     </nav>
 
-    <!-- Right header actions (no search icon) -->
+    <!-- Right header actions -->
     <div class="header-right">
       <a href="https://auth.oradigit.com" class="auth-link" target="_blank" rel="noopener">Sign In</a>
       <span class="divider">|</span>
@@ -59,75 +60,48 @@
     </div>
   </div>
 
+  <!-- Single, robust script (remove the other two) -->
   <script>
-    // Mobile toggle
-    const toggle = document.getElementById('mobileMenuToggle');
-    const links  = document.getElementById('navLinks');
-    if (toggle && links) {
-      toggle.addEventListener('click', () => {
-        const isOpen = links.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', String(isOpen));
-      });
-    }
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggleBtn = document.getElementById('mobileMenuToggle');
+      const mainNav   = document.querySelector('.main-nav');
+      const navLinks  = document.getElementById('navLinks');
 
-    // Dropdown buttons
-    document.querySelectorAll('.has-dropdown').forEach(group => {
-      const btn = group.querySelector('.dropdown-toggle');
-      if (!btn) return;
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const expanded = btn.getAttribute('aria-expanded') === 'true';
-        btn.setAttribute('aria-expanded', String(!expanded));
-      });
-    });
+      if (toggleBtn && mainNav && navLinks) {
+        toggleBtn.addEventListener('click', () => {
+          const opened = mainNav.classList.toggle('open');
+          navLinks.classList.toggle('open', opened);
+          toggleBtn.setAttribute('aria-expanded', String(opened));
+          document.body.classList.toggle('nav-open', opened);
+        });
+      }
 
-    // Active state: mark clicked item as active (simple client-side)
-    document.querySelectorAll('.nav-links a').forEach(a => {
-      a.addEventListener('click', () => {
-        document.querySelectorAll('.nav-links a').forEach(el => el.classList.remove('active'));
-        a.classList.add('active');
+      // Dropdown tap support + Escape to collapse (desktop hover handled by CSS)
+      document.querySelectorAll('.has-dropdown').forEach(group => {
+        const btn = group.querySelector('.dropdown-toggle');
+        if (!btn) return;
+        btn.addEventListener('click', (e) => {
+          // On mobile this gives tap-to-open feel; on desktop CSS handles hover
+          e.preventDefault();
+          const expanded = btn.getAttribute('aria-expanded') === 'true';
+          btn.setAttribute('aria-expanded', String(!expanded));
+        });
+        group.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') btn.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+      // Mark current page link as active
+      const curPath = location.pathname.replace(/\/$/, '') || '/';
+      document.querySelectorAll('.nav-links a[href]').forEach(a => {
+        const href = a.getAttribute('href');
+        if (!href) return;
+        const normalized = href.replace(/\/$/, '');
+        if (normalized === curPath) {
+          a.classList.add('active');
+          a.setAttribute('aria-current', 'page');
+        }
       });
     });
   </script>
-<script>
-  // Mark current page link as active (works for /careers/, /contact/, etc.)
-  (function() {
-    const curPath = location.pathname.replace(/\/$/, '') || '/';
-    document.querySelectorAll('.nav-links a[href]').forEach(a => {
-      const href = a.getAttribute('href');
-      if (!href) return;
-      const normalized = href.replace(/\/$/, '');
-      if (normalized === curPath) {
-        a.classList.add('active');
-        a.setAttribute('aria-current', 'page');
-      }
-    });
-
-    // When clicking in-page anchors, highlight them until navigation changes
-    document.querySelectorAll('.nav-links a[href^="#"]').forEach(a => {
-      a.addEventListener('click', () => {
-        document.querySelectorAll('.nav-links a').forEach(el => el.classList.remove('active'));
-        a.classList.add('active');
-      });
-    });
-  })();
-</script>
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const toggleBtn = document.getElementById('mobileMenuToggle');
-    const mainNav   = document.querySelector('.main-nav');
-    const navLinks  = document.getElementById('navLinks');
-
-    if (toggleBtn && mainNav && navLinks) {
-      toggleBtn.setAttribute('aria-controls', 'navLinks');
-      toggleBtn.addEventListener('click', () => {
-        const opened = mainNav.classList.toggle('open');
-        navLinks.classList.toggle('open', opened);
-        toggleBtn.setAttribute('aria-expanded', String(opened));
-        document.body.classList.toggle('nav-open', opened); // optional: lock scroll
-      });
-    }
-  });
-</script>
-
 </header>
