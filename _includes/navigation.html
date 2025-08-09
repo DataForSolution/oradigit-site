@@ -12,9 +12,7 @@
 
 <nav class="main-nav" role="navigation" aria-label="Primary">
   <ul class="nav-links" id="navLinks">
-    <!-- menu items -->
-  </ul>
-</nav>
+    
 
     <!-- Primary Nav -->
     <nav class="main-nav" role="navigation" aria-label="Primary">
@@ -126,7 +124,7 @@
         const opened = mainNav.classList.toggle('open');
         navLinks.classList.toggle('open', opened);
         toggleBtn.setAttribute('aria-expanded', String(opened));
-        document.body.classList.toggle('nav-open', opened); // optional: lock scrolling
+        document.body.classList.toggle('nav-open', opened); // optional: lock scroll
       });
     }
   });
