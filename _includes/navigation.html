@@ -10,6 +10,12 @@
     <!-- Mobile hamburger -->
     <button id="mobileMenuToggle" class="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
 
+<nav class="main-nav" role="navigation" aria-label="Primary">
+  <ul class="nav-links" id="navLinks">
+    <!-- menu items -->
+  </ul>
+</nav>
+
     <!-- Primary Nav -->
     <nav class="main-nav" role="navigation" aria-label="Primary">
       <ul class="nav-links" id="navLinks">
@@ -107,6 +113,23 @@
       });
     });
   })();
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggleBtn = document.getElementById('mobileMenuToggle');
+    const mainNav   = document.querySelector('.main-nav');
+    const navLinks  = document.getElementById('navLinks');
+
+    if (toggleBtn && mainNav && navLinks) {
+      toggleBtn.setAttribute('aria-controls', 'navLinks');
+      toggleBtn.addEventListener('click', () => {
+        const opened = mainNav.classList.toggle('open');
+        navLinks.classList.toggle('open', opened);
+        toggleBtn.setAttribute('aria-expanded', String(opened));
+        document.body.classList.toggle('nav-open', opened); // optional: lock scrolling
+      });
+    }
+  });
 </script>
 
 </header>
