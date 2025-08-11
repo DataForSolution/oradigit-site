@@ -1,0 +1,104 @@
+---
+layout: default
+title: Reducing Radiology Insurance Denials (PET/CT)
+description: OraDigit’s hybrid Rules + LLM workflow that improves PET/CT ordering quality and payer readiness.
+permalink: /case-studies/radiology-claim-denial/
+---
+
+<section class="hero">
+  <div class="container">
+    <h2>Reducing Radiology Insurance Denials (PET/CT)</h2>
+    <p>A practical, compliant workflow to help oncology providers and radiology teams pick the correct study headers and document medical necessity.</p>
+    <a class="btn" href="/contact/">Talk to OraDigit</a>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h3>Summary</h3>
+    <p>
+      Multiple sites reported unusually high denial rates for PET/CT orders driven by two issues:
+      (1) incorrect <em>study header</em> selection (e.g., PET Whole Body vs. PET Skull‑to‑Thigh), and
+      (2) indication text that did not align with payer medical‑necessity criteria. This caused repeat scheduling,
+      staff rework, delayed care, and revenue leakage.
+    </p>
+
+    <h3>Goals</h3>
+    <ul>
+      <li>Cut initial claim denials and prior‑auth rejections.</li>
+      <li>Standardize ordering with compliant study headers.</li>
+      <li>Capture clinically accurate indications mapped to payer rules.</li>
+      <li>Shorten time‑to‑scan; reduce back‑and‑forth with payers.</li>
+    </ul>
+
+    <h3>What exists today (baseline)</h3>
+    <ul>
+      <li>Current ordering portals allow free‑text reasons and broad header choices.</li>
+      <li>Site protocols favor PET Skull‑to‑Thigh for most adult oncology; Whole Body is needed in select scenarios (e.g., suspected distal disease).</li>
+      <li>Schedulers/coders often fix orders post‑hoc; documentation quality varies by referrer.</li>
+    </ul>
+
+    <h3>OraDigit Solution (Hybrid: Rules + LLM)</h3>
+    <div class="soln-grid">
+      <div>
+        <h4>Deterministic Rules Engine</h4>
+        <ul>
+          <li>Maps clinical scenarios to PET/CT headers (e.g., staging/restaging vs. therapy response).</li>
+          <li>Enforces required fields: diagnosis, stage, therapy status, ICD‑10, prior imaging.</li>
+          <li>Validates indication against a versioned payer‑policy table.</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Guardrailed LLM Assistant</h4>
+        <ul>
+          <li>Drafts payer‑ready justification using structured inputs (explainable templates).</li>
+          <li>Explains header choice to the ordering provider in plain language.</li>
+          <li>Flags contradictions or missing fields before submission.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Workflow</h3>
+    <ol>
+      <li><strong>Web Form</strong> on <code>oradigit.com</code> captures structured inputs (cancer type, intent, stage, therapy status, ICD‑10, prior imaging, symptoms).</li>
+      <li><strong>Header Recommendation</strong> from rules; alternatives shown with rationale.</li>
+      <li><strong>Justification Draft</strong> (LLM) + suggested diagnosis codes.</li>
+      <li><strong>Payer Readiness Check</strong> (required fields, policy alignment, prior‑auth hints).</li>
+      <li><strong>Export</strong> to PDF/EMR note for scheduling and authorization.</li>
+    </ol>
+
+    <h3>Inputs & Data</h3>
+    <ul>
+      <li>Ordering details: known/suspected malignancy, stage, intended use (staging, restaging, surveillance), therapy response.</li>
+      <li>Facility protocols: preferred headers (Skull‑to‑Thigh, Whole Body), tracer, dose ranges.</li>
+      <li>Payer rules (summarized): medical necessity language, documentation requirements.</li>
+    </ul>
+
+    <h3>Security, Privacy & Compliance</h3>
+    <ul>
+      <li>No PHI stored by default; hosted options with BAA available.</li>
+      <li>Versioned policy table; audit trail of recommendations.</li>
+      <li>Decision support only—does not replace clinical judgment.</li>
+    </ul>
+
+    <h3>KPIs & Expected Outcomes</h3>
+    <ul>
+      <li><strong>Denials ↓ 50–70%</strong> within 90 days at pilot sites (target).</li>
+      <li><strong>Time‑to‑scan ↓</strong> via complete orders on the first pass.</li>
+      <li><strong>Staff rework ↓</strong> (fewer resubmissions and payer calls).</li>
+      <li><strong>Provider experience ↑</strong> (explainable, consistent ordering).</li>
+    </ul>
+
+    <h3>Status</h3>
+    <p><strong>In progress:</strong> rules table definition, form schema, and draft LLM templates. Next: pilot integration and PDF/EMR export.</p>
+
+    <div class="cta">
+      <a class="btn" href="/contact/">Start a pilot</a>
+    </div>
+  </div>
+</section>
+
+<style>
+.soln-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem;margin:1rem 0 0}
+.cta{margin-top:1rem}
+</style>

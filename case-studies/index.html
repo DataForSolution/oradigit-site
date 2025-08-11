@@ -1,0 +1,51 @@
+---
+layout: default
+title: Case Studies | OraDigit
+description: Real outcomes from OraDigit’s AI & data science solutions in healthcare and beyond.
+permalink: /case-studies/
+---
+
+<section class="hero">
+  <div class="container">
+    <h2>Case Studies</h2>
+    <p>How OraDigit blends human expertise and AI to reduce risk, speed up decisions, and create measurable value.</p>
+    <a href="/contact/" class="btn">Start a pilot</a>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="cs-grid">
+      <!-- In progress card → links to the detail page -->
+      <article class="cs-card">
+        <header class="cs-header">
+          <span class="badge live">In progress</span>
+          <h3><a href="/case-studies/radiology-claim-denial/">Reducing Radiology Insurance Denials (PET/CT)</a></h3>
+          <p class="subtitle">Rules + LLM workflow to select compliant study headers and capture payer‑ready medical necessity.</p>
+        </header>
+        <ul class="meta">
+          <li><strong>Industry:</strong> Oncology Imaging (Hospitals & Imaging Centers)</li>
+          <li><strong>Impact:</strong> Fewer prior‑auth rejections & first‑pass claim approvals</li>
+          <li><strong>Tech:</strong> Deterministic rules engine + guardrailed LLM note drafting + export to EMR/PDF</li>
+        </ul>
+        <div class="actions">
+          <a class="btn" href="/case-studies/radiology-claim-denial/">Read the case</a>
+          <a class="btn btn-ghost" href="/contact/">Talk to OraDigit</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+.cs-grid{display:grid;gap:1.25rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.cs-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.1rem;display:flex;flex-direction:column}
+.cs-header h3{font-size:1.1rem;margin:.2rem 0 .35rem}
+.subtitle{color:#444;margin:.1rem 0 .6rem}
+.meta{margin:.5rem 0 1rem;padding-left:1.1rem}
+.meta li{list-style:disc;margin:.25rem 0;color:#333}
+.actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.btn-ghost{background:transparent;border:1px solid #d0d5ff;color:#1a53ff}
+.badge{display:inline-block;font-size:.72rem;font-weight:600;border-radius:999px;padding:.18rem .55rem;margin-bottom:.25rem}
+.badge.live{background:#e8fff0;color:#18794e;border:1px solid #b6f0cb}
+</style>
