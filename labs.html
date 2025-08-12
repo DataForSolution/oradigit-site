@@ -135,27 +135,37 @@ description: Experiments and demos from OraDigit Labs — including de-identifie
 .lightbox img{max-width:min(95vw,1200px);max-height:75vh;margin-bottom:.5rem}
 .lightbox .caption{color:#eee;font-size:.9rem;text-align:center}
 .lightbox .close{position:absolute;top:14px;right:18px;background:transparent;border:0;color:#fff;font-size:2rem;cursor:pointer}
+.lightbox[hidden] { display: none !important; }   /* ensures it's off on load */
 </style>
 
 <script>
 /* Minimal lightbox */
+
 document.addEventListener('DOMContentLoaded', () => {
   const lb = document.getElementById('lightbox');
+  if (!lb) return;
+  lb.hidden = true; // explicit
+
   const lbImg = document.getElementById('lightbox-img');
   const lbCap = document.getElementById('lightbox-caption');
 
-  document.querySelectorAll('.img-card').forEach(a => {
+  // Only bind to gallery anchors, not the video
+  document.querySelectorAll('a.img-card').forEach(a => {
     a.addEventListener('click', e => {
       e.preventDefault();
-      lbImg.src = a.href;
+      const src = a.getAttribute('href');
+      if (!src) return;  // guard
+      lbImg.src = src;
       lbImg.alt = a.dataset.title || '';
       lbCap.textContent = a.dataset.title || '';
       lb.hidden = false;
     });
   });
 
-  lb.querySelector('.close').addEventListener('click', () => lb.hidden = true);
-  lb.addEventListener('click', (e) => { if(e.target === lb) lb.hidden = true; });
-  document.addEventListener('keydown', e => { if(e.key === 'Escape') lb.hidden = true; });
+  lb.querySelector('.close').addEventListener('click', () => { lb.hidden = true; lbImg.src=''; });
+  lb.addEventListener('click', (e) => { if (e.target === lb) { lb.hidden = true; lbImg.src=''; } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { lb.hidden = true; lbImg.src=''; } });
 });
 </script>
+
+
