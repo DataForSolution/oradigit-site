@@ -2,77 +2,195 @@
 layout: default
 title: Contact
 permalink: /contact/
+description: Get in touch with OraDigit. Healthcare-first AI & data solutions—strategy, ML, MLOps, imaging ops, and more.
 ---
 
-<section class="contact-section">
+<section class="contact-section" aria-labelledby="contact-title">
   <div class="contact-card">
-    <h1>Contact Us</h1>
-    <p>
-      Thank you for your interest. Please fill out the form below to inquire about our work at OraDigit.
-      Required fields are marked with an asterisk (*).
+    <h1 id="contact-title">Contact Us</h1>
+    <p class="lead">
+      Tell us a bit about your goals. We’ll respond within 1–2 business days.
+      Fields marked with * are required.
     </p>
 
-    <form action="https://formsubmit.co/admin@oradigit.com" method="POST" class="contact-form">
-      <!-- Inquiry Type -->
+    <!--
+      Keeps your current pipeline:
+      - FormSubmit posts to admin@oradigit.com (Zoho receives)
+      - Redirects to /thank-you
+    -->
+    <form action="https://formsubmit.co/admin@oradigit.com" method="POST" class="contact-form" novalidate>
+      <!-- Hidden (FormSubmit) -->
+      <input type="hidden" name="_captcha" value="false">
+      <input type="hidden" name="_next" value="https://oradigit.com/thank-you/">
+      <input type="hidden" name="_subject" value="OraDigit Contact Form Submission">
+      <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+
+      <!-- Type of Inquiry -->
       <div class="form-group">
-        <label class="form-label">Type of Inquiry*</label>
-        <div class="checkbox-group">
-          <label><input type="checkbox" name="inquiry[]" value="general" /> General inquiries</label>
-          <label><input type="checkbox" name="inquiry[]" value="press" /> Press inquiries</label>
-          <label><input type="checkbox" name="inquiry[]" value="speaking" /> Speaking requests</label>
-        </div>
+        <label class="form-label" for="inquiry">Type of inquiry*</label>
+        <select id="inquiry" name="inquiry" required>
+          <option value="" disabled selected>Select one</option>
+          <option>Project / Consulting</option>
+          <option>Partnership</option>
+          <option>Press / Speaking</option>
+          <option>Support / Billing</option>
+          <option>General Question</option>
+        </select>
+      </div>
+
+      <!-- What We Do (Service interest) -->
+      <div class="form-group">
+        <label class="form-label" for="services">What can we help with?*</label>
+        <select id="services" name="services[]" multiple required aria-describedby="services-help">
+          <option value="ai-strategy">AI Strategy & Roadmap</option>
+          <option value="imaging-ops">Imaging Operations (PET/CT workflow, protocol, quality)</option>
+          <option value="revenue-integrity">Prior Auth & Revenue Integrity (order/header validation)</option>
+          <option value="llm-apps">LLM Apps (RAG/agents, document intelligence)</option>
+          <option value="mlops">MLOps (model CI/CD, monitoring, governance)</option>
+          <option value="data-platform">Data Platform (FHIR/HL7, pipelines, quality, lineage)</option>
+          <option value="digital-twins">Digital Twins & Simulation</option>
+          <option value="iot">IoT / Telemetry & Asset Analytics</option>
+          <option value="training">Upskilling & Training</option>
+        </select>
+        <small id="services-help" class="hint">
+          Hold Ctrl (Windows) or ⌘ (Mac) to select multiple.
+        </small>
+      </div>
+
+      <!-- Industry -->
+      <div class="form-group">
+        <label class="form-label" for="industry">Industry*</label>
+        <select id="industry" name="industry" required>
+          <option value="" disabled selected>Select one</option>
+          <option>Healthcare</option>
+          <option>Life Sciences</option>
+          <option>Public Sector</option>
+          <option>Financial Services</option>
+          <option>Manufacturing</option>
+          <option>Retail/CPG</option>
+          <option>Other</option>
+        </select>
       </div>
 
       <!-- Name -->
-      <div class="form-group">
-        <label class="form-label" for="name">Name*</label>
-        <input type="text" id="name" name="name" required />
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="first_name">First name*</label>
+          <input type="text" id="first_name" name="first_name" autocomplete="given-name" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="last_name">Last name*</label>
+          <input type="text" id="last_name" name="last_name" autocomplete="family-name" required>
+        </div>
       </div>
 
-      <!-- Email -->
-      <div class="form-group">
-        <label class="form-label" for="email">Email*</label>
-        <input type="email" id="email" name="email" required />
-      </div>
-
-      <!-- Organization -->
-      <div class="form-group">
-        <label class="form-label" for="org">Organization</label>
-        <input type="text" id="org" name="organization" />
+      <!-- Email & Organization -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="email">Work email*</label>
+          <input type="email" id="email" name="email" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="org">Organization</label>
+          <input type="text" id="org" name="organization" autocomplete="organization">
+        </div>
       </div>
 
       <!-- Subject -->
       <div class="form-group">
         <label class="form-label" for="subject">Subject*</label>
-        <input type="text" id="subject" name="subject" required />
+        <input type="text" id="subject" name="subject" required>
+      </div>
+
+      <!-- Project qualifiers -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="timeline">Target timeline*</label>
+          <select id="timeline" name="timeline" required>
+            <option value="" disabled selected>Select one</option>
+            <option>ASAP (0–4 weeks)</option>
+            <option>Short term (1–3 months)</option>
+            <option>Mid term (3–6 months)</option>
+            <option>Exploring / Not sure</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="budget">Budget range (USD)</label>
+          <select id="budget" name="budget">
+            <option value="" selected>Prefer not to say</option>
+            <option>Under 25,000</option>
+            <option>25,000 – 75,000</option>
+            <option>75,000 – 150,000</option>
+            <option>150,000+</option>
+          </select>
+        </div>
       </div>
 
       <!-- Message -->
       <div class="form-group">
         <label class="form-label" for="message">Message*</label>
-        <textarea id="message" name="message" required></textarea>
+        <textarea id="message" name="message" rows="6" placeholder="Briefly describe your goals, current systems, and success criteria." required></textarea>
       </div>
 
-      <!-- Security Validation -->
+      <!-- Preferred contact -->
+      <fieldset class="form-group">
+        <legend class="form-label">Preferred contact method*</legend>
+        <label class="radio">
+          <input type="radio" name="contact_method" value="email" required> Email
+        </label>
+        <label class="radio">
+          <input type="radio" name="contact_method" value="meeting"> Schedule a meeting
+        </label>
+      </fieldset>
+
+      <!-- How did you hear about us -->
+      <div class="form-group">
+        <label class="form-label" for="ref">How did you hear about OraDigit?</label>
+        <select id="ref" name="referral">
+          <option value="" selected>Select one (optional)</option>
+          <option>Search engine</option>
+          <option>LinkedIn</option>
+          <option>Conference / Event</option>
+          <option>Referral</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <!-- Security validation (simple) -->
       <div class="form-group">
         <label class="form-label" for="validation">Security validation*</label>
-        <input type="text" id="validation" name="validation" required />
+        <input type="text" id="validation" name="validation" inputmode="numeric" pattern="[0-9]*" placeholder="Type 7 to verify" required>
       </div>
 
-      <!-- Formsubmit Hidden Fields -->
-      <input type="hidden" name="_captcha" value="false">
-      <input type="hidden" name="_next" value="https://oradigit.com/thank-you">
+      <!-- Consent -->
+      <div class="form-group consent">
+        <label class="checkbox">
+          <input type="checkbox" name="consent" value="yes" required>
+          I agree to the processing of my information in accordance with the
+          <a href="{{ '/privacy/' | relative_url }}">Privacy Policy</a>.*
+        </label>
+      </div>
 
-      <!-- Privacy Notice -->
-      <p class="privacy-note">
-        OraDigit is committed to protecting your information. Your information will be used in accordance with the applicable data privacy law,
-        our internal policies and our <a href="{{ '/privacy/' | relative_url }}">Privacy Policy</a>.
-        As OraDigit may operate globally, your information may be stored and processed in countries
-        outside your country of residence. Wherever it is processed, we will handle it with care and respect for your privacy.
-      </p>
-
-      <!-- Submit -->
-      <button type="submit" class="submit-btn">Submit</button>
+      <div class="actions">
+        <button type="submit" class="submit-btn" aria-label="Submit contact request to OraDigit">Submit</button>
+        <a class="btn btn-ghost" href="/" aria-label="Return to OraDigit home">Back to Home</a>
+      </div>
     </form>
   </div>
+
+  <aside class="contact-aside">
+    <div class="contact-aside-card">
+      <h3>Why OraDigit</h3>
+      <ul>
+        <li>Healthcare‑grade AI with governance and safety.</li>
+        <li>Clinical, imaging, and MLOps expertise.</li>
+        <li>From idea → production with measurable impact.</li>
+      </ul>
+    </div>
+    <div class="contact-aside-card">
+      <h3>Direct</h3>
+      <p><strong>Email:</strong> <a href="mailto:admin@oradigit.com">admin@oradigit.com</a></p>
+      <p><strong>Location:</strong> Lanham, Maryland, USA</p>
+    </div>
+  </aside>
 </section>
