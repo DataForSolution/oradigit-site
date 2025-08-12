@@ -1,0 +1,25 @@
+[
+  {
+    "modality": "MRI",
+    "region": "Brain",
+    "contexts": ["oncology", "neuro", "infection", "inflammation"],
+    "keywords": ["glioma", "mets", "seizure", "headache", "abscess", "ms", "multiple sclerosis"],
+    "header": "MRI Brain with and without Contrast",
+    "reasons": [
+      "MRI brain with and without IV contrast to evaluate {condition}; characterize parenchymal and meningeal involvement."
+    ],
+    "prep_notes": [
+      "Screen for MRI safety (implants, devices, metal).",
+      "Check renal function if gadolinium is planned per protocol."
+    ],
+    "supporting_docs": [
+      "Neurology/oncology note with clinical question.",
+      "Prior MRI/CT for comparison."
+    ],
+    "flags": [
+      "Tailor protocols (tumor, epilepsy, demyelination) per indication.",
+      "Consider diffusion/perfusion as clinically indicated."
+    ],
+    "tags": ["mri-brain"]
+  }
+]
