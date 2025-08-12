@@ -1,0 +1,85 @@
+---
+layout: default
+title: Order Helper (PET/CT)
+permalink: /order-helper/
+description: Quick suggestions for PET/CT study headers, defensible reason-for-exam text, prep notes, and a printable summary.
+---
+
+<section class="oh-hero">
+  <div class="container">
+    <h1>OraDigit PET/CT Order Helper</h1>
+    <p class="lead">Reduce denials with consistent study headers and clear, defensible “reason for exam” language. All client-side. No PHI. Educational use only.</p>
+  </div>
+</section>
+
+<section class="oh-card container">
+  <h2 class="sr-only">Input</h2>
+
+  <label for="indication" class="oh-label">Clinical indication (free text)</label>
+  <textarea id="indication" class="oh-input" rows="3" placeholder="e.g., Newly diagnosed DLBCL for staging; evaluate nodal/distant disease"></textarea>
+
+  <div class="oh-grid">
+    <div>
+      <label for="region" class="oh-label">Region</label>
+      <select id="region" class="oh-input">
+        <option value="Skull base to mid-thigh">Skull base to mid-thigh</option>
+        <option value="Whole body">Whole body</option>
+        <option value="Brain">Brain</option>
+        <option value="Head & Neck">Head & Neck</option>
+        <option value="Cardiac">Cardiac</option>
+        <option value="">Auto (let tool decide)</option>
+      </select>
+    </div>
+
+    <div>
+      <span class="oh-label">Context</span>
+      <div class="oh-chips" id="contextChips" aria-label="Context chips">
+        <!-- chips created by JS from a small list -->
+      </div>
+    </div>
+  </div>
+
+  <button id="suggestBtn" class="oh-btn">Suggest Order</button>
+</section>
+
+<section id="results" class="container oh-results" hidden>
+  <h2>Suggested Order</h2>
+
+  <div class="oh-result">
+    <h3>Recommended Study Header</h3>
+    <p id="outHeader" class="oh-output"></p>
+  </div>
+
+  <div class="oh-result">
+    <h3>Reason for Exam (editable)</h3>
+    <textarea id="outReason" class="oh-input" rows="4"></textarea>
+    <div class="oh-actions">
+      <button id="copyReasonBtn" class="oh-btn oh-btn-secondary">Copy Reason</button>
+      <button id="copyAllBtn" class="oh-btn oh-btn-secondary">Copy Summary</button>
+      <button id="printBtn" class="oh-btn oh-btn-outline">Print</button>
+    </div>
+  </div>
+
+  <div class="oh-columns">
+    <div class="oh-col">
+      <h3>Prep / Contraindications</h3>
+      <ul id="outPrep" class="oh-list"></ul>
+    </div>
+    <div class="oh-col">
+      <h3>Supporting Documentation</h3>
+      <ul id="outDocs" class="oh-list"></ul>
+    </div>
+    <div class="oh-col">
+      <h3>Clinical Flags</h3>
+      <ul id="outFlags" class="oh-list"></ul>
+    </div>
+  </div>
+
+  <details class="oh-disclaimer">
+    <summary>Disclaimer & Privacy</summary>
+    <p>This tool is for educational workflow support and must not replace physician judgment, payer policies, or local protocol. No protected health information (PHI) is collected or stored. Content requires local review and approval.</p>
+  </details>
+</section>
+
+<link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}">
+<script src="{{ '/order-helper/app.js' | relative_url }}" defer></script>
