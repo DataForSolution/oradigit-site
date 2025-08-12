@@ -1260,3 +1260,13 @@ header.main-header { min-height: 72px; }
   /* Optional: prevent body scroll when menu is open */
   body.nav-open { overflow: hidden; }
 }
+/* Overview page polish */
+.overview-hero .cta-row { display:flex; gap:1rem; flex-wrap:wrap; margin-top:1rem; }
+.btn.btn-ghost { background:transparent; border:1px solid var(--text-weak, #d0d7de); }
+.pillars { display:grid; gap:.5rem; margin:1rem 0 0; padding-left:1.1rem; }
+.grid-two { display:grid; grid-template-columns: 1fr; gap:1.5rem; }
+.delivery-steps { counter-reset: step; margin-left:1rem; }
+.delivery-steps li { margin:.5rem 0; }
+@media (min-width: 768px) {
+  .grid-two { grid-template-columns: 1fr 1fr; }
+}
