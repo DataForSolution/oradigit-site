@@ -1384,3 +1384,6 @@ textarea { resize:vertical; }
     grid-template-columns: repeat(3, 1fr);
   }
 }
+/* Labs page (reuses Insights card grid) */
+.bullets { padding-left: 1.25rem; }
+.bullets li { margin:.4rem 0; }
