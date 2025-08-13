@@ -65,6 +65,17 @@ permalink: /order-helper/admin/
 <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-check-compat.js"></script>
+
+<script src="{{ '/order-helper/admin/firebase-config.js' | relative_url }}"></script>
+
+<script>
+  // Activate Firebase App Check
+  const appCheck = firebase.appCheck();
+  appCheck.activate('6LdqOKUrAAAAAIpliM6FnuqO8AWvCi66sWd6J6Gr', true);
+</script>
+
+<script src="{{ '/order-helper/admin/admin.js' | relative_url }}" defer></script>
 
 <!-- Load Firebase config at runtime from your Hosting subdomain, then load admin.js -->
 <script>
