@@ -49,27 +49,34 @@ function getSelectedContexts() {
   return [...document.querySelectorAll('.oh-chip[aria-pressed="true"]')]
     .map(b => b.textContent.toLowerCase());
 }
-
 async function loadLocalRules(modality) {
-  const path = LOCAL_RULE_PATHS[modality] || LOCAL_RULE_PATHS["PET/CT"];
-  dbg(`Loading rules from ${path} …`);
-  const res = await fetch(path, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
+  const candidatesByMod = {
+    "PET/CT": ["./data/rules.json", "/order-helper/data/rules.json", "/data/rules.json"],
+    "CT":     ["./data/ct_rules.json", "/order-helper/data/ct_rules.json", "/data/ct_rules.json"],
+    "MRI":    ["./data/mri_rules.json", "/order-helper/data/mri_rules.json", "/data/mri_rules.json"]
+  };
+  const candidates = candidatesByMod[modality] || candidatesByMod["PET/CT"];
 
-  // Read as text, strip BOM, guard against HTML responses (e.g., 404 page)
-  let txt = await res.text();
-  if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
-  if (txt.trim().startsWith('<!DOCTYPE')) {
-    throw new Error(`${path} returned HTML (likely 404). Check that the file exists and the path is correct.`);
+  let lastErr = null;
+  for (const path of candidates) {
+    try {
+      dbg(`Trying ${path} …`);
+      const res = await fetch(path, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      let txt = await res.text();
+      if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
+      if (txt.trim().startsWith('<!DOCTYPE')) throw new Error("Got HTML (likely 404 page)");
+      const json = JSON.parse(txt);
+      dbg(`✅ Loaded ${Array.isArray(json) ? json.length : 0} rule(s) from ${path}`);
+      return json;
+    } catch (e) {
+      lastErr = e;
+      console.warn(`Failed ${path}: ${e.message}`);
+    }
   }
-  try {
-    const json = JSON.parse(txt);
-    dbg(`✅ Loaded ${Array.isArray(json) ? json.length : 0} rule(s) from ${path}`);
-    return json;
-  } catch (e) {
-    throw new Error(`Invalid JSON in ${path}: ${e.message}`);
-  }
+  throw new Error(`Failed to load rules for ${modality}. Tried: ${candidates.join(", ")}. Last error: ${lastErr?.message || 'unknown'}`);
 }
+
 
 function scoreRule(rule, indication, region, contexts) {
   let score = 0;
