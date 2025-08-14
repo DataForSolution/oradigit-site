@@ -1,3 +1,4 @@
+// ----- Config -----
 const DEFAULT_CONTEXTS = [
   "staging","restaging","treatment response","surveillance",
   "suspected infection","dementia","epilepsy","viability","oncology","neuro"
@@ -10,8 +11,18 @@ const LOCAL_RULE_PATHS = {
   "MRI": "./data/mri_rules.json"
 };
 
+// ----- Utilities -----
+function byId(id) { return document.getElementById(id); }
+
+function showError(msg = "") {
+  const el = byId('errMsg');
+  if (el) el.textContent = msg;
+  if (msg) console.error(msg);
+}
+
 function initChips() {
-  const wrap = document.getElementById('contextChips');
+  const wrap = byId('contextChips');
+  if (!wrap) return;
   wrap.innerHTML = "";
   DEFAULT_CONTEXTS.forEach(ctx => {
     const btn = document.createElement('button');
@@ -28,24 +39,44 @@ function initChips() {
 }
 
 function getSelectedContexts() {
-  return [...document.querySelectorAll('.oh-chip[aria-pressed="true"]')].map(b => b.textContent.toLowerCase());
+  return [...document.querySelectorAll('.oh-chip[aria-pressed="true"]')]
+    .map(b => b.textContent.toLowerCase());
 }
 
 async function loadLocalRules(modality) {
   const path = LOCAL_RULE_PATHS[modality] || LOCAL_RULE_PATHS["PET/CT"];
   const res = await fetch(path, { cache: 'no-store' });
-  return await res.json();
+  if (!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
+
+  // Read as text, strip BOM, guard against HTML responses (e.g., 404 page)
+  let txt = await res.text();
+  if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
+  if (txt.trim().startsWith('<!DOCTYPE')) {
+    throw new Error(`${path} returned HTML (likely 404). Check that the file exists and the path is correct.`);
+  }
+  try {
+    return JSON.parse(txt);
+  } catch (e) {
+    throw new Error(`Invalid JSON in ${path}: ${e.message}`);
+  }
 }
 
 function scoreRule(rule, indication, region, contexts) {
   let score = 0;
-  const text = indication.toLowerCase();
-  const hits = (rule.keywords || []).filter(k => text.includes(k.toLowerCase()));
+  const text = (indication || "").toLowerCase();
+
+  const hits = (rule.keywords || []).filter(k => text.includes(String(k).toLowerCase()));
   score += hits.length * 5;
-  const ctxOverlap = (rule.contexts || []).filter(c => contexts.includes(c.toLowerCase())).length;
+
+  const ctxOverlap = (rule.contexts || []).filter(c => contexts.includes(String(c).toLowerCase())).length;
   score += ctxOverlap * 3;
+
   if (region && rule.region?.toLowerCase() === region.toLowerCase()) score += 4;
-  if (/cancer|carcinoma|lymphoma|sarcoma|melanoma|tumor|malign/.test(text) && rule.tags?.includes('oncology-general')) score += 2;
+
+  if (/cancer|carcinoma|lymphoma|sarcoma|melanoma|tumou?r|malign/.test(text)
+      && Array.isArray(rule.tags) && rule.tags.includes('oncology-general')) {
+    score += 2;
+  }
   return { score, hits };
 }
 
@@ -56,72 +87,129 @@ function pickBestRule(indication, region, contexts) {
     if (!best || score > best.score) best = { rule, score, hits };
   }
   if (!best || best.score < 3) {
-    const def = RULES.find(r => r.tags?.includes('oncology-general')) || RULES[0];
-    return { rule: def, hits: [] };
+    const fallback = RULES.find(r => Array.isArray(r.tags) && r.tags.includes('oncology-general')) || RULES[0];
+    return { rule: fallback, hits: [] };
   }
   return best;
 }
 
 function fillTemplate(tpl, { context, condition }) {
-  return tpl.replaceAll('{context}', context || 'staging').replaceAll('{condition}', condition || 'the stated condition');
+  return String(tpl)
+    .replaceAll('{context}', context || 'staging')
+    .replaceAll('{condition}', condition || 'the stated condition');
 }
-function deriveConditionFromHits(hits){ return (hits && hits.length) ? hits[0] : 'the stated condition'; }
+
+function deriveConditionFromHits(hits){
+  return (hits && hits.length) ? String(hits[0]) : 'the stated condition';
+}
 
 function renderResult(match, userRegion, contexts) {
-  const rule = match.rule || {};
+  if (!match || !match.rule) {
+    showError('No matching rule found.');
+    return;
+  }
+  const rule = match.rule;
   const chosenRegion = userRegion || rule.region || 'Skull base to mid-thigh';
-  const header = rule.header || `PET/CT ${chosenRegion}`;
-  const ctx = contexts[0] || (rule.contexts && rule.contexts[0]) || 'staging';
-  const condition = deriveConditionFromHits(match.hits);
 
-  const reasonTpl = (rule.reasons && rule.reasons[0]) ||
-    'FDG PET/CT for {context} of {condition}; evaluate extent of disease and FDG-avid metastases.';
+  // Default header if missing; try to reflect PET vs PET/CT if provided
+  const ruleModality = rule.modality || 'PET/CT';
+  const header = rule.header || `${ruleModality} ${chosenRegion}`;
+
+  const ctx = contexts[0] || (Array.isArray(rule.contexts) && rule.contexts[0]) || 'staging';
+  const condition = deriveConditionFromHits(match.hits);
+  const reasonTpl = (Array.isArray(rule.reasons) && rule.reasons[0])
+    || 'FDG PET/CT for {context} of {condition}; evaluate extent of disease and FDG-avid metastases.';
   const reason = fillTemplate(reasonTpl, { context: ctx, condition });
 
-  document.getElementById('outHeader').textContent = header;
-  document.getElementById('outReason').value = reason;
+  byId('outHeader').textContent = header;
+  byId('outReason').value = reason;
 
-  const ulPrep = document.getElementById('outPrep');
-  const ulDocs = document.getElementById('outDocs');
-  const ulFlags = document.getElementById('outFlags');
-  [ulPrep, ulDocs, ulFlags].forEach(ul => ul.innerHTML = '');
+  const ulPrep  = byId('outPrep');
+  const ulDocs  = byId('outDocs');
+  const ulFlags = byId('outFlags');
+  [ulPrep, ulDocs, ulFlags].forEach(ul => { if (ul) ul.innerHTML = ''; });
 
-  (rule.prep_notes || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; ulPrep.appendChild(li); });
-  (rule.supporting_docs || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; ulDocs.appendChild(li); });
-  (rule.flags || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; ulFlags.appendChild(li); });
+  (rule.prep_notes || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; ulPrep?.appendChild(li); });
+  (rule.supporting_docs || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; ulDocs?.appendChild(li); });
+  (rule.flags || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; ulFlags?.appendChild(li); });
 
-  document.getElementById('results').hidden = false;
+  const results = byId('results');
+  if (results) results.hidden = false;
+
+  showError('');
 }
 
 function copy(text){ navigator.clipboard.writeText(text).catch(()=>{}); }
 
+// ----- Wire UI -----
 function wireEvents() {
-  document.getElementById('suggestBtn').addEventListener('click', () => {
-    const indication = document.getElementById('indication').value.trim();
-    const region = document.getElementById('region').value.trim();
-    const contexts = getSelectedContexts();
+  // Handle both form submit and button click
+  const form = byId('orderForm');
+  const handler = (evt) => {
+    evt?.preventDefault?.();
+
+    const indication = byId('indication')?.value.trim() || '';
+    const region     = byId('region')?.value.trim() || '';
+    const contexts   = getSelectedContexts();
+
+    if (!RULES || !RULES.length) {
+      showError('Rules not loaded yet.');
+      return;
+    }
     const match = pickBestRule(indication, region, contexts);
     renderResult(match, region, contexts);
-  });
-  document.getElementById('copyReasonBtn').addEventListener('click', () => copy(document.getElementById('outReason').value));
-  document.getElementById('copyAllBtn').addEventListener('click', () => {
-    const header = document.getElementById('outHeader').textContent;
-    const reason = document.getElementById('outReason').value;
+  };
+
+  form?.addEventListener('submit', handler);
+  byId('suggestBtn')?.addEventListener('click', handler);
+
+  byId('copyReasonBtn')?.addEventListener('click', () => copy(byId('outReason')?.value || ''));
+  byId('copyAllBtn')?.addEventListener('click', () => {
+    const header = byId('outHeader')?.textContent || '';
+    const reason = byId('outReason')?.value || '';
     const listToText = (id) => [...document.querySelectorAll(`#${id} li`)].map(li=>`• ${li.textContent}`).join('\n');
-    const bundle = `Study Header:\n${header}\n\nReason for Exam:\n${reason}\n\nPrep / Contraindications:\n${listToText('outPrep')}\n\nSupporting Docs:\n${listToText('outDocs')}\n\nClinical Flags:\n${listToText('outFlags')}\n`;
+    const bundle =
+`Study Header:
+${header}
+
+Reason for Exam:
+${reason}
+
+Prep / Contraindications:
+${listToText('outPrep')}
+
+Supporting Docs:
+${listToText('outDocs')}
+
+Clinical Flags:
+${listToText('outFlags')}
+`;
     copy(bundle);
   });
-  document.getElementById('printBtn').addEventListener('click', ()=>window.print());
+  byId('printBtn')?.addEventListener('click', ()=>window.print());
 
-  // reload rules when modality changes
-  document.getElementById('modality').addEventListener('change', async (e) => {
-    RULES = await loadLocalRules(e.target.value);
-    document.getElementById('results').hidden = true;
+  // Reload rules when modality changes
+  byId('modality')?.addEventListener('change', async (e) => {
+    try {
+      RULES = await loadLocalRules(e.target.value);
+      const results = byId('results');
+      if (results) results.hidden = true;
+      showError('');
+    } catch (err) {
+      showError(err.message);
+    }
   });
 }
 
+// ----- Bootstrap -----
 document.addEventListener('DOMContentLoaded', async () => {
   initChips();
-  RULES = await loadLocalRules(document.getElementById('modality').value);
+  try {
+    const initialModality = byId('modality')?.value || 'PET/CT';
+    RULES = await loadLocalRules(initialModality);
+    showError('');
+  } catch (err) {
+    showError(err.message);
+  }
   wireEvents();
 });
