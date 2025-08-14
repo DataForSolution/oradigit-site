@@ -1,93 +1,93 @@
----
-layout: default
-title: Order Helper (PET/CT)
-permalink: /order-helper/
-description: Quick suggestions for PET/CT study headers, defensible reason-for-exam text, prep notes, and a printable summary.
----
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>OraDigit PET/CT Order Helper</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, Segoe UI, Arial; margin: 24px; }
+    .oh-label{display:block;margin:8px 0 4px;font-weight:600}
+    .oh-input{padding:8px;width:100%;max-width:640px}
+    .oh-chip{margin:2px;padding:6px 10px;border:1px solid #bbb;border-radius:16px;background:#f8f8f8;cursor:pointer}
+    .oh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;max-width:960px}
+    #results[hidden]{display:none}
+    .btn{padding:.6rem .9rem;border:none;border-radius:8px;background:#1e40af;color:#fff;cursor:pointer}
+    .muted{color:#6b7280}
+    #dbg{font-size:12px;color:#065f46;margin-top:6px}
+    #errMsg{font-size:13px;color:#b91c1c;margin-left:10px}
+  </style>
+</head>
+<body>
+  <h1>OraDigit PET/CT Order Helper</h1>
+  <p class="muted">Reduce denials with consistent study headers and clear, defensible “reason for exam” language. All client-side. No PHI. Educational use only.</p>
 
-<section class="oh-hero">
-  <div class="container">
-    <h1>OraDigit PET/CT Order Helper</h1>
-    <p class="lead">Reduce denials with consistent study headers and clear, defensible “reason for exam” language. All client-side. No PHI. Educational use only.</p>
-  </div>
-</section>
+  <!-- Use a form so Enter key works; JS prevents default submit -->
+  <form id="orderForm">
+    <label class="oh-label" for="indication">Clinical indication (free text)</label>
+    <textarea id="indication" class="oh-input" rows="3" placeholder="e.g., Newly diagnosed DLBCL for staging; evaluate nodal/distant disease"></textarea>
 
-<section class="oh-card container">
-  <h2 class="sr-only">Input</h2>
-
-  <label for="indication" class="oh-label">Clinical indication (free text)</label>
-  <textarea id="indication" class="oh-input" rows="3" placeholder="e.g., Newly diagnosed DLBCL for staging; evaluate nodal/distant disease"></textarea>
-
-  <div class="oh-grid">
-    <div>
-      <label for="modality" class="oh-label">Modality</label>
-    <select id="modality" class="oh-input">
-      <option value="PET/CT" selected>PET/CT</option>
-      <option value="CT">CT</option>
-      <option value="MRI">MRI</option>
-    </select>
-  </div>
- </div>
-      <label for="region" class="oh-label">Region</label>
-      <select id="region" class="oh-input">
-        <option value="Skull base to mid-thigh">Skull base to mid-thigh</option>
-        <option value="Whole body">Whole body</option>
-        <option value="Brain">Brain</option>
-        <option value="Head & Neck">Head & Neck</option>
-        <option value="Cardiac">Cardiac</option>
-        <option value="">Auto (let tool decide)</option>
-      </select>
-    </div>
-
-    <div>
-      <span class="oh-label">Context</span>
-      <div class="oh-chips" id="contextChips" aria-label="Context chips">
-        <!-- chips created by JS from a small list -->
+    <div class="oh-grid" style="margin-top:8px">
+      <div>
+        <label class="oh-label" for="modality">Modality</label>
+        <select id="modality" class="oh-input">
+          <option value="PET/CT" selected>PET/CT</option>
+          <option value="CT">CT</option>
+          <option value="MRI">MRI</option>
+        </select>
+      </div>
+      <div>
+        <label class="oh-label" for="region">Region</label>
+        <select id="region" class="oh-input">
+          <option value="Skull base to mid-thigh" selected>Skull base to mid-thigh</option>
+          <option value="Whole body">Whole body</option>
+          <option value="Brain">Brain</option>
+          <option value="Head & Neck">Head & Neck</option>
+          <option value="Cardiac">Cardiac</option>
+          <option value="">Auto (let tool decide)</option>
+        </select>
+      </div>
+      <div>
+        <span class="oh-label">Context</span>
+        <div id="contextChips" class="oh-chips" aria-label="Context chips"></div>
       </div>
     </div>
-  </div>
 
-  <button id="suggestBtn" class="oh-btn">Suggest Order</button>
-</section>
-
-<section id="results" class="container oh-results" hidden>
-  <h2>Suggested Order</h2>
-
-  <div class="oh-result">
-    <h3>Recommended Study Header</h3>
-    <p id="outHeader" class="oh-output"></p>
-  </div>
-
-  <div class="oh-result">
-    <h3>Reason for Exam (editable)</h3>
-    <textarea id="outReason" class="oh-input" rows="4"></textarea>
-    <div class="oh-actions">
-      <button id="copyReasonBtn" class="oh-btn oh-btn-secondary">Copy Reason</button>
-      <button id="copyAllBtn" class="oh-btn oh-btn-secondary">Copy Summary</button>
-      <button id="printBtn" class="oh-btn oh-btn-outline">Print</button>
+    <div style="margin-top:12px">
+      <button id="suggestBtn" type="submit" class="btn">Suggest Order</button>
+      <span id="errMsg"></span>
+      <div id="dbg"></div>
     </div>
-  </div>
+  </form>
+  <div id="dbg" style="color:green;font-size:0.9rem;margin-top:4px"></div>
 
-  <div class="oh-columns">
-    <div class="oh-col">
-      <h3>Prep / Contraindications</h3>
-      <ul id="outPrep" class="oh-list"></ul>
-    </div>
-    <div class="oh-col">
-      <h3>Supporting Documentation</h3>
-      <ul id="outDocs" class="oh-list"></ul>
-    </div>
-    <div class="oh-col">
-      <h3>Clinical Flags</h3>
-      <ul id="outFlags" class="oh-list"></ul>
-    </div>
-  </div>
+  <section id="results" hidden style="margin-top:16px">
+    <h2 id="outHeader"></h2>
+    <label class="oh-label" for="outReason">Reason for exam</label>
+    <textarea id="outReason" class="oh-input" rows="3"></textarea>
 
-  <details class="oh-disclaimer">
-    <summary>Disclaimer & Privacy</summary>
-    <p>This tool is for educational workflow support and must not replace physician judgment, payer policies, or local protocol. No protected health information (PHI) is collected or stored. Content requires local review and approval.</p>
-  </details>
-</section>
+    <div class="oh-grid" style="margin-top:12px">
+      <div>
+        <h3>Prep / Contraindications</h3>
+        <ul id="outPrep"></ul>
+      </div>
+      <div>
+        <h3>Supporting Docs</h3>
+        <ul id="outDocs"></ul>
+      </div>
+      <div>
+        <h3>Clinical Flags</h3>
+        <ul id="outFlags"></ul>
+      </div>
+    </div>
 
-<link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}">
-<script src="{{ '/order-helper/app.js' | relative_url }}" defer></script>
+    <div style="margin-top:12px">
+      <button id="copyReasonBtn" type="button" class="btn">Copy Reason</button>
+      <button id="copyAllBtn" type="button" class="btn" style="background:#0f766e">Copy All</button>
+      <button id="printBtn" type="button" class="btn" style="background:#334155">Print</button>
+    </div>
+  </section>
+
+  <!-- IMPORTANT: use a RELATIVE path so it works anywhere -->
+  <script src="./app.js" defer></script>
+</body>
+</html>

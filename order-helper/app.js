@@ -14,6 +14,13 @@ const LOCAL_RULE_PATHS = {
 // ----- Utilities -----
 function byId(id) { return document.getElementById(id); }
 
+// Small debug helper: writes to #dbg (if present) and console
+function dbg(msg) {
+  const el = byId('dbg');
+  if (el) el.textContent = msg;
+  console.log(msg);
+}
+
 function showError(msg = "") {
   const el = byId('errMsg');
   if (el) el.textContent = msg;
@@ -45,6 +52,7 @@ function getSelectedContexts() {
 
 async function loadLocalRules(modality) {
   const path = LOCAL_RULE_PATHS[modality] || LOCAL_RULE_PATHS["PET/CT"];
+  dbg(`Loading rules from ${path} …`);
   const res = await fetch(path, { cache: 'no-store' });
   if (!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
 
@@ -55,7 +63,9 @@ async function loadLocalRules(modality) {
     throw new Error(`${path} returned HTML (likely 404). Check that the file exists and the path is correct.`);
   }
   try {
-    return JSON.parse(txt);
+    const json = JSON.parse(txt);
+    dbg(`✅ Loaded ${Array.isArray(json) ? json.length : 0} rule(s) from ${path}`);
+    return json;
   } catch (e) {
     throw new Error(`Invalid JSON in ${path}: ${e.message}`);
   }
@@ -106,6 +116,7 @@ function deriveConditionFromHits(hits){
 function renderResult(match, userRegion, contexts) {
   if (!match || !match.rule) {
     showError('No matching rule found.');
+    dbg('No matching rule found.');
     return;
   }
   const rule = match.rule;
@@ -137,6 +148,7 @@ function renderResult(match, userRegion, contexts) {
   if (results) results.hidden = false;
 
   showError('');
+  dbg('Rendered suggestion.');
 }
 
 function copy(text){ navigator.clipboard.writeText(text).catch(()=>{}); }
@@ -154,8 +166,10 @@ function wireEvents() {
 
     if (!RULES || !RULES.length) {
       showError('Rules not loaded yet.');
+      dbg('Suggest clicked but rules not loaded yet.');
       return;
     }
+    dbg(`Suggest clicked with contexts: ${JSON.stringify(contexts)}`);
     const match = pickBestRule(indication, region, contexts);
     renderResult(match, region, contexts);
   };
@@ -195,8 +209,10 @@ ${listToText('outFlags')}
       const results = byId('results');
       if (results) results.hidden = true;
       showError('');
+      dbg(`✅ Reloaded ${RULES.length} rules for ${e.target.value}`);
     } catch (err) {
       showError(err.message);
+      dbg('❌ ' + err.message);
     }
   });
 }
@@ -208,8 +224,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const initialModality = byId('modality')?.value || 'PET/CT';
     RULES = await loadLocalRules(initialModality);
     showError('');
+    dbg(`✅ Loaded ${RULES.length} rules for ${initialModality}`);
   } catch (err) {
     showError(err.message);
+    dbg('❌ ' + err.message);
   }
   wireEvents();
 });
