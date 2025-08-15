@@ -41,7 +41,11 @@ nav:
 
 plugins:
   - jekyll-feed
+  - jekyll-sitemap
   - jekyll-seo-tag
+
+ # Helpful defaults
+permalink: /:categories/:title/
 
 defaults:
   - scope:
