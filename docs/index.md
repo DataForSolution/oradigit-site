@@ -9,6 +9,7 @@ last_updated: 2025-08-15
 <!-- ─────────────────────────────
   Docs Hub — self-contained styles
 ────────────────────────────── -->
+
 <style>
   .docs-hero { padding: 2rem 0 1rem; }
   .docs-hero h1 { margin-bottom: .5rem; }
