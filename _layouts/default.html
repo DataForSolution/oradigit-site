@@ -83,6 +83,12 @@
   {% include navigation.html %}
   <main class="page-content">
     {{ content }}
+  {% if page.last_updated %}
+  <p class="page-updated" style="margin-top:1rem; font-size:.9rem; color:#6b7280;">
+    Last updated: {{ page.last_updated }}
+  </p>
+{% endif %}
+
   </main>
   {% include footer.html %}
 <!-- 1) Back to Top Button Styles -->
