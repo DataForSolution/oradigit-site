@@ -66,7 +66,10 @@
     gtag('config','G-FKVXD8061R',{ send_page_view:true });
   </script>
 
-  
+  {% if page.custom_css %}
+<link rel="stylesheet" href="{{ page.custom_css | relative_url }}">
+{% endif %}
+
 
 </head>
 <body>
@@ -285,6 +288,7 @@
     });
   });
 </script>
+<body class="{{ page.body_class }}">
 
 </body>
 </html>

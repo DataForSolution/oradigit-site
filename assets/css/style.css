@@ -1387,61 +1387,65 @@ textarea { resize:vertical; }
 /* Labs page (reuses Insights card grid) */
 .bullets { padding-left: 1.25rem; }
 .bullets li { margin:.4rem 0; }
-/* ===== FINAL OVERRIDES FOR READABILITY (keep at end) ===== */
+/* Skills page only (scoped by .page-skill on <body>) */
 
-/* Light mode — force readable text & links site-wide */
-html body,
-html body .container,
-html body .docs-hero,
-html body .doc-card,
-html body .doc-card p,
-html body .doc-card h3,
-html body .doc-card ul,
-html body .faq summary,
-html body .section-title {
-  color: #111827 !important;
-  background-color: transparent;
+/* Light mode */
+.page-skill .docs-hero,
+.page-skill .doc-card,
+.page-skill .doc-card p,
+.page-skill .doc-card h3,
+.page-skill .doc-card ul,
+.page-skill .faq summary,
+.page-skill .section-title {
+  color: #111827;
 }
-html body a {
-  color: #1d4ed8 !important;
+
+.page-skill .doc-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 12px rgba(0,0,0,.04);
+}
+
+.page-skill a {
+  color: #1d4ed8;
   text-decoration: underline;
 }
-html body a:hover {
-  color: #2563eb !important;
+.page-skill a:hover {
+  color: #2563eb;
 }
 
-/* Dark mode — light text, clear links */
+.page-skill .btn {
+  border: 1px solid #111827;
+  color: #111827;
+}
+.page-skill .btn-primary {
+  background: #111827;
+  color: #fff;
+}
+
+/* Dark mode */
 @media (prefers-color-scheme: dark) {
-  html body {
-    background-color: #0b0b0b !important;
-    color: #e5e7eb !important;
+  .page-skill .docs-hero,
+  .page-skill .doc-card,
+  .page-skill .doc-card p,
+  .page-skill .doc-card h3,
+  .page-skill .doc-card ul,
+  .page-skill .faq summary,
+  .page-skill .section-title {
+    color: #e5e7eb;
   }
-  html body .container,
-  html body .docs-hero,
-  html body .doc-card,
-  html body .doc-card p,
-  html body .doc-card h3,
-  html body .doc-card ul,
-  html body .faq summary,
-  html body .section-title {
-    color: #e5e7eb !important;
+  .page-skill .doc-card {
+    background: #0b0b0b;
+    border-color: #1f2937;
   }
-  html body .doc-card {
-    background: #0b0b0b !important;
-    border-color: #1f2937 !important;
+  .page-skill a { color: #93c5fd; }
+  .page-skill a:hover { color: #bfdbfe; }
+  .page-skill .btn {
+    border-color: #e5e7eb;
+    color: #e5e7eb;
   }
-  html body a {
-    color: #93c5fd !important;
-  }
-  html body a:hover {
-    color: #bfdbfe !important;
-  }
-  html body .btn {
-    border-color: #e5e7eb !important;
-    color: #e5e7eb !important;
-  }
-  html body .btn-primary {
-    background: #e5e7eb !important;
-    color: #0b0b0b !important;
+  .page-skill .btn-primary {
+    background: #e5e7eb;
+    color: #0b0b0b;
   }
 }
