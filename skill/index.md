@@ -1,0 +1,222 @@
+---
+layout: default
+title: OraDigit Documentation Hub
+permalink: /skill/
+description: Official OraDigit guides, service manuals, integrations, policies, and FAQs.
+last_updated: 2025-08-15
+---
+
+<!-- ─────────────────────────────
+  Docs Hub — self-contained styles
+────────────────────────────── -->
+
+<style>
+  .docs-hero { padding: 2rem 0 1rem; }
+  .docs-hero h1 { margin-bottom: .5rem; }
+  .docs-hero p.lead { font-size: 1.125rem; max-width: 60ch; }
+
+  .docs-search { margin: 1rem 0 2rem; }
+  .docs-search input {
+    width: 100%;
+    max-width: 640px;
+    padding: .85rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: .75rem;
+    font-size: 1rem;
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  .doc-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    padding: 1rem 1.1rem;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,.04);
+    transition: box-shadow .2s ease, transform .15s ease;
+  }
+  .doc-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.08); transform: translateY(-2px); }
+  .doc-card h3 { margin: 0 0 .5rem; font-size: 1.05rem; }
+  .doc-card p { margin: 0 0 .75rem; color: #4b5563; }
+  .doc-card ul { margin: 0; padding-left: 1.1rem; }
+  .label {
+    display: inline-block; font-size: .75rem; padding: .15rem .5rem; border-radius: 999px;
+    border: 1px solid #e5e7eb; color: #6b7280; margin-left: .5rem;
+  }
+  .muted { color: #6b7280; font-size: .95rem; }
+  .coming { opacity: .7; }
+  .kicker { text-transform: uppercase; letter-spacing: .06em; font-size: .78rem; color: #6b7280; margin-bottom: .2rem; }
+  .cta-row { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: .75rem; }
+  .btn {
+    display: inline-block; padding: .6rem .9rem; border-radius: .6rem;
+    border: 1px solid #111827; text-decoration: none; color: #111827;
+  }
+  .btn-primary { background: #111827; color: #fff; }
+  .section-title { margin-top: 2.2rem; margin-bottom: .8rem; }
+  .faq details { border: 1px solid #e5e7eb; padding: .9rem 1rem; border-radius: .75rem; margin: .6rem 0; }
+  .faq summary { font-weight: 600; cursor: pointer; }
+  @media (prefers-color-scheme: dark) {
+    .doc-card { background: #0b0b0b; border-color: #1f2937; }
+    .docs-search input { background: #0b0b0b; color: #e5e7eb; border-color: #1f2937; }
+    .btn { border-color: #e5e7eb; color: #e5e7eb; }
+    .btn-primary { background: #e5e7eb; color: #0b0b0b; }
+  }
+</style>
+
+<section class="container docs-hero">
+  <p class="kicker">Documentation</p>
+  <h1>OraDigit Documentation Hub</h1>
+  <p class="lead">
+    Your single source of truth for OraDigit solutions, integration guides, policies, and FAQs.
+    Built to be AI-friendly so assistants (and people!) can find the right answer fast.
+  </p>
+  <div class="docs-search" role="search" aria-label="Search docs">
+    <label for="docsSearch" class="sr-only">Search docs</label>
+    <input id="docsSearch" type="search" placeholder="Search docs (e.g., PET/CT headers, prior auth, EHR)">
+    <p class="muted" style="margin-top:.4rem">Tip: this filters the sections below. Site-wide search coming soon.</p>
+  </div>
+
+  <div class="cta-row">
+    <a class="btn btn-primary" href="/solutions/pet-ct-denial-reduction/">Start with PET/CT Denial Reduction</a>
+    <a class="btn" href="/contact/">Contact Support</a>
+  </div>
+</section>
+
+<h2 class="container section-title">All sections</h2>
+<section class="container cards-grid" id="docsGrid">
+  <!-- Getting Started -->
+  <article class="doc-card" data-keywords="get started overview approach engagement onboarding what we do">
+    <h3>Getting Started</h3>
+    <p>Understand how OraDigit works, our engagement models, and what to expect.</p>
+    <ul>
+      <li><a href="/overview/">Company Overview</a></li>
+      <li><a href="/approach/">Our Approach</a></li>
+      <li><a href="/labs/">OraDigit Labs</a></li>
+    </ul>
+  </article>
+
+  <!-- Solutions Guides -->
+  <article class="doc-card" data-keywords="pet ct denial headers reasons policy oncology skull to thigh whole body">
+    <h3>Solutions Guides</h3>
+    <p>Step-by-step guides for each solution, with policy-aligned language and checklists.</p>
+    <ul>
+      <li><a href="/solutions/pet-ct-denial-reduction/">PET/CT Insurance Denial Reduction</a></li>
+      <li class="coming">AI Strategy for Healthcare <span class="label">coming soon</span></li>
+      <li class="coming">Radiology Workflow Automation <span class="label">coming soon</span></li>
+      <li class="coming">MLOps & Data Platforms <span class="label">coming soon</span></li>
+    </ul>
+  </article>
+
+  <!-- Integrations -->
+  <article class="doc-card" data-keywords="integration epic cerner ehr buttondown firebase auth newsletter embed api">
+    <h3>Integrations</h3>
+    <p>How OraDigit connects to your tools and systems.</p>
+    <ul>
+      <li><a href="/subscribe/">Newsletter (Buttondown) Setup</a></li>
+      <li class="coming">EHR integration (Epic/Cerner) <span class="label">coming soon</span></li>
+      <li class="coming">Firebase Auth (auth.oradigit.com) <span class="label">coming soon</span></li>
+    </ul>
+  </article>
+
+  <!-- Policies & Compliance -->
+  <article class="doc-card" data-keywords="privacy policy terms cookies compliance hipaa phi security data handling">
+    <h3>Policies &amp; Compliance</h3>
+    <p>Where we stand on privacy, security, and compliance.</p>
+    <ul>
+      <li><a href="/privacy/">Privacy Policy</a></li>
+      <li><a href="/contact/">Report a Security/Privacy Concern</a></li>
+      <li class="coming">HIPAA &amp; PHI Handling Guidelines <span class="label">coming soon</span></li>
+    </ul>
+  </article>
+
+  <!-- Tutorials -->
+  <article class="doc-card" data-keywords="tutorial how-to ordering form prior auth documentation phrases examples">
+    <h3>Tutorials &amp; How-Tos</h3>
+    <p>Short, practical walkthroughs for common tasks.</p>
+    <ul>
+      <li class="coming">Order Guidance Web Form <span class="label">coming soon</span></li>
+      <li class="coming">Prior-Auth Documentation Checklist <span class="label">coming soon</span></li>
+    </ul>
+  </article>
+
+  <!-- FAQs -->
+  <article class="doc-card" data-keywords="faq questions answers approvals denials payer wording coverage">
+    <h3>FAQs</h3>
+    <div class="faq">
+      <details>
+        <summary>What’s the difference between Whole Body and Skull-to-Thigh PET/CT?</summary>
+        <p>“Whole Body” includes head and extremities; most oncology protocols use Skull-to-Thigh unless payer/indication requires otherwise.</p>
+      </details>
+      <details>
+        <summary>Can OraDigit embed in our EHR?</summary>
+        <p>Yes. We can present order guidance as a link-out or an embedded web view; details vary by EHR.</p>
+      </details>
+      <details>
+        <summary>Do you provide payer-specific policy phrasing?</summary>
+        <p>Yes. We maintain lightweight, updateable modules that mirror payer language to reduce avoidable denials.</p>
+      </details>
+    </div>
+  </article>
+
+  <!-- Changelog -->
+  <article class="doc-card" data-keywords="changelog release notes roadmap updates">
+    <h3>Changelog &amp; Roadmap</h3>
+    <p>Track improvements and what’s coming next.</p>
+    <ul>
+      <li>2025-08-15 — Launched Docs Hub and PET/CT guide.</li>
+      <li class="coming">2025-09 — Site Search & Assistant <span class="label">planned</span></li>
+    </ul>
+  </article>
+
+  <!-- Support -->
+  <article class="doc-card" data-keywords="support contact help email schedule call consult">
+    <h3>Support</h3>
+    <p>Need help or have a question?</p>
+    <ul>
+      <li><a href="/contact/">Contact OraDigit</a></li>
+      <li>Email: hello@oradigit.com</li>
+    </ul>
+  </article>
+</section>
+
+<!-- JSON-LD to describe this as a docs collection for AI/search -->
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@type":"CollectionPage",
+  "name":"OraDigit Documentation Hub",
+  "url":"https://oradigit.com/docs/",
+  "about":{
+    "@type":"Organization",
+    "name":"OraDigit",
+    "url":"https://oradigit.com"
+  },
+  "hasPart":[
+    {"@type":"WebPage","name":"PET/CT Insurance Denial Reduction","url":"https://oradigit.com/solutions/pet-ct-denial-reduction/"},
+    {"@type":"WebPage","name":"Policies","url":"https://oradigit.com/privacy/"},
+    {"@type":"WebPage","name":"Support","url":"https://oradigit.com/contact/"}
+  ]
+}
+</script>
+
+<!-- Client-side filter for the grid -->
+<script>
+  (function () {
+    var input = document.getElementById('docsSearch');
+    var grid = document.getElementById('docsGrid');
+    if (!input || !grid) return;
+    var cards = Array.prototype.slice.call(grid.querySelectorAll('.doc-card'));
+    input.addEventListener('input', function (e) {
+      var q = (e.target.value || '').toLowerCase().trim();
+      cards.forEach(function (card) {
+        var keys = (card.getAttribute('data-keywords') || '').toLowerCase();
+        var text = card.textContent.toLowerCase();
+        var match = !q || keys.indexOf(q) !== -1 || text.indexOf(q) !== -1;
+        card.style.display = match ? '' : 'none';
+      });
+    });
+  })();
+</script>

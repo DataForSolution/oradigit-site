@@ -1,0 +1,102 @@
+---
+layout: default
+title: Order Helper Admin
+permalink: /order-helper/admin/
+---
+
+<section class="container">
+  <h1>Rules Editor (Secure)</h1>
+  <p class="lead">Sign in to edit PET/CT, CT, and MRI rule sets. Changes save to Firestore.</p>
+
+  <div id="authBox" class="card">
+    <h3>Sign In</h3>
+    <input id="email" class="input" type="email" placeholder="Email">
+    <input id="password" class="input" type="password" placeholder="Password">
+    <button id="signInBtn" class="btn">Sign In</button>
+    <p id="authMsg" class="msg"></p>
+  </div>
+
+  <div id="appBox" class="card" hidden>
+    <div class="row">
+      <div>
+        <label class="label">Module</label>
+        <select id="module" class="input">
+          <option value="rules_petct" selected>PET/CT</option>
+          <option value="rules_ct">CT</option>
+          <option value="rules_mri">MRI</option>
+        </select>
+      </div>
+      <div>
+        <button id="signOutBtn" class="btn btn-outline">Sign Out</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <button id="loadBtn" class="btn">Load Rules</button>
+      <button id="newRuleBtn" class="btn btn-secondary">New Rule</button>
+      <button id="saveAllBtn" class="btn btn-primary">Save All</button>
+      <span id="saveMsg" class="msg"></span>
+    </div>
+
+    <table id="rulesTable" class="table">
+      <thead>
+        <tr>
+          <th>Modality</th>
+          <th>Region</th>
+          <th>Contexts (comma)</th>
+          <th>Keywords (comma)</th>
+          <th>Header</th>
+          <th>Reason Template</th>
+          <th>Prep (comma)</th>
+          <th>Docs (comma)</th>
+          <th>Flags (comma)</th>
+          <th>Tags (comma)</th>
+          <th>Delete</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<link rel="stylesheet" href="{{ '/order-helper/admin/admin.css' | relative_url }}">
+
+<!-- Firebase libs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-check-compat.js"></script>
+
+<script src="{{ '/order-helper/admin/firebase-config.js' | relative_url }}"></script>
+
+<script>
+  // Activate Firebase App Check
+  const appCheck = firebase.appCheck();
+  appCheck.activate('6LdqOKUrAAAAAIpliM6FnuqO8AWvCi66sWd6J6Gr', true);
+</script>
+
+<script src="{{ '/order-helper/admin/admin.js' | relative_url }}" defer></script>
+
+<!-- Load Firebase config at runtime from your Hosting subdomain, then load admin.js -->
+<script>
+  (async () => {
+    try {
+      const res = await fetch('https://auth.oradigit.com/firebase-config.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load Firebase config.');
+      const cfg = await res.json();
+
+      // Expose the config just like the old firebase-config.js did,
+      // so your existing admin.js can keep using window.FIREBASE_CONFIG.
+      window.FIREBASE_CONFIG = cfg;
+
+      // Now load admin.js after config is ready
+      const s = document.createElement('script');
+      s.src = "{{ '/order-helper/admin/admin.js' | relative_url }}";
+      s.defer = true;
+      document.body.appendChild(s);
+    } catch (err) {
+      const msgEl = document.getElementById('authMsg') || document.body;
+      msgEl.textContent = 'Firebase init error: ' + err.message;
+    }
+  })();
+</script>

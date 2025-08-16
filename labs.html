@@ -1,0 +1,172 @@
+---
+layout: default
+title: OraDigit Labs
+permalink: /labs/
+description: Where OraDigit prototypes healthcare‑grade AI, LLM, MLOps, and data platform accelerators.
+last_updated: 2025-08-15
+---
+
+<section class="labs-hero">
+  <div class="container">
+    <h1>OraDigit Labs: Innovation in Motion</h1>
+    <p class="lead">
+      We bring together world-class talent and cutting-edge technology to push the boundaries of what’s possible with data and AI.
+      OraDigit Labs fuels innovation with scalable, reliable, and industry-shaping technology—while advancing collaborative knowledge and global progress.
+    </p>
+    <a href="/case-studies/radiology-claim-denial/" class="btn">Related case: Radiology Denial Reduction</a>
+  </div>
+</section>
+
+<!-- NEW: Imaging Sandbox -->
+<section class="labs-section">
+  <div class="container">
+    <h2>Imaging Sandbox (De-identified)</h2>
+    <p>
+      PET/CT & MRI media for UI/UX prototyping and educational use. All examples are strictly de-identified:
+      no names, dates, IDs, site tags, or facial features. These are illustrative only and do not replace clinical judgement.
+    </p>
+
+    <!-- Optional short MP4 clip -->
+    <figure class="media">
+      <video controls preload="metadata" playsinline muted width="100%" poster="/assets/labs/petct-poster.jpg">
+        <source src="/assets/labs/petctdemov.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+      <figcaption>PET/CT cine (de-identified). Used to prototype ordering & review workflows.</figcaption>
+    </figure>
+
+    <!-- Image grid -->
+    <div class="img-grid" role="list">
+      <!-- Replace with your real assets -->
+      <a class="img-card" href="/assets/labs/petct-01.webp" data-title="PET/CT MIP view (de-identified)">
+        <img loading="lazy" src="/assets/labs/petct-01.thumb.webp" alt="De-identified PET/CT MIP view" width="360" height="240">
+      </a>
+
+      <a class="img-card" href="/assets/labs/mri-axial.webp" data-title="MRI axial T1 (de-identified)">
+        <img loading="lazy" src="/assets/labs/mri-axial.thumb.webp" alt="De-identified MRI axial T1" width="360" height="240">
+      </a>
+
+      <a class="img-card" href="/assets/labs/mri-sagittal.webp" data-title="MRI sagittal T2 (de-identified)">
+        <img loading="lazy" src="/assets/labs/mri-sagittal.thumb.webp" alt="De-identified MRI sagittal T2" width="360" height="240">
+      </a>
+    </div>
+
+    <!-- Lightweight lightbox -->
+    <div id="lightbox" class="lightbox" aria-modal="true" role="dialog" hidden>
+      <button class="close" aria-label="Close">&times;</button>
+      <img id="lightbox-img" alt="">
+      <div id="lightbox-caption" class="caption"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Your original sections (kept) -->
+<section class="labs-section">
+  <div class="container">
+    <h2>Cross-Industry Technology</h2>
+    <p>
+      Our horizontal technology platform helps clients scale digital and AI capabilities across domains. From diagnostics and data pipelines
+      to cloud-native architecture and modular AI components—everything we build is reusable, secure, cost-effective, and battle-tested.
+    </p>
+    <p>
+      These solutions act as foundational blueprints—powering our industry-specific toolkits and enabling faster, safer, more impactful transformation journeys.
+    </p>
+  </div>
+</section>
+
+<section class="labs-section">
+  <div class="container">
+    <h2>Industry-Specific Solutions</h2>
+    <p>
+      Our sector-tailored toolkits are built with deep domain knowledge and practical machine learning expertise. Whether it's Life Sciences,
+      Retail, Financial Services, or Mining—we provide over 140 accelerators and 20+ deployable products that solve real-world challenges and scale results.
+    </p>
+    <p>
+      Flexible by design, these products can be deployed via managed services, in-house implementations, or as fully hosted offerings.
+      OraDigit Labs delivers with speed, resilience, and precision—no matter the context.
+    </p>
+  </div>
+</section>
+
+<section class="labs-section">
+  <div class="container">
+    <p class="learn-more">
+      Want to see our Labs in action? Explore our <a href="/case-studies/">case studies</a> or
+      <a href="/projects/">technical projects</a>.
+    </p>
+  </div>
+</section>
+
+<section class="labs-section">
+  <div class="container">
+    <h2>Managed Services</h2>
+    <p>
+      Our Managed Services team ensures organizations derive sustained value from their AI solutions through ongoing support, maintenance,
+      and optimization post-deployment. Our global live operations team partners with solution teams and clients to monitor, improve,
+      and either transition AI solutions to independence or continue in partnership as needed.
+    </p>
+    <p>
+      Leveraging codified monitoring tools—designed to streamline support operations and enhance the production experience—we help organizations
+      navigate the complexities of AI implementation and maximize the impact of our industry-specific use case accelerators.
+    </p>
+  </div>
+</section>
+
+<section class="labs-section">
+  <div class="container">
+    <h2>Research & Development</h2>
+    <p>
+      OraDigit Labs is also home to our Research & Development team, dedicated to curating and incubating the next wave of AI-enabled solutions.
+      We draw on insights from cross-sector engagements, industry trends, and OraDigit’s own Tech Council to identify promising ideas.
+    </p>
+    <p>
+      Using a battle-tested validation framework, we determine which innovations graduate into mature assets—and whether they’re best integrated into existing solutions
+      or developed by new product teams. This process keeps OraDigit Labs at the forefront of AI transformation.
+    </p>
+  </div>
+</section>
+
+<style>
+/* Scoped styles for Imaging Sandbox */
+.media{margin:0 0 1rem}
+.img-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem;margin-top:1rem}
+.img-card{display:block;background:#fff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden}
+.img-card img{display:block;width:100%;height:auto}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;z-index:9999}
+.lightbox img{max-width:min(95vw,1200px);max-height:75vh;margin-bottom:.5rem}
+.lightbox .caption{color:#eee;font-size:.9rem;text-align:center}
+.lightbox .close{position:absolute;top:14px;right:18px;background:transparent;border:0;color:#fff;font-size:2rem;cursor:pointer}
+.lightbox[hidden] { display: none !important; }   /* ensures it's off on load */
+</style>
+
+<script>
+/* Minimal lightbox */
+
+document.addEventListener('DOMContentLoaded', () => {
+  const lb = document.getElementById('lightbox');
+  if (!lb) return;
+  lb.hidden = true; // explicit
+
+  const lbImg = document.getElementById('lightbox-img');
+  const lbCap = document.getElementById('lightbox-caption');
+
+  // Only bind to gallery anchors, not the video
+  document.querySelectorAll('a.img-card').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const src = a.getAttribute('href');
+      if (!src) return;  // guard
+      lbImg.src = src;
+      lbImg.alt = a.dataset.title || '';
+      lbCap.textContent = a.dataset.title || '';
+      lb.hidden = false;
+    });
+  });
+
+  lb.querySelector('.close').addEventListener('click', () => { lb.hidden = true; lbImg.src=''; });
+  lb.addEventListener('click', (e) => { if (e.target === lb) { lb.hidden = true; lbImg.src=''; } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { lb.hidden = true; lbImg.src=''; } });
+});
+</script>
+
+

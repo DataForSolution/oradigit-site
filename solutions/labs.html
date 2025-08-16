@@ -1,0 +1,85 @@
+---
+layout: default
+title: OraDigit Labs | Imaging Sandbox
+description: Experiments and demos from OraDigit Labs — including PET/CT and MRI examples with strict de‑identification.
+permalink: /solutions/labs/
+---
+
+<section class="hero">
+  <div class="container">
+    <h2>OraDigit Labs</h2>
+    <p>Hands‑on demos and experiments. Below: an Imaging Sandbox with PET/CT & MRI visuals (strictly de‑identified).</p>
+    <a href="/case-studies/radiology-claim-denial/" class="btn">Related case: Denial Reduction</a>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h3>Imaging Sandbox</h3>
+    <p>All media is de‑identified: no names, dates, IDs, or overlays. Shown for educational and prototyping purposes only.</p>
+
+    <!-- Video demo (optional). Use small, muted, looped clip -->
+    <figure class="media">
+      <video controls preload="metadata" playsinline muted width="100%" poster="/assets/labs/petct-poster.jpg">
+        <source src="/assets/labs/petct-demo.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+      <figcaption>PET/CT cine (de‑identified). Example clip used for UI/UX prototyping of ordering & review workflows.</figcaption>
+    </figure>
+
+    <!-- Image grid -->
+    <div class="img-grid" role="list">
+      <!-- Example items; replace with your images -->
+      <a class="img-card" href="/assets/labs/petct-01.webp" data-title="PET/CT MIP view (de-identified)">
+        <img loading="lazy" src="/assets/labs/petct-01.thumb.webp" alt="De-identified PET/CT MIP view" width="360" height="240">
+      </a>
+
+      <a class="img-card" href="/assets/labs/mri-axial.webp" data-title="MRI axial T1 (de-identified)">
+        <img loading="lazy" src="/assets/labs/mri-axial.thumb.webp" alt="De-identified MRI axial T1" width="360" height="240">
+      </a>
+
+      <a class="img-card" href="/assets/labs/mri-sagittal.webp" data-title="MRI sagittal T2 (de-identified)">
+        <img loading="lazy" src="/assets/labs/mri-sagittal.thumb.webp" alt="De-identified MRI sagittal T2" width="360" height="240">
+      </a>
+    </div>
+
+    <!-- Lightweight lightbox -->
+    <div id="lightbox" class="lightbox" aria-modal="true" role="dialog" hidden>
+      <button class="close" aria-label="Close">&times;</button>
+      <img id="lightbox-img" alt="">
+      <div id="lightbox-caption" class="caption"></div>
+    </div>
+  </div>
+</section>
+
+<style>
+/* Scoped styles */
+.media{margin:0 0 1rem}
+.img-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem;margin-top:1rem}
+.img-card{display:block;background:#fff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden}
+.img-card img{display:block;width:100%;height:auto}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem;z-index:9999}
+.lightbox img{max-width:min(95vw,1200px);max-height:75vh;margin-bottom:.5rem}
+.lightbox .caption{color:#eee;font-size:.9rem;text-align:center}
+.lightbox .close{position:absolute;top:14px;right:18px;background:transparent;border:0;color:#fff;font-size:2rem;cursor:pointer}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const lb = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lightbox-img');
+  const lbCap = document.getElementById('lightbox-caption');
+  document.querySelectorAll('.img-card').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      lbImg.src = a.href;
+      lbImg.alt = a.dataset.title || '';
+      lbCap.textContent = a.dataset.title || '';
+      lb.hidden = false;
+    });
+  });
+  lb.querySelector('.close').addEventListener('click', () => lb.hidden = true);
+  lb.addEventListener('click', (e) => { if(e.target === lb) lb.hidden = true; });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') lb.hidden = true; });
+});
+</script>

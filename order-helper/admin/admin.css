@@ -1,0 +1,16 @@
+.container { max-width: 1100px; margin:0 auto; padding:1.25rem; }
+.lead { color:#475569; }
+.card { background:#fff; border:1px solid #e6e9ef; border-radius:12px; padding:1rem; margin:1rem 0; box-shadow:0 6px 18px rgba(0,0,0,0.04); }
+.row { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin:.5rem 0; }
+.label { font-weight:600; }
+.input { padding:.6rem .8rem; border:1px solid #cfd6e6; border-radius:10px; min-width:240px; }
+.btn { padding:.6rem .9rem; border:none; border-radius:10px; background:#1e40af; color:#fff; font-weight:600; cursor:pointer; }
+.btn:hover{ filter:brightness(1.05); }
+.btn-outline { background:#fff; color:#1e40af; border:1px solid #b5c0de; }
+.btn-secondary{ background:#334155; }
+.btn-primary{ background:#0f766e; }
+.msg{ margin-left:.5rem; color:#0f766e; }
+.table { width:100%; border-collapse: collapse; }
+.table th, .table td { border:1px solid #e6e9ef; padding:.4rem; vertical-align: top; }
+.table input, .table textarea { width:100%; box-sizing: border-box; padding:.4rem; border:1px solid #cfd6e6; border-radius:6px; }
+.table textarea { min-height: 60px; }

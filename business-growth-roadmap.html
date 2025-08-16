@@ -1,0 +1,144 @@
+---
+layout: default
+title: Business Growth Roadmap | OraDigit
+description: How OraDigit drives measurable value with AI—step by step—from discovery to scale, with compliance at the core.
+permalink: /solutions/business-growth-roadmap/
+---
+
+<section class="hero">
+  <div class="container">
+    <h2>Business Growth Roadmap</h2>
+    <p>
+      A clear, outcomes‑first path to value with AI and data—built for healthcare and adaptable to other industries.
+      We blend human expertise, deterministic rules, and LLMs under strong governance to deliver results that stick.
+    </p>
+    <a href="/contact/" class="btn">Start a discovery call</a>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h3>Who this is for</h3>
+    <ul class="grid-3">
+      <li><strong>Healthcare providers & imaging centers</strong><br/>Prior auth readiness, denial reduction, operational efficiency (PET/CT, MR, oncology workflows).</li>
+      <li><strong>Payers & TPAs</strong><br/>Policy‑aware automation, FWA analytics, explainable decisioning.</li>
+      <li><strong>Other industries</strong><br/>Finance, public sector, manufacturing—where compliance, reliability, and scale matter.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h3>Roadmap at a glance</h3>
+    <div class="phases">
+      <article class="phase">
+        <div class="step">0</div>
+        <h4>Align & Frame Value (1 week)</h4>
+        <p>Clarify business goals, constraints, and success metrics. Define PHI/PII boundaries and data access model.</p>
+        <ul class="bul">
+          <li><strong>Deliverables:</strong> Value hypothesis, KPI baseline plan, risk & compliance checklist.</li>
+        </ul>
+      </article>
+
+      <article class="phase">
+        <div class="step">1</div>
+        <h4>Data & Compliance Readiness (2–3 weeks)</h4>
+        <p>Map data sources; set up secure access; validate ICD‑10, CPT/HCPCS, payer policies (healthcare) or domain equivalents.</p>
+        <ul class="bul">
+          <li><strong>Deliverables:</strong> Data catalog, policy table (versioned), security plan (HIPAA/BAA, SOC2/ISO as applicable).</li>
+        </ul>
+      </article>
+
+      <article class="phase">
+        <div class="step">2</div>
+        <h4>Prototype: Rules + LLM (2–4 weeks)</h4>
+        <p>Build a guardrailed assistant that pairs deterministic rules with LLM drafting for human‑in‑the‑loop decisions.</p>
+        <ul class="bul">
+          <li><strong>Deliverables:</strong> Web form or API, header/decision engine, prompt templates, audit logging.</li>
+        </ul>
+      </article>
+
+      <article class="phase">
+        <div class="step">3</div>
+        <h4>Pilot & Measurement (4–6 weeks)</h4>
+        <p>Run with real users. Measure denial rate, time‑to‑scan/order, rework, and user satisfaction.</p>
+        <ul class="bul">
+          <li><strong>Deliverables:</strong> KPI dashboard, error analysis, user feedback loop, go/no‑go criteria.</li>
+        </ul>
+      </article>
+
+      <article class="phase">
+        <div class="step">4</div>
+        <h4>Production & MLOps (4–8 weeks)</h4>
+        <p>Harden the stack: CI/CD, model/Prompt registry, policy updates, monitoring, rollbacks, and documentation.</p>
+        <ul class="bul">
+          <li><strong>Deliverables:</strong> Prod deployment, runbooks, governance pack, SLA/SLOs, incident playbooks.</li>
+        </ul>
+      </article>
+
+      <article class="phase">
+        <div class="step">5</div>
+        <h4>Scale & Enablement (ongoing)</h4>
+        <p>Extend to new sites, service lines, or business units. Train staff and embed change that sticks.</p>
+        <ul class="bul">
+          <li><strong>Deliverables:</strong> Training, playbooks, expansion roadmap, quarterly value reviews.</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="light">
+  <div class="container">
+    <h3>What “good” looks like</h3>
+    <ul class="grid-3">
+      <li><strong>Measurable impact:</strong> Denials ↓ 50–70% (target), faster throughput, fewer resubmissions.</li>
+      <li><strong>Explainability:</strong> Every recommendation has a rationale and policy reference.</li>
+      <li><strong>Compliance by design:</strong> PHI minimization, tiered access, immutable audit trails.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <h3>Reference architecture</h3>
+    <ul class="grid-3">
+      <li><strong>Frontend</strong><br/>Jekyll/Next.js; form UX; role‑based access; ADA/WCAG.</li>
+      <li><strong>Services</strong><br/>FastAPI/Firebase Functions; rules engine; LLM with guardrails; PDF/EMR export.</li>
+      <li><strong>MLOps/Gov</strong><br/>GitHub Actions CI/CD; registry & prompts; monitoring; policy versioning; logs & lineage.</li>
+    </ul>
+    <div class="cta">
+      <a href="/contact/" class="btn">Request the architecture pack</a>
+    </div>
+  </div>
+</section>
+
+<style>
+/* Scoped styles for this page */
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin:.75rem 0 0}
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem}
+.phase{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1rem}
+.step{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:#eef3ff;border:1px solid #cfd9ff;font-weight:700;margin-bottom:.5rem}
+.bul{margin:.5rem 0 0;padding-left:1.1rem}
+.bul li{list-style:disc;margin:.25rem 0}
+.cta{margin-top:1rem}
+</style>
+
+<!-- Optional JSON-LD for SEO (HowTo-style roadmap) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowTo",
+  "name": "OraDigit Business Growth Roadmap",
+  "description": "Step-by-step approach to deliver AI value with governance.",
+  "step": [
+    {"@type": "HowToStep", "name": "Align & Frame Value"},
+    {"@type": "HowToStep", "name": "Data & Compliance Readiness"},
+    {"@type": "HowToStep", "name": "Prototype: Rules + LLM"},
+    {"@type": "HowToStep", "name": "Pilot & Measurement"},
+    {"@type": "HowToStep", "name": "Production & MLOps"},
+    {"@type": "HowToStep", "name": "Scale & Enablement"}
+  ]
+}
+</script>

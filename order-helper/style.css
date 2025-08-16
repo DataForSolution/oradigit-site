@@ -1,0 +1,66 @@
+/* Container & layout */
+.container { max-width: 1080px; margin: 0 auto; padding: 1.25rem; }
+.oh-hero { padding: 2rem 0 0.5rem; }
+.lead { font-size: 1.05rem; color: #3a3a3a; }
+
+/* Card */
+.oh-card {
+  background: #fff;
+  border: 1px solid #e6e9ef;
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+}
+
+/* Inputs */
+.oh-label { display:block; font-weight:600; margin: 0.5rem 0; }
+.oh-input {
+  width: 100%; padding: 0.75rem 0.9rem; border:1px solid #d5d8e0; border-radius: 10px;
+  font: inherit; background: #fafbfe;
+}
+.oh-input:focus { outline: 3px solid rgba(36,99,235,0.15); border-color:#2463eb; }
+
+/* Grid */
+.oh-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; margin-top: 1rem; }
+@media (min-width: 800px) { .oh-grid { grid-template-columns: 1fr 1fr; } }
+
+/* Chips */
+.oh-chips { display:flex; flex-wrap:wrap; gap: 0.5rem; }
+.oh-chip {
+  border:1px solid #cfd6e6; border-radius: 999px; padding: 0.35rem 0.75rem; background:#fff;
+  cursor:pointer; user-select:none; font-size: 0.95rem;
+}
+.oh-chip[aria-pressed="true"] { background:#2463eb; color:#fff; border-color:#2463eb; }
+
+/* Buttons */
+.oh-btn {
+  margin-top: 1rem; padding: 0.75rem 1rem; border: none; border-radius: 10px;
+  background:#1e40af; color:#fff; font-weight:600; cursor:pointer;
+}
+.oh-btn:hover { filter: brightness(1.05); }
+.oh-btn-secondary { background:#334155; }
+.oh-btn-outline { background:#fff; color:#1e40af; border:1px solid #b5c0de; }
+
+/* Results */
+.oh-results { margin-top: 1.25rem; }
+.oh-result { background:#fff; border:1px solid #e6e9ef; border-radius: 12px; padding: 1rem; margin-bottom:1rem; }
+.oh-output { font-weight:600; }
+.oh-actions { display:flex; gap:0.5rem; flex-wrap: wrap; margin-top:0.5rem; }
+
+.oh-columns { display:grid; gap:1rem; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .oh-columns { grid-template-columns: repeat(3, 1fr); } }
+.oh-col { background:#fff; border:1px solid #e6e9ef; border-radius:12px; padding:1rem; }
+
+.oh-list { padding-left: 1.1rem; }
+.oh-list li { margin: 0.25rem 0; }
+
+/* Misc */
+.sr-only { position:absolute; left:-9999px; }
+.oh-disclaimer { font-size:0.92rem; color:#475569; }
+
+/* Print */
+@media print {
+  .oh-card, .oh-actions button { display:none !important; }
+  body { background:#fff; }
+  .oh-result, .oh-col { border:none; box-shadow:none; }
+}

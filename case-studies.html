@@ -1,0 +1,158 @@
+---
+layout: default
+title: Case Studies | OraDigit
+description: Real outcomes from OraDigit’s AI & data science solutions in healthcare and beyond.
+permalink: /case-studies/
+---
+
+<section class="hero">
+  <div class="container">
+    <h2>Case Studies</h2>
+    <p>How OraDigit blends human expertise and AI to reduce risk, speed up decisions, and create measurable value.</p>
+    <a href="/contact/" class="btn">Start a pilot</a>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <!-- Optional: quick filters (client-side only) -->
+    <div class="cs-filters" aria-label="Case study filters">
+      <button class="chip" data-filter="all" aria-pressed="true">All</button>
+      <button class="chip" data-filter="healthcare">Healthcare</button>
+      <button class="chip" data-filter="nlp">NLP</button>
+      <button class="chip" data-filter="mlops">MLOps</button>
+      <button class="chip" data-filter="ops">Operations</button>
+    </div>
+
+    <div class="cs-grid">
+      <!-- 1) Radiology denial reduction (your active case) -->
+      <article class="cs-card" data-tags="healthcare nlp ops">
+        <header class="cs-header">
+          <span class="badge live">In progress</span>
+          <h3><a href="/case-studies/radiology-claim-denial/">Reducing Radiology Insurance Denials (PET/CT)</a></h3>
+          <p class="subtitle">Rules + LLM workflow to select compliant study headers and capture payer-ready medical necessity.</p>
+        </header>
+        <ul class="meta">
+          <li><strong>Industry:</strong> Healthcare, Oncology Imaging</li>
+          <li><strong>Impact:</strong> Fewer prior-auth rejections & first-pass claims</li>
+          <li><strong>What we built:</strong> Deterministic rules engine + guardrailed LLM note drafting + export to EMR/PDF</li>
+        </ul>
+        <div class="actions">
+          <a class="btn" href="/case-studies/radiology-claim-denial/">Read the case</a>
+          <a class="btn btn-ghost" href="/contact/">Talk to OraDigit</a>
+        </div>
+      </article>
+
+      <!-- 2) Clinical NLP for Prior Authorization (roadmap) -->
+      <article class="cs-card" data-tags="healthcare nlp">
+        <header class="cs-header">
+          <span class="badge planned">Planned</span>
+          <h3>Clinical NLP for Prior Authorization Readiness</h3>
+          <p class="subtitle">Extracts ICD‑10, tumor staging, intent, and therapy status from referrals to pre‑validate against payer policy.</p>
+        </header>
+        <ul class="meta">
+          <li><strong>Industry:</strong> Healthcare Providers</li>
+          <li><strong>Impact:</strong> Faster scheduling, fewer back‑and‑forths</li>
+          <li><strong>What we’ll build:</strong> Policy-aware NLP with explainable highlights</li>
+        </ul>
+        <div class="actions">
+          <a class="btn btn-ghost" href="/contact/">Join early access</a>
+        </div>
+      </article>
+
+      <!-- 3) Imaging Operations Forecasting -->
+      <article class="cs-card" data-tags="healthcare ops">
+        <header class="cs-header">
+          <span class="badge planned">In design</span>
+          <h3>Imaging Volume Forecasting & Slot Optimization</h3>
+          <p class="subtitle">Predict daily PET/CT and MR volume; optimize staffing, tracers, and scanner utilization.</p>
+        </header>
+        <ul class="meta">
+          <li><strong>Industry:</strong> Hospitals & Imaging Centers</li>
+          <li><strong>Impact:</strong> Higher utilization, lower overtime, fewer delays</li>
+          <li><strong>What we’ll build:</strong> Time‑series + constraints-based scheduler</li>
+        </ul>
+        <div class="actions">
+          <a class="btn btn-ghost" href="/contact/">Collaborate on a pilot</a>
+        </div>
+      </article>
+
+      <!-- 4) MLOps Platform-in-a-Box -->
+      <article class="cs-card" data-tags="mlops ops">
+        <header class="cs-header">
+          <span class="badge reusable">Reusable solution</span>
+          <h3>MLOps Platform‑in‑a‑Box</h3>
+          <p class="subtitle">Reference stack for regulated analytics: CI/CD, data quality, model registry, audit trails.</p>
+        </header>
+        <ul class="meta">
+          <li><strong>Industry:</strong> Cross‑industry</li>
+          <li><strong>Impact:</strong> Faster deployments with governance</li>
+          <li><strong>What we built:</strong> GitHub Actions, feature store, lineage, monitoring</li>
+        </ul>
+        <div class="actions">
+          <a class="btn btn-ghost" href="/contact/">See architecture</a>
+        </div>
+      </article>
+
+      <!-- 5) FWA Analytics (exploratory) -->
+      <article class="cs-card" data-tags="ops nlp">
+        <header class="cs-header">
+          <span class="badge exploratory">Exploratory</span>
+          <h3>Fraud, Waste & Abuse (FWA) Pattern Detection</h3>
+          <p class="subtitle">Unsupervised pattern mining and claim‑text NLP to surface anomalous behavior for review.</p>
+        </header>
+        <ul class="meta">
+          <li><strong>Industry:</strong> Payers & TPAs</li>
+          <li><strong>Impact:</strong> Targeted investigations, reduced leakage</li>
+          <li><strong>What we’ll build:</strong> Graph + anomaly scoring + investigator cockpit</li>
+        </ul>
+        <div class="actions">
+          <a class="btn btn-ghost" href="/contact/">Discuss feasibility</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<style>
+/* ── Case Studies Styles (scoped) ───────────────────────── */
+.cs-filters{display:flex;flex-wrap:wrap;gap:.5rem;margin:-.5rem 0 1.25rem}
+.chip{border:1px solid #d7d7e0;background:#fff;border-radius:999px;padding:.4rem .8rem;font-size:.85rem;cursor:pointer}
+.chip[aria-pressed="true"]{background:#1a53ff;color:#fff;border-color:#1a53ff}
+
+.cs-grid{display:grid;gap:1.25rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.cs-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:1.1rem;display:flex;flex-direction:column;justify-content:space-between}
+.cs-header h3{font-size:1.1rem;margin:.2rem 0 .35rem}
+.subtitle{color:#444;margin:.1rem 0 .6rem}
+.meta{margin:.5rem 0 1rem;padding-left:1.1rem}
+.meta li{list-style:disc;margin:.25rem 0;color:#333}
+.actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.btn-ghost{background:transparent;border:1px solid #d0d5ff;color:#1a53ff}
+.badge{display:inline-block;font-size:.72rem;font-weight:600;border-radius:999px;padding:.18rem .55rem;margin-bottom:.25rem}
+.badge.live{background:#e8fff0;color:#18794e;border:1px solid #b6f0cb}
+.badge.planned{background:#fff7e6;color:#8a5b00;border:1px solid #ffdf99}
+.badge.reusable{background:#eef3ff;color:#1a53ff;border:1px solid #cfd9ff}
+.badge.exploratory{background:#f9f2ff;color:#6c2bd9;border:1px solid #e3d6ff}
+</style>
+
+<script>
+/* Client-side tag filtering (no backend) */
+document.addEventListener('DOMContentLoaded', () => {
+  const chips = document.querySelectorAll('.chip');
+  const cards = document.querySelectorAll('.cs-card');
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.setAttribute('aria-pressed','false'));
+      chip.setAttribute('aria-pressed','true');
+      const tag = chip.dataset.filter;
+
+      cards.forEach(card => {
+        if (tag === 'all') { card.style.display = ''; return; }
+        const tags = (card.getAttribute('data-tags') || '').split(' ');
+        card.style.display = tags.includes(tag) ? '' : 'none';
+      });
+    });
+  });
+});
+</script>

@@ -1,0 +1,192 @@
+---
+layout: default
+title: OraDigit | AI for Healthcare Imaging & Analytics
+description: Advancing Radiology, Imaging, and Nuclear Medicine through AI-Powered Data Science.
+last_updated: 2025-08-15
+---
+
+<!-- Hero Section -->
+<section class="hero">
+  <div class="container">
+    <h1>Enabling Radiology Innovation with AI-Powered Imaging & Actionable Intelligence</h1>
+    <p>OraDigit empowers healthcare providers with AI-driven imaging insights, precision diagnostics, and data science tools tailored for radiology, nuclear medicine, and PET/CT technologies.</p>
+    <a href="/services/" class="btn">Explore Our Healthcare Solutions</a>
+  </div>
+</section>
+  
+
+<!-- What We Do Summary -->
+<section class="light">
+  <div class="container">
+    <h2>What We Do</h2>
+    <ul class="service-list">
+      <li><strong>Imaging AI Solutions</strong><br>AI for lesion detection, segmentation, and diagnostic support in radiology and PET/CT.</li>
+      <li><strong>Therapeutic Data Science</strong><br>Predictive models and outcome analytics for nuclear medicine therapy planning and response.</li>
+      <li><strong>Clinical Data Engineering</strong><br>Build compliant data pipelines and imaging repositories for research and operations.</li>
+      <li><strong>AI-Powered Decision Support</strong><br>Deliver real-time insights for care teams and radiologists through intuitive dashboards.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Why OraDigit -->
+<section>
+  <div class="container">
+    <h2>Why OraDigit?</h2>
+    <ul class="service-list">
+      <li><strong>Healthcare Expertise</strong><br>Led by professionals with 15+ years in PET/CT, nuclear medicine, and advanced analytics.</li>
+      <li><strong>AI Built for Imaging</strong><br>We specialize in ML models for radiology, oncology, and therapy optimization.</li>
+      <li><strong>Compliant & Secure</strong><br>HIPAA-aware workflows, anonymized data handling, and traceable pipelines.</li>
+      <li><strong>End-to-End Delivery</strong><br>From research prototype to enterprise deployment—seamlessly executed.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- Explore OraDigit Solutions -->
+<section class="light">
+  <div class="container">
+    <h2>Explore Our Healthcare AI Solutions</h2>
+    <p>OraDigit delivers tailored AI solutions across imaging, therapy analytics, workflow automation, and clinical data platforms. Select a focus area to learn more:</p>
+    <ul class="service-list">
+      <li>
+        <strong>Imaging AI for Radiology & PET/CT</strong><br>
+        Computer vision, segmentation, and radiomics models.<br>
+        <a href="/services/imaging-ai/">Explore →</a>
+      </li>
+      <li>
+        <strong>Therapy Analytics & Outcome Prediction</strong><br>
+        AI-driven response modeling and personalized care planning.<br>
+        <a href="/services/therapy-analytics/">Explore →</a>
+      </li>
+      <li>
+        <strong>Workflow Optimization in Nuclear Medicine</strong><br>
+        AI scheduling, dose tracking, and compliance automation.<br>
+        <a href="/services/workflow-ai/">Explore →</a>
+      </li>
+      <li>
+        <strong>Healthcare Data Platforms</strong><br>
+        Secure DICOM pipelines and scalable data engineering for imaging.<br>
+        <a href="/services/data-platforms/">Explore →</a>
+      </li>
+      <li>
+        <strong>Clinical Decision Support Systems</strong><br>
+        Real-time dashboards and explainable AI tools for physicians.<br>
+        <a href="/services/decision-support/">Explore →</a>
+      </li>
+      <li>
+        <strong>AI Strategy & MLOps for Healthcare</strong><br>
+        Model deployment, governance, and monitoring at scale.<br>
+        <a href="/services/mlops-healthcare/">Explore →</a>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<!-- Meet the Team Preview -->
+<section>
+  <div class="container">
+    <h2>Meet the People Behind OraDigit</h2>
+    <p>We’re a team of healthcare technologists, AI engineers, and clinical data scientists passionate about reshaping medical imaging with intelligence and trust.</p>
+    <a href="/services/about/" class="btn">About Us</a>
+  </div>
+</section>
+
+<!-- CTA Contact -->
+<section class="light">
+  <div class="container">
+    <h2>Partner With Us</h2>
+    <p>Let’s explore how OraDigit can support your AI transformation in radiology, therapy, and nuclear imaging workflows.</p>
+    <a href="/contact/" class="btn">Contact Us</a>
+  </div>
+</section>
+
+<!-- Cookie Consent Banner -->
+<div id="cookie-consent" class="cookie-banner" style="display: none;">
+  <div class="cookie-content">
+    <p>
+      We use cookies to enhance your experience and analyze traffic. See our
+      <a href="/cookies/">Cookie Policy</a> for details.
+    </p>
+    <div class="cookie-buttons">
+      <button id="accept-cookies" class="btn-solid">Accept All Cookies</button>
+      <button id="manage-prefs" class="btn-outline">Manage Preferences</button>
+    </div>
+  </div>
+  <div id="cookie-modal" class="cookie-modal">
+  <div class="modal-content">
+    <h3>Manage Your Cookie Preferences</h3>
+    <form id="cookie-form">
+      <label><input type="checkbox" disabled checked> Essential Cookies (Always Active)</label>
+      <label><input type="checkbox" id="analytics-cookies"> Analytics Cookies</label>
+      <label><input type="checkbox" id="marketing-cookies"> Marketing Cookies</label>
+
+      <div class="modal-actions">
+        <button type="button" id="save-cookies" class="btn-solid">Save Preferences</button>
+        <button type="button" id="close-modal" class="btn-outline">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+</div>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const acceptBtn  = document.getElementById('cookie-accept');
+    const declineBtn = document.getElementById('cookie-decline');
+
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', () => {
+        gtag('consent','update',{ analytics_storage:'granted' });
+      });
+    }
+    if (declineBtn) {
+      declineBtn.addEventListener('click', () => {
+        gtag('consent','update',{ analytics_storage:'denied' });
+      });
+    }
+  });
+</script>
+
+
+<!-- Cookie Script -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const banner = document.getElementById("cookie-consent");
+    const acceptBtn = document.getElementById("accept-cookies");
+    const manageBtn = document.getElementById("manage-prefs");
+
+    if (!localStorage.getItem("cookiesAccepted")) {
+      banner.style.display = "block";
+    }
+
+    acceptBtn.addEventListener("click", function () {
+      localStorage.setItem("cookiesAccepted", "true");
+      banner.style.display = "none";
+    });
+    manageBtn.addEventListener("click", function () {
+  const modal = document.getElementById("cookie-modal");
+  modal.style.display = "flex";
+});
+const modal = document.getElementById("cookie-modal");
+const closeModal = document.getElementById("close-modal");
+const savePrefs = document.getElementById("save-cookies");
+
+closeModal.addEventListener("click", () => {
+  modal.style.display = "none";
+});
+
+savePrefs.addEventListener("click", () => {
+  const analytics = document.getElementById("analytics-cookies").checked;
+  const marketing = document.getElementById("marketing-cookies").checked;
+
+  const preferences = {
+    analytics: analytics,
+    marketing: marketing
+  };
+
+  localStorage.setItem("cookiePreferences", JSON.stringify(preferences));
+  modal.style.display = "none";
+  banner.style.display = "none";
+});
+
+    });
+</script>
