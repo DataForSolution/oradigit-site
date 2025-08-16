@@ -1387,3 +1387,61 @@ textarea { resize:vertical; }
 /* Labs page (reuses Insights card grid) */
 .bullets { padding-left: 1.25rem; }
 .bullets li { margin:.4rem 0; }
+/* ===== FINAL OVERRIDES FOR READABILITY (keep at end) ===== */
+
+/* Light mode — force readable text & links site-wide */
+html body,
+html body .container,
+html body .docs-hero,
+html body .doc-card,
+html body .doc-card p,
+html body .doc-card h3,
+html body .doc-card ul,
+html body .faq summary,
+html body .section-title {
+  color: #111827 !important;
+  background-color: transparent;
+}
+html body a {
+  color: #1d4ed8 !important;
+  text-decoration: underline;
+}
+html body a:hover {
+  color: #2563eb !important;
+}
+
+/* Dark mode — light text, clear links */
+@media (prefers-color-scheme: dark) {
+  html body {
+    background-color: #0b0b0b !important;
+    color: #e5e7eb !important;
+  }
+  html body .container,
+  html body .docs-hero,
+  html body .doc-card,
+  html body .doc-card p,
+  html body .doc-card h3,
+  html body .doc-card ul,
+  html body .faq summary,
+  html body .section-title {
+    color: #e5e7eb !important;
+  }
+  html body .doc-card {
+    background: #0b0b0b !important;
+    border-color: #1f2937 !important;
+  }
+  html body a {
+    color: #93c5fd !important;
+  }
+  html body a:hover {
+    color: #bfdbfe !important;
+  }
+  html body .btn {
+    border-color: #e5e7eb !important;
+    color: #e5e7eb !important;
+  }
+  html body .btn-primary {
+    background: #e5e7eb !important;
+    color: #0b0b0b !important;
+  }
+}
