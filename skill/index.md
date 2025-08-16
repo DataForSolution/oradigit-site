@@ -1,7 +1,7 @@
 ---
 layout: default
 title: OraDigit Documentation Hub
-permalink: /docs/
+permalink: /skill/
 description: Official OraDigit guides, service manuals, integrations, policies, and FAQs.
 last_updated: 2025-08-15
 ---
