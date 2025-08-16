@@ -1387,3 +1387,33 @@ textarea { resize:vertical; }
 /* Labs page (reuses Insights card grid) */
 .bullets { padding-left: 1.25rem; }
 .bullets li { margin:.4rem 0; }
+/* ─────────────────────────────
+   Global readability improvements
+   Light & Dark theme support
+────────────────────────────── */
+
+/* Default (light) */
+body { color: #111827; background-color: #ffffff; }
+a { color: #1d4ed8; text-decoration: underline; }
+a:hover { color: #2563eb; }
+
+h1, h2, h3, h4, h5, h6 { color: #111827; }
+p, li, span, td, th { color: #374151; }
+
+.muted { color: #6b7280; }
+
+.btn { border: 1px solid #111827; color: #111827; }
+.btn-primary { background: #111827; color: #fff; }
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+  body { background-color: #0b0b0b; color: #e5e7eb; }
+  h1, h2, h3, h4, h5, h6,
+  p, li, span, td, th { color: #e5e7eb; }
+
+  a { color: #93c5fd; }
+  a:hover { color: #bfdbfe; }
+
+  .btn { border-color: #e5e7eb; color: #e5e7eb; }
+  .btn-primary { background: #e5e7eb; color: #0b0b0b; }
+}
