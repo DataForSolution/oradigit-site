@@ -10,9 +10,9 @@ last_updated: 2025-08-16
   Skill Hub — self-contained styles
 ────────────────────────────── -->
 <style>
-  .docs-hero { padding: 2rem 0 1rem; }
-  .docs-hero h1 { margin-bottom: .5rem; }
-  .docs-hero p.lead { font-size: 1.125rem; max-width: 60ch; }
+  .docs-hero { padding: 2rem 0 1rem; color: #111827; }
+  .docs-hero h1 { margin-bottom: .5rem; color: #111827; }
+  .docs-hero p.lead { font-size: 1.125rem; max-width: 60ch; color: #374151; }
 
   .docs-search { margin: 1rem 0 2rem; }
   .docs-search input {
@@ -36,11 +36,15 @@ last_updated: 2025-08-16
     background: #fff;
     box-shadow: 0 2px 12px rgba(0,0,0,.04);
     transition: box-shadow .2s ease, transform .15s ease;
+    color: #111827;
   }
   .doc-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.08); transform: translateY(-2px); }
-  .doc-card h3 { margin: 0 0 .5rem; font-size: 1.05rem; }
-  .doc-card p { margin: 0 0 .75rem; color: #4b5563; }
-  .doc-card ul { margin: 0; padding-left: 1.1rem; }
+  .doc-card h3 { margin: 0 0 .5rem; font-size: 1.05rem; color: #111827; }
+  .doc-card p { margin: 0 0 .75rem; color: #374151; }
+  .doc-card ul { margin: 0; padding-left: 1.1rem; color: #111827; }
+  .doc-card a { color: #1d4ed8; text-decoration: underline; }
+  .doc-card a:hover { color: #2563eb; }
+
   .label {
     display: inline-block; font-size: .75rem; padding: .15rem .5rem; border-radius: 999px;
     border: 1px solid #e5e7eb; color: #6b7280; margin-left: .5rem;
@@ -56,10 +60,18 @@ last_updated: 2025-08-16
   .btn-primary { background: #111827; color: #fff; }
   .section-title { margin-top: 2.2rem; margin-bottom: .8rem; }
   .faq details { border: 1px solid #e5e7eb; padding: .9rem 1rem; border-radius: .75rem; margin: .6rem 0; }
-  .faq summary { font-weight: 600; cursor: pointer; }
+  .faq summary { font-weight: 600; cursor: pointer; color: #111827; }
+
+  /* 🌙 Dark mode */
   @media (prefers-color-scheme: dark) {
-    .doc-card { background: #0b0b0b; border-color: #1f2937; }
+    .doc-card { background: #0b0b0b; border-color: #1f2937; color: #e5e7eb; }
+    .docs-hero, .docs-hero h1, .docs-hero p.lead,
+    .doc-card h3, .doc-card p, .doc-card ul, .faq summary {
+      color: #e5e7eb;
+    }
     .docs-search input { background: #0b0b0b; color: #e5e7eb; border-color: #1f2937; }
+    .doc-card a { color: #93c5fd; text-decoration: underline; }
+    .doc-card a:hover { color: #bfdbfe; }
     .btn { border-color: #e5e7eb; color: #e5e7eb; }
     .btn-primary { background: #e5e7eb; color: #0b0b0b; }
   }
