@@ -1389,63 +1389,69 @@ textarea { resize:vertical; }
 .bullets li { margin:.4rem 0; }
 /* Skills page only (scoped by .page-skill on <body>) */
 
-/* Light mode */
+/* Skills page — match site light theme (dark text on white background) */
+
+.page-skill {
+  background: #ffffff;        /* white page background */
+  color: #1a1a1a;             /* dark text */
+}
+
+/* Hero and section titles */
 .page-skill .docs-hero,
-.page-skill .doc-card,
-.page-skill .doc-card p,
-.page-skill .doc-card h3,
-.page-skill .doc-card ul,
-.page-skill .faq summary,
-.page-skill .section-title {
-  color: #111827;
+.page-skill .section-title,
+.page-skill h1,
+.page-skill h2,
+.page-skill h3 {
+  color: #111111;
 }
 
+/* Cards */
 .page-skill .doc-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 12px rgba(0,0,0,.04);
+  background: #ffffff;
+  color: #1a1a1a;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
+/* Card text */
+.page-skill .doc-card p,
+.page-skill .doc-card ul,
+.page-skill .doc-card li {
+  color: #333333;
+}
+
+/* Inputs (search box, etc.) */
+.page-skill .docs-search input {
+  background: #f9f9f9;
+  color: #1a1a1a;
+  border: 1px solid #ccc;
+}
+
+/* Links */
 .page-skill a {
-  color: #1d4ed8;
+  color: #0056b3;
   text-decoration: underline;
 }
 .page-skill a:hover {
-  color: #2563eb;
+  color: #003f80;
 }
 
+/* FAQ details */
+.page-skill .faq summary {
+  color: #1a1a1a;
+}
+.page-skill .faq details {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Buttons */
 .page-skill .btn {
-  border: 1px solid #111827;
-  color: #111827;
+  border: 1px solid #1a1a1a;
+  color: #1a1a1a;
+  background: #ffffff;
 }
 .page-skill .btn-primary {
-  background: #111827;
-  color: #fff;
-}
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .page-skill .docs-hero,
-  .page-skill .doc-card,
-  .page-skill .doc-card p,
-  .page-skill .doc-card h3,
-  .page-skill .doc-card ul,
-  .page-skill .faq summary,
-  .page-skill .section-title {
-    color: #e5e7eb;
-  }
-  .page-skill .doc-card {
-    background: #0b0b0b;
-    border-color: #1f2937;
-  }
-  .page-skill a { color: #93c5fd; }
-  .page-skill a:hover { color: #bfdbfe; }
-  .page-skill .btn {
-    border-color: #e5e7eb;
-    color: #e5e7eb;
-  }
-  .page-skill .btn-primary {
-    background: #e5e7eb;
-    color: #0b0b0b;
-  }
+  background: #1a1a1a;
+  color: #ffffff;
 }
