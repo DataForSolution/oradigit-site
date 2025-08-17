@@ -1,240 +1,264 @@
-// ----- Config -----
-const DEFAULT_CONTEXTS = [
-  "staging","restaging","treatment response","surveillance",
-  "suspected infection","dementia","epilepsy","viability","oncology","neuro"
-];
+/* =========================================================
+   OraDigit Order Helper (PET/CT)
+   Single responsibility in this step:
+   - Load /order-helper/data/rules.json robustly
+   - Populate Context chips
+   - Build suggestions & show results
+   ========================================================= */
 
-let RULES = [];
-const LOCAL_RULE_PATHS = {
-  "PET/CT": "./data/rules.json",
-  "CT": "./data/ct_rules.json",
-  "MRI": "./data/mri_rules.json"
+const els = {
+  status: document.getElementById("status"),
+  form: document.getElementById("orderForm"),
+  indication: document.getElementById("indication"),
+  modality: document.getElementById("modality"),
+  region: document.getElementById("region"),
+  chips: document.getElementById("contextChips"),
+  errMsg: document.getElementById("errMsg"),
+  results: document.getElementById("results"),
+  outHeader: document.getElementById("outHeader"),
+  outReason: document.getElementById("outReason"),
+  outPrep: document.getElementById("outPrep"),
+  outDocs: document.getElementById("outDocs"),
+  outFlags: document.getElementById("outFlags"),
+  copyReasonBtn: document.getElementById("copyReasonBtn"),
+  copyAllBtn: document.getElementById("copyAllBtn"),
+  printBtn: document.getElementById("printBtn"),
 };
 
-// ----- Utilities -----
-function byId(id) { return document.getElementById(id); }
-
-// Small debug helper: writes to #dbg (if present) and console
-function dbg(msg) {
-  const el = byId('dbg');
-  if (el) el.textContent = msg;
-  console.log(msg);
+function setStatus(msg, kind = "info") {
+  if (!els.status) return;
+  els.status.textContent = msg || "";
+  els.status.className = `status ${kind}`;
+}
+function clearStatus() { setStatus(""); }
+function setError(msg) {
+  if (els.errMsg) els.errMsg.textContent = msg || "";
 }
 
-function showError(msg = "") {
-  const el = byId('errMsg');
-  if (el) el.textContent = msg;
-  if (msg) console.error(msg);
+function normalizeModality(m) {
+  return (m || "").replace(/\s+/g, "").replace("/", "").toUpperCase(); // "PET/CT" -> "PETCT"
+}
+function normalizeRegion(r) {
+  return (r || "").trim();
 }
 
-function initChips() {
-  const wrap = byId('contextChips');
-  if (!wrap) return;
-  wrap.innerHTML = "";
-  DEFAULT_CONTEXTS.forEach(ctx => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'oh-chip';
-    btn.textContent = ctx;
-    btn.setAttribute('aria-pressed','false');
-    btn.addEventListener('click', ()=>{
-      const pressed = btn.getAttribute('aria-pressed') === 'true';
-      btn.setAttribute('aria-pressed', String(!pressed));
-    });
-    wrap.appendChild(btn);
+/** Build an absolute path to /order-helper/data/rules.json reliably */
+function buildRulesURL() {
+  // If the site is at root, this is the most reliable path:
+  const hard = `${location.origin}/order-helper/data/rules.json`;
+
+  // Fallback: relative to current page (works if the page is actually /order-helper/)
+  const soft = new URL("./data/rules.json", location.href).toString();
+
+  return { hard, soft };
+}
+
+async function loadRules() {
+  const { hard, soft } = buildRulesURL();
+
+  // Try the hard path first
+  try {
+    let res = await fetch(hard, { cache: "no-store" });
+    if (res.ok) return await res.json();
+    // Try the soft/fallback
+    res = await fetch(soft, { cache: "no-store" });
+    if (res.ok) return await res.json();
+    throw new Error("HTTP error");
+  } catch (e) {
+    // Show friendly message; don't dump all attempted paths to the UI
+    throw new Error("Could not load PET/CT rules. Please refresh or contact support.");
+  }
+}
+
+let RULES = [];
+let selectedContext = "";
+
+/** Render context "chips" from rules (union of all contexts for the selected modality) */
+function renderContextChips() {
+  if (!els.chips) return;
+  els.chips.innerHTML = "";
+
+  const currentMod = normalizeModality(els.modality.value);
+  const regionset = new Set(); // Optional: could filter by region later
+  const contextSet = new Set();
+
+  RULES.forEach(item => {
+    const itemMod = normalizeModality(item.modality);
+    if (itemMod !== currentMod) return;
+
+    regionset.add(item.region);
+    (item.contexts || []).forEach(c => contextSet.add(c));
   });
-}
 
-function getSelectedContexts() {
-  return [...document.querySelectorAll('.oh-chip[aria-pressed="true"]')]
-    .map(b => b.textContent.toLowerCase());
-}
-async function loadLocalRules(modality) {
-  const candidatesByMod = {
-    "PET/CT": ["./data/rules.json", "/order-helper/data/rules.json", "/data/rules.json"],
-    "CT":     ["./data/ct_rules.json", "/order-helper/data/ct_rules.json", "/data/ct_rules.json"],
-    "MRI":    ["./data/mri_rules.json", "/order-helper/data/mri_rules.json", "/data/mri_rules.json"]
-  };
-  const candidates = candidatesByMod[modality] || candidatesByMod["PET/CT"];
+  // If region is "Auto", do nothing special for now; otherwise we could constrain contexts by region
+  Array.from(contextSet).sort().forEach(ctx => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "oh-chip";
+    btn.textContent = ctx;
+    btn.setAttribute("aria-pressed", String(ctx === selectedContext));
+    btn.addEventListener("click", () => {
+      selectedContext = ctx;
+      // Update pressed state
+      Array.from(els.chips.querySelectorAll(".oh-chip")).forEach(ch => {
+        ch.setAttribute("aria-pressed", String(ch.textContent === selectedContext));
+      });
+    });
+    els.chips.appendChild(btn);
+  });
 
-  let lastErr = null;
-  for (const path of candidates) {
-    try {
-      dbg(`Trying ${path} …`);
-      const res = await fetch(path, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      let txt = await res.text();
-      if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
-      if (txt.trim().startsWith('<!DOCTYPE')) throw new Error("Got HTML (likely 404 page)");
-      const json = JSON.parse(txt);
-      dbg(`✅ Loaded ${Array.isArray(json) ? json.length : 0} rule(s) from ${path}`);
-      return json;
-    } catch (e) {
-      lastErr = e;
-      console.warn(`Failed ${path}: ${e.message}`);
-    }
+  // If nothing rendered, show a helper
+  if (!els.chips.children.length) {
+    const span = document.createElement("span");
+    span.className = "muted";
+    span.textContent = "No contexts available for the current selection.";
+    els.chips.appendChild(span);
   }
-  throw new Error(`Failed to load rules for ${modality}. Tried: ${candidates.join(", ")}. Last error: ${lastErr?.message || 'unknown'}`);
 }
 
+/** Given selected inputs, find the best matching rule(s) */
+function findMatchingRules() {
+  const mod = normalizeModality(els.modality.value);
+  const reg = normalizeRegion(els.region.value);
+  const ctx = selectedContext || ""; // may be empty if user didn't pick chips
 
-function scoreRule(rule, indication, region, contexts) {
-  let score = 0;
-  const text = (indication || "").toLowerCase();
+  let candidates = RULES.filter(r => normalizeModality(r.modality) === mod);
 
-  const hits = (rule.keywords || []).filter(k => text.includes(String(k).toLowerCase()));
-  score += hits.length * 5;
-
-  const ctxOverlap = (rule.contexts || []).filter(c => contexts.includes(String(c).toLowerCase())).length;
-  score += ctxOverlap * 3;
-
-  if (region && rule.region?.toLowerCase() === region.toLowerCase()) score += 4;
-
-  if (/cancer|carcinoma|lymphoma|sarcoma|melanoma|tumou?r|malign/.test(text)
-      && Array.isArray(rule.tags) && rule.tags.includes('oncology-general')) {
-    score += 2;
+  // If a region is chosen (and not "Auto"), prefer those
+  if (reg) {
+    const exact = candidates.filter(r => normalizeRegion(r.region).toLowerCase() === reg.toLowerCase());
+    if (exact.length) candidates = exact;
   }
-  return { score, hits };
-}
 
-function pickBestRule(indication, region, contexts) {
-  let best = null;
-  for (const rule of RULES) {
-    const { score, hits } = scoreRule(rule, indication, region, contexts);
-    if (!best || score > best.score) best = { rule, score, hits };
+  // If a context is chosen, prefer those that list it
+  if (ctx) {
+    const withCtx = candidates.filter(r => (r.contexts || []).map(String).includes(ctx));
+    if (withCtx.length) candidates = withCtx;
   }
-  if (!best || best.score < 3) {
-    const fallback = RULES.find(r => Array.isArray(r.tags) && r.tags.includes('oncology-general')) || RULES[0];
-    return { rule: fallback, hits: [] };
+
+  return candidates;
+}
+
+/** Produce a suggestion payload (header, reason, lists) */
+function buildSuggestion(rule, context, indicationText) {
+  const condition = (indicationText || "").trim() || "the stated condition";
+  const ctx = context || "the clinical context";
+
+  const header = rule.header || `${rule.modality} ${rule.region}`;
+  // Pick first reason template if present
+  const tpl = (rule.reasons && rule.reasons[0]) || "FDG PET/CT for {context} of {condition}.";
+  const reason = tpl.replace("{context}", ctx).replace("{condition}", condition);
+
+  const prep = rule.prep_notes || [];
+  const docs = rule.supporting_docs || [];
+  const flags = rule.flags || [];
+
+  return { header, reason, prep, docs, flags };
+}
+
+/** Render suggestion to the page */
+function renderSuggestion(s) {
+  els.outHeader.textContent = s.header;
+  els.outReason.value = s.reason;
+
+  els.outPrep.innerHTML = s.prep.map(li => `<li>${li}</li>`).join("");
+  els.outDocs.innerHTML = s.docs.map(li => `<li>${li}</li>`).join("");
+  els.outFlags.innerHTML = s.flags.map(li => `<li>${li}</li>`).join("");
+
+  els.results.hidden = false;
+  setStatus("Suggestion generated.", "success");
+}
+
+/** Copy helpers */
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    setStatus("Copied to clipboard.", "success");
+  } catch {
+    setStatus("Could not copy to clipboard.", "error");
   }
-  return best;
 }
 
-function fillTemplate(tpl, { context, condition }) {
-  return String(tpl)
-    .replaceAll('{context}', context || 'staging')
-    .replaceAll('{condition}', condition || 'the stated condition');
-}
+/* ===========================
+   Boot
+   =========================== */
+document.addEventListener("DOMContentLoaded", async () => {
+  setStatus("Loading PET/CT rules…");
 
-function deriveConditionFromHits(hits){
-  return (hits && hits.length) ? String(hits[0]) : 'the stated condition';
-}
-
-function renderResult(match, userRegion, contexts) {
-  if (!match || !match.rule) {
-    showError('No matching rule found.');
-    dbg('No matching rule found.');
-    return;
+  try {
+    RULES = await loadRules();
+    clearStatus();
+  } catch (e) {
+    setStatus(e.message, "error");
+    // We still allow manual typing; just no rule-driven chips
   }
-  const rule = match.rule;
-  const chosenRegion = userRegion || rule.region || 'Skull base to mid-thigh';
 
-  // Default header if missing; try to reflect PET vs PET/CT if provided
-  const ruleModality = rule.modality || 'PET/CT';
-  const header = rule.header || `${ruleModality} ${chosenRegion}`;
+  renderContextChips();
 
-  const ctx = contexts[0] || (Array.isArray(rule.contexts) && rule.contexts[0]) || 'staging';
-  const condition = deriveConditionFromHits(match.hits);
-  const reasonTpl = (Array.isArray(rule.reasons) && rule.reasons[0])
-    || 'FDG PET/CT for {context} of {condition}; evaluate extent of disease and FDG-avid metastases.';
-  const reason = fillTemplate(reasonTpl, { context: ctx, condition });
+  els.modality.addEventListener("change", () => {
+    selectedContext = "";
+    renderContextChips();
+  });
+  els.region.addEventListener("change", () => {
+    // Could filter contexts by region in the future
+  });
 
-  byId('outHeader').textContent = header;
-  byId('outReason').value = reason;
+  // Form submit (Suggest)
+  els.form.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    setError("");
+    setStatus("");
 
-  const ulPrep  = byId('outPrep');
-  const ulDocs  = byId('outDocs');
-  const ulFlags = byId('outFlags');
-  [ulPrep, ulDocs, ulFlags].forEach(ul => { if (ul) ul.innerHTML = ''; });
+    const indication = els.indication.value.trim();
+    const mod = normalizeModality(els.modality.value);
 
-  (rule.prep_notes || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; ulPrep?.appendChild(li); });
-  (rule.supporting_docs || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; ulDocs?.appendChild(li); });
-  (rule.flags || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; ulFlags?.appendChild(li); });
-
-  const results = byId('results');
-  if (results) results.hidden = false;
-
-  showError('');
-  dbg('Rendered suggestion.');
-}
-
-function copy(text){ navigator.clipboard.writeText(text).catch(()=>{}); }
-
-// ----- Wire UI -----
-function wireEvents() {
-  // Handle both form submit and button click
-  const form = byId('orderForm');
-  const handler = (evt) => {
-    evt?.preventDefault?.();
-
-    const indication = byId('indication')?.value.trim() || '';
-    const region     = byId('region')?.value.trim() || '';
-    const contexts   = getSelectedContexts();
-
-    if (!RULES || !RULES.length) {
-      showError('Rules not loaded yet.');
-      dbg('Suggest clicked but rules not loaded yet.');
+    // Basic required fields
+    const missing = [];
+    if (!mod) missing.push("Modality");
+    if (!indication) missing.push("Clinical indication");
+    if (missing.length) {
+      setError(`Please complete: ${missing.join(", ")}.`);
       return;
     }
-    dbg(`Suggest clicked with contexts: ${JSON.stringify(contexts)}`);
-    const match = pickBestRule(indication, region, contexts);
-    renderResult(match, region, contexts);
-  };
 
-  form?.addEventListener('submit', handler);
-  byId('suggestBtn')?.addEventListener('click', handler);
-
-  byId('copyReasonBtn')?.addEventListener('click', () => copy(byId('outReason')?.value || ''));
-  byId('copyAllBtn')?.addEventListener('click', () => {
-    const header = byId('outHeader')?.textContent || '';
-    const reason = byId('outReason')?.value || '';
-    const listToText = (id) => [...document.querySelectorAll(`#${id} li`)].map(li=>`• ${li.textContent}`).join('\n');
-    const bundle =
-`Study Header:
-${header}
-
-Reason for Exam:
-${reason}
-
-Prep / Contraindications:
-${listToText('outPrep')}
-
-Supporting Docs:
-${listToText('outDocs')}
-
-Clinical Flags:
-${listToText('outFlags')}
-`;
-    copy(bundle);
-  });
-  byId('printBtn')?.addEventListener('click', ()=>window.print());
-
-  // Reload rules when modality changes
-  byId('modality')?.addEventListener('change', async (e) => {
-    try {
-      RULES = await loadLocalRules(e.target.value);
-      const results = byId('results');
-      if (results) results.hidden = true;
-      showError('');
-      dbg(`✅ Reloaded ${RULES.length} rules for ${e.target.value}`);
-    } catch (err) {
-      showError(err.message);
-      dbg('❌ ' + err.message);
+    const candidates = findMatchingRules();
+    if (!candidates.length) {
+      setStatus("No matching rule found for the current selection. Try another Region or Context.", "warn");
+      return;
     }
-  });
-}
 
-// ----- Bootstrap -----
-document.addEventListener('DOMContentLoaded', async () => {
-  initChips();
-  try {
-    const initialModality = byId('modality')?.value || 'PET/CT';
-    RULES = await loadLocalRules(initialModality);
-    showError('');
-    dbg(`✅ Loaded ${RULES.length} rules for ${initialModality}`);
-  } catch (err) {
-    showError(err.message);
-    dbg('❌ ' + err.message);
+    // Choose the first candidate for now (could be smarter later)
+    const s = buildSuggestion(candidates[0], selectedContext, indication);
+    renderSuggestion(s);
+  });
+
+  // Copy buttons
+  if (els.copyReasonBtn) {
+    els.copyReasonBtn.addEventListener("click", () => {
+      copyText(els.outReason.value || "");
+    });
   }
-  wireEvents();
+  if (els.copyAllBtn) {
+    els.copyAllBtn.addEventListener("click", () => {
+      const text = [
+        els.outHeader.textContent,
+        "",
+        "Reason for exam:",
+        els.outReason.value,
+        "",
+        "Prep / Contraindications:",
+        ...Array.from(els.outPrep.querySelectorAll("li")).map(li => `• ${li.textContent}`),
+        "",
+        "Supporting Docs:",
+        ...Array.from(els.outDocs.querySelectorAll("li")).map(li => `• ${li.textContent}`),
+        "",
+        "Clinical Flags:",
+        ...Array.from(els.outFlags.querySelectorAll("li")).map(li => `• ${li.textContent}`),
+      ].join("\n");
+      copyText(text);
+    });
+  }
+  if (els.printBtn) {
+    els.printBtn.addEventListener("click", () => window.print());
+  }
 });
