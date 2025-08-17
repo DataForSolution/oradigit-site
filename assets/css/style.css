@@ -1455,3 +1455,182 @@ textarea { resize:vertical; }
   background: #1a1a1a;
   color: #ffffff;
 }
+/* OraDigit Skills Hub Styles (skill.css) */
+
+/* Reset overrides */
+.page-skill {
+  background: #fff;
+  color: #222;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.7;
+}
+
+/* Hero */
+.docs-hero {
+  padding: 4rem 1.5rem;
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.docs-hero h1 {
+  font-size: 2.2rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.docs-hero .lead {
+  font-size: 1.2rem;
+  color: #333;
+  margin-bottom: 2rem;
+}
+
+/* Search */
+.docs-search {
+  margin: 2rem auto;
+  max-width: 500px;
+}
+
+.docs-search input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.docs-search .muted {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* CTA Buttons */
+.cta-row {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.2rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: #004aad;
+  color: #fff;
+  border: none;
+}
+
+.btn-primary:hover {
+  background: #00337a;
+}
+
+.btn {
+  border: 1px solid #004aad;
+  color: #004aad;
+  background: #fff;
+}
+
+.btn:hover {
+  background: #f2f7ff;
+}
+
+/* Section title */
+.section-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin: 2rem auto 1rem;
+  text-align: center;
+  color: #111;
+}
+
+/* Grid Layout */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+
+.doc-card {
+  background: #fff;
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.doc-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.doc-card h3 {
+  margin-bottom: 0.75rem;
+  font-size: 1.3rem;
+  color: #111;
+}
+
+.doc-card p {
+  color: #333;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.doc-card ul {
+  padding-left: 1.2rem;
+  margin: 0;
+}
+
+.doc-card li {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.doc-card a {
+  color: #004aad;
+  text-decoration: none;
+}
+
+.doc-card a:hover {
+  text-decoration: underline;
+}
+
+.doc-card .coming {
+  color: #888;
+  font-style: italic;
+}
+
+.label {
+  background: #e6f0ff;
+  color: #004aad;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  margin-left: 0.25rem;
+}
+
+/* FAQs */
+.faq details {
+  margin-bottom: 0.75rem;
+}
+
+.faq summary {
+  font-weight: 600;
+  cursor: pointer;
+  color: #004aad;
+}
+
+.faq p {
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  color: #333;
+}
