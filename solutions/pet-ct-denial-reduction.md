@@ -1,7 +1,7 @@
 ---
 layout: default
 title: PET/CT Insurance Denial Reduction
-permalink: /services/pet-ct-denial-reduction/
+permalink: /solutions/pet-ct-denial-reduction/
 description: Reduce PET/CT claim denials by standardizing headers, aligning clinical indications with payer policies, and guiding orders in real time.
 last_updated: 2025-08-15
 ---
@@ -9,93 +9,103 @@ last_updated: 2025-08-15
 <section class="container">
   <h1>PET/CT Insurance Denial Reduction</h1>
   <p class="lead">
-    OraDigit helps imaging departments cut PET/CT denials by standardizing exam headers, aligning indications with payer language, and guiding ordering providers in real time—without slowing down workflow.
+    Insurance denials for PET/CT can stall care, delay treatment, and increase costs. OraDigit helps imaging departments and healthcare organizations eliminate unnecessary denials by connecting clinical needs with payer language—so the right scan is approved the first time.
   </p>
 
-  <h2>Who It’s For</h2>
+  <h2>Why It Matters</h2>
+  <p>
+    PET/CT is one of the most powerful imaging modalities in oncology, neurology, and infection/inflammation workups. Yet, across the U.S., denial rates remain high—often due to:
+  </p>
   <ul>
-    <li>Hospital radiology and outpatient imaging centers</li>
-    <li>Ordering providers, schedulers, and prior-auth teams</li>
-    <li>Revenue cycle, utilization management, QA/Compliance</li>
+    <li>Incorrect exam headers (e.g., <em>Whole Body</em> used instead of <em>Skull-to-Thigh</em>)</li>
+    <li>Poorly phrased clinical indications not aligned with payer policies</li>
+    <li>Missing documentation of prior therapy, staging, or necessity</li>
+    <li>Tracer or interval restrictions (e.g., FDG timing rules)</li>
+  </ul>
+  <p>
+    Each denial means delays for patients, rework for providers, and lost revenue for healthcare systems. Our solution directly targets these failure points.
+  </p>
+
+  <h2>Who Benefits</h2>
+  <ul>
+    <li><strong>Hospitals & Imaging Centers</strong>: Reduce administrative overhead and accelerate patient scheduling.</li>
+    <li><strong>Ordering Providers</strong>: One-click order guidance that avoids phone calls and faxes with payers.</li>
+    <li><strong>Payers & Utilization Management</strong>: Cleaner, policy-compliant orders that lower appeals volume.</li>
+    <li><strong>Patients</strong>: Faster access to critical scans and treatments.</li>
   </ul>
 
-  <h2>Measurable Outcomes</h2>
-  <ul>
-    <li>Lower initial denial rate and fewer re-submissions</li>
-    <li>Consistent use of correct PET/CT headers (e.g., <em>Skull-to-Thigh</em> vs <em>Whole Body</em>)</li>
-    <li>Cleaner documentation that matches payer policy language</li>
-    <li>Shorter time-to-scan and improved referrer satisfaction</li>
-  </ul>
-
-  <h2>How It Works</h2>
+  <h2>How OraDigit Reduces Denials</h2>
   <ol>
-    <li><strong>Order Guidance</strong>: Map clinical reason → correct PET/CT header with policy-aligned wording.</li>
-    <li><strong>Documentation Helper</strong>: One-click phrases that satisfy “medical necessity” expectations.</li>
-    <li><strong>Policy Guardrails</strong>: Gentle checks for tracer, interval, and indication red flags.</li>
-    <li><strong>Analytics</strong>: Denial patterns, top referrer issues, education targets.</li>
+    <li><strong>Real-Time Order Guidance</strong>: Maps each clinical scenario to the correct PET/CT header and policy-approved phrasing.</li>
+    <li><strong>Documentation Helper</strong>: Inserts required language (stage, prior imaging, therapy context) in seconds.</li>
+    <li><strong>Policy Guardrails</strong>: Flags when an interval, tracer, or indication is outside payer guidelines.</li>
+    <li><strong>Analytics Dashboard</strong>: Reveals denial patterns, top referrer errors, and educational opportunities.</li>
   </ol>
 
-  <h2>Quick Guide — Indications → Correct Header</h2>
-  <p class="muted"><em>Always follow local protocol and payer policy. Examples below are typical, not universal.</em></p>
+  <h2>Examples — Indication to Header</h2>
   <table>
     <thead>
       <tr>
-        <th>Clinical scenario (example)</th>
-        <th>Typical PET/CT header</th>
+        <th>Clinical Scenario</th>
+        <th>Recommended PET/CT Header</th>
         <th>Notes</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td>Oncology staging/restaging (most solid tumors)</td>
+        <td>Oncology staging/restaging (lung, breast, GI, GU cancers)</td>
         <td>PET/CT <strong>Skull-to-Thigh</strong></td>
-        <td>Standard field-of-view for many cancers.</td>
+        <td>Standard field-of-view; widely accepted by payers.</td>
       </tr>
       <tr>
-        <td>Melanoma, myeloma, suspected distal/extremity disease</td>
+        <td>Melanoma or suspected distal/extremity disease</td>
         <td>PET/CT <strong>Whole Body</strong></td>
-        <td>Includes distal extremities when required.</td>
+        <td>Ensures distal extremities are captured.</td>
       </tr>
       <tr>
-        <td>Infection/inflammation assessment</td>
+        <td>Neuro-oncology, epilepsy, neurodegenerative evaluation</td>
+        <td><strong>PET Brain</strong></td>
+        <td>Dedicated protocol; not billed as whole-body.</td>
+      </tr>
+      <tr>
+        <td>Infection/inflammation workup (e.g., fever of unknown origin, vasculitis)</td>
         <td>PET/CT <strong>Skull-to-Thigh</strong></td>
-        <td>Adjust per clinical question/policy.</td>
-      </tr>
-      <tr>
-        <td>Dedicated brain metabolic evaluation (e.g., epilepsy, neurodegenerative)</td>
-        <td><strong>PET Brain</strong> (± CT as per protocol)</td>
-        <td>Not a whole-body exam; dedicated brain PET protocol.</td>
+        <td>Adjust per clinical question and local policy.</td>
       </tr>
     </tbody>
   </table>
 
-  <h2>Prior-Auth & Documentation Checklist</h2>
+  <h2>Checklist for Approval</h2>
   <ul>
-    <li>Diagnosis and stage (if known), clear clinical question</li>
-    <li>Specific indication language (policy-aligned phrasing)</li>
-    <li>Prior imaging/treatment details and timing (when relevant)</li>
-    <li>Requested exam header and tracer (e.g., FDG)</li>
+    <li>Clear diagnosis or suspected condition</li>
+    <li>Stage and clinical question (staging, restaging, treatment response)</li>
+    <li>Prior therapy or imaging results, when relevant</li>
+    <li>Correct exam header (aligned to policy language)</li>
+    <li>Tracer information (FDG, etc.)</li>
   </ul>
 
-  <h2>Order Text — Helpful Phrases</h2>
+  <h2>Helpful Order Text</h2>
   <ul>
-    <li>“FDG PET/CT Skull-to-Thigh for initial staging of biopsy-proven <em>[cancer]</em>.”</li>
-    <li>“FDG PET/CT Whole Body to evaluate melanoma with suspected extremity involvement.”</li>
-    <li>“FDG PET Brain for evaluation of medically refractory focal epilepsy.”</li>
+    <li>“FDG PET/CT Skull-to-Thigh for initial staging of biopsy-proven lung cancer.”</li>
+    <li>“FDG PET/CT Whole Body for melanoma with suspected distal extremity involvement.”</li>
+    <li>“FDG PET Brain to evaluate refractory temporal lobe epilepsy.”</li>
   </ul>
 
-  <h2>Integrations & Workflow</h2>
+  <h2>Wider Healthcare Impact</h2>
+  <p>
+    Denial reduction is not only about faster scans—it improves the entire healthcare ecosystem:
+  </p>
   <ul>
-    <li><strong>EHR-friendly</strong> links or embedded web form (Cerner, Epic, etc.)</li>
-    <li><strong>Role-based</strong> views for schedulers, referrers, technologists</li>
-    <li><strong>Policy packs</strong>: payer-specific phrasing modules</li>
+    <li><strong>Health Systems</strong>: Less rework, fewer write-offs, higher throughput.</li>
+    <li><strong>Insurance Payers</strong>: Cleaner, policy-compliant submissions reduce disputes.</li>
+    <li><strong>Patients</strong>: Faster diagnosis, reduced stress, timelier treatment.</li>
   </ul>
 
-  <h2>Engagement Options</h2>
+  <h2>Deployment Options</h2>
   <ul>
-    <li>Rapid pilot (4–6 weeks) with your top denial categories</li>
-    <li>Full rollout with analytics and referrer education</li>
-    <li>Ongoing policy updates and QA support</li>
+    <li><strong>Pilot</strong>: Focus on your top 2–3 denial categories within 6 weeks.</li>
+    <li><strong>Enterprise Rollout</strong>: Full integration with Epic, Cerner, or your EHR.</li>
+    <li><strong>Continuous Updates</strong>: Ongoing payer policy refreshes and analytics.</li>
   </ul>
 
   <div style="margin-top:1.25rem">
@@ -105,7 +115,6 @@ last_updated: 2025-08-15
   <p class="muted" style="margin-top:1rem">Last updated: {{ page.last_updated }}</p>
 </section>
 
-<!-- Optional page-level Service schema to help AI & search engines understand this page -->
 <script type="application/ld+json">
 {
   "@context":"https://schema.org",
@@ -114,6 +123,6 @@ last_updated: 2025-08-15
   "provider":{"@type":"Organization","name":"OraDigit","url":"https://oradigit.com"},
   "areaServed":"US",
   "url":"https://oradigit.com/services/pet-ct-denial-reduction/",
-  "description":"Reduce PET/CT denials by standardizing headers, policy-aligned indications, and real-time order guidance."
+  "description":"Reduce PET/CT denials by standardizing headers, aligning clinical indications with payer policies, and guiding orders in real time."
 }
 </script>
