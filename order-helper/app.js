@@ -380,3 +380,230 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   if (els.printBtn) els.printBtn.addEventListener("click", () => window.print());
 });
+/* ================== Validator + Loader + Renderer ================== */
+
+const DATA_FILES = [
+  './data/rules.json',    // master source of truth
+  './data/ct_rules.json', // optional
+  './data/mri_rules.json' // optional
+];
+
+// ------------ UI helpers ------------
+function showErrors(errors, warnings = []) {
+  const box = document.getElementById('rulesErrors');
+  if (!box) return;
+  const eHTML = errors.length
+    ? `<h3>⚠️ Rules Validation Failed</h3>
+       <ul>${errors.map(e => `<li>${e}</li>`).join('')}</ul>`
+    : '';
+  const wHTML = warnings.length
+    ? `<h4>Warnings (non-blocking)</h4>
+       <ul>${warnings.map(w => `<li>${w}</li>`).join('')}</ul>`
+    : '';
+  box.innerHTML = eHTML + wHTML;
+  box.style.display = (errors.length || warnings.length) ? 'block' : 'none';
+  // basic styling
+  box.style.border = '1px solid #c33';
+  box.style.padding = '12px';
+  box.style.background = '#fff5f5';
+  box.style.color = '#5a0000';
+  box.style.margin = '12px 0';
+}
+
+// ------------ Loader (merges by id) ------------
+async function loadRules() {
+  const byId = new Map();
+  const warnings = [];
+
+  for (const url of DATA_FILES) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) continue; // file may not exist (optional)
+      const json = await res.json();
+      const records = Array.isArray(json) ? json : (json.records || []);
+      for (const r of records) {
+        if (!r || typeof r !== 'object') continue;
+        if (!r.id) {
+          warnings.push(`Record missing "id" in ${url}`);
+          continue;
+        }
+        byId.set(r.id, { ...(byId.get(r.id) || {}), ...r });
+      }
+    } catch (err) {
+      warnings.push(`Failed to load ${url}: ${err.message}`);
+    }
+  }
+  return { records: Array.from(byId.values()), warnings };
+}
+
+// ------------ Validator ------------
+function validateRulesPayload(payload) {
+  const errors = [];
+  const warnings = [];
+
+  // payload must be object with "records" array OR array itself
+  const records = Array.isArray(payload) ? payload
+                  : (payload && Array.isArray(payload.records) ? payload.records : null);
+  if (!records) {
+    errors.push('rules.json must be an object with a "records" array (or be an array itself).');
+    return { ok: false, errors, warnings, records: [] };
+  }
+
+  // ID uniqueness
+  const seen = new Set();
+  for (const r of records) {
+    if (!r || typeof r !== 'object') {
+      errors.push('A record is not an object.');
+      continue;
+    }
+    if (!r.id || typeof r.id !== 'string') {
+      errors.push('Record missing string "id".');
+      continue;
+    }
+    if (seen.has(r.id)) {
+      errors.push(`Duplicate id "${r.id}".`);
+    }
+    seen.add(r.id);
+  }
+
+  // Field-level checks
+  const CPT_RE = /^[0-9]{5}$/;                   // simple CPT pattern (5 digits)
+  const ICD_RE = /^[A-TV-Z][0-9][0-9A-Z](\.[0-9A-Z]{1,4})?$/; // basic ICD-10 pattern
+
+  records.forEach((r) => {
+    if (!r) return;
+
+    // Required fields
+    if (!r.modality) errors.push(`${r.id}: missing "modality".`);
+    if (!r.study_name) errors.push(`${r.id}: missing "study_name".`);
+    if (!r.contrast && r.contrast !== 'None') warnings.push(`${r.id}: "contrast" not specified.`);
+    if (!r.header_coverage) warnings.push(`${r.id}: "header_coverage" not specified.`);
+    if (!Array.isArray(r.reasons) || r.reasons.length === 0) {
+      errors.push(`${r.id}: "reasons" must be a non-empty array.`);
+    }
+    if (!Array.isArray(r.cpt) || r.cpt.length === 0) {
+      errors.push(`${r.id}: "cpt" must be a non-empty array.`);
+    }
+
+    // CPT format
+    if (Array.isArray(r.cpt)) {
+      r.cpt.forEach(c => {
+        if (typeof c !== 'string' || !CPT_RE.test(c)) {
+          warnings.push(`${r.id}: CPT "${c}" does not match 5-digit pattern (verify).`);
+        }
+      });
+    }
+
+    // ICD-10 format
+    if (Array.isArray(r.icd10_common)) {
+      r.icd10_common.forEach(code => {
+        if (typeof code !== 'string' || !ICD_RE.test(code)) {
+          warnings.push(`${r.id}: ICD-10 "${code}" format looks unusual (verify).`);
+        }
+      });
+    }
+
+    // Types for arrays (non-fatal)
+    ['keywords','supporting_docs','flags','alternatives','contexts','tags'].forEach(key => {
+      if (r[key] != null && !Array.isArray(r[key])) {
+        warnings.push(`${r.id}: "${key}" should be an array.`);
+      }
+    });
+
+    // prior_auth structure (non-fatal)
+    if (r.prior_auth && typeof r.prior_auth !== 'object') {
+      warnings.push(`${r.id}: "prior_auth" should be an object.`);
+    }
+  });
+
+  const ok = errors.length === 0;
+  return { ok, errors, warnings, records };
+}
+
+// ------------ Renderer (same as before) ------------
+function optionLabel(r) {
+  return `${r.modality || 'Mod'} — ${r.study_name || r.id}`;
+}
+
+function renderSelect(records) {
+  const sel = document.getElementById('studySelect');
+  if (!sel) return;
+  sel.innerHTML = '';
+
+  records.sort((a, b) => {
+    const ma = (a.modality || '').localeCompare(b.modality || '');
+    if (ma !== 0) return ma;
+    return (a.study_name || '').localeCompare(b.study_name || '');
+  });
+
+  for (const r of records) {
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = optionLabel(r);
+    sel.appendChild(opt);
+  }
+
+  sel.addEventListener('change', () => {
+    const rec = records.find(x => x.id === sel.value);
+    renderDetails(rec);
+  });
+
+  if (records.length) {
+    sel.value = records[0].id;
+    renderDetails(records[0]);
+  }
+}
+
+function renderDetails(rec) {
+  const el = document.getElementById('studyDetails');
+  if (!el) return;
+  if (!rec) {
+    el.innerHTML = '<p>No study selected.</p>';
+    return;
+    }
+
+  const rows = [
+    ['ID', rec.id],
+    ['Modality', rec.modality],
+    ['Study', rec.study_name],
+    ['CPT', Array.isArray(rec.cpt) ? rec.cpt.join(', ') : '—'],
+    ['ICD-10 (common)', Array.isArray(rec.icd10_common) ? rec.icd10_common.join(', ') : '—'],
+    ['Contrast', rec.contrast ?? '—'],
+    ['Header/Coverage', rec.header_coverage ?? '—'],
+    ['Reasons', Array.isArray(rec.reasons) ? rec.reasons.join(' | ') : '—'],
+    ['Prep', rec.prep ?? '—'],
+    ['Alternatives', Array.isArray(rec.alternatives) ? rec.alternatives.join('; ') : '—'],
+    ['Tags', Array.isArray(rec.tags) ? rec.tags.join(', ') : '—'],
+    ['Prior Auth', rec.prior_auth?.requires_prior_auth ? 'Required' : 'Usually not'],
+    ['Notes', rec.notes ?? '—']
+  ];
+
+  el.innerHTML = `
+    <div class="study-card">
+      ${rows.map(([k,v]) =>
+        `<div class="row"><div class="k"><strong>${k}</strong></div><div class="v">${v}</div></div>`
+      ).join('')}
+    </div>
+  `;
+}
+
+// ------------ Boot ------------
+document.addEventListener('DOMContentLoaded', async () => {
+  // Load (and merge optional modules)
+  const { records, warnings: loadWarnings } = await loadRules();
+
+  // Validate the merged payload (we wrap in the same structure your rules.json uses)
+  const validation = validateRulesPayload({ records });
+
+  // Show load warnings + validation messages
+  showErrors(
+    [...(validation.errors || [])],
+    [...(loadWarnings || []), ...(validation.warnings || [])]
+  );
+
+  // If invalid, stop here
+  if (!validation.ok) return;
+
+  // Render UI
+  renderSelect(validation.records);
+});
