@@ -11,8 +11,17 @@ description: Evidence-based PET/CT order helper with validation and export. No P
   <meta charset="utf-8" />
   <title>OraDigit PET/CT Order Helper</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="preload" href="{{ '/order-helper/app.js' | relative_url }}" as="script">
-  <link rel="stylesheet" href="{{ '/order-helper/styles.css' | relative_url }}">
+
+  <!-- Publish data/config to JS (app.js reads this) -->
+  <meta name="oh-rules-path" content="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250818">
+  <meta name="oh-version" content="20250818">
+
+  <!-- Preload to reduce first-paint delay -->
+  <link rel="preload" href="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250818" as="fetch" crossorigin="anonymous">
+  <link rel="preload" href="{{ '/order-helper/app.js' | relative_url }}?v=20250818" as="script">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="{{ '/order-helper/styles.css' | relative_url }}?v=20250818">
   <style>
     body { font-family: system-ui, Segoe UI, Arial; }
     .oh-label{display:block;margin:8px 0 4px;font-weight:600}
@@ -30,6 +39,7 @@ description: Evidence-based PET/CT order helper with validation and export. No P
     .status.success{background:#f0fdf4;border-color:#dcfce7}
     .help{font-size:.9rem;color:#6b7280;margin-top:4px}
     .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+    #rulesErrors{display:none;border:1px solid #c33;background:#fff5f5;color:#5a0000;padding:12px;margin:12px 0;border-radius:10px}
   </style>
 </head>
 <body>
@@ -39,6 +49,9 @@ description: Evidence-based PET/CT order helper with validation and export. No P
 
     <!-- Status live area (populated by app.js) -->
     <div id="status" class="status" aria-live="polite"></div>
+
+    <!-- Validator error box (single instance) -->
+    <div id="rulesErrors"></div>
 
     <!-- Main form -->
     <form id="orderForm" novalidate>
@@ -50,6 +63,10 @@ description: Evidence-based PET/CT order helper with validation and export. No P
             <option value="PET/CT" selected>PET/CT</option>
             <option value="CT">CT</option>
             <option value="MRI">MRI</option>
+            <option value="Ultrasound">Ultrasound</option>
+            <option value="X-Ray">X-Ray</option>
+            <option value="Nuclear Medicine">Nuclear Medicine</option>
+            <option value="IR">Interventional Radiology</option>
           </select>
         </div>
 
@@ -63,6 +80,7 @@ description: Evidence-based PET/CT order helper with validation and export. No P
             <option value="Cardiac">Cardiac</option>
             <option value="">Auto (let tool decide)</option>
           </select>
+          <div class="help">Header/coverage. Some studies override this (e.g., PET whole body for melanoma).</div>
         </div>
 
         <div>
@@ -71,7 +89,7 @@ description: Evidence-based PET/CT order helper with validation and export. No P
           <select id="context" class="oh-input" required disabled>
             <option value="">Loading contexts…</option>
           </select>
-          <div class="help">Choose clinical context (e.g., staging, restaging, recurrence, viability).</div>
+          <div class="help">Clinical context: staging, restaging, treatment response, surveillance, viability, etc.</div>
         </div>
 
         <div>
@@ -131,8 +149,8 @@ description: Evidence-based PET/CT order helper with validation and export. No P
     <details>
       <summary>What rules are applied?</summary>
       <p>
-        This tool loads a local rules file (<code>/order-helper/data/rules.json</code>) to suggest contexts and validate required fields before submission.
-        You can update it without touching the code.
+        This tool loads a rules file at <code>/order-helper/data/rules.json</code> (path resolved with Jekyll’s <code>relative_url</code>) to suggest contexts and validate required fields before submission.
+        Update that JSON anytime without touching code. A validator runs on load and shows issues above.
       </p>
     </details>
 
@@ -141,11 +159,12 @@ description: Evidence-based PET/CT order helper with validation and export. No P
     </noscript>
   </section>
 
-  <!-- Firebase (kept; we will wire submit in the next file step) -->
+  <!-- Firebase (kept for your submit flow) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" defer></script>
-  <div id="rulesErrors" style="display:none;"></div>
-  <script src="{{ '/order-helper/app.js' | relative_url }}" defer></script>
+
+  <!-- Your app logic (cache-busted) -->
+  <script src="{{ '/order-helper/app.js' | relative_url }}?v=20250818" defer></script>
 </body>
 </html>

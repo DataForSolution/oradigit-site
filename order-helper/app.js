@@ -1,3 +1,11 @@
+   // at top of app.js
+const RULES_URL =
+  document.querySelector('meta[name="oh-rules-path"]')?.content ||
+  './data/rules.json';
+
+// later in your loadRules()
+const res = await fetch(RULES_URL, { cache: 'no-store' });
+
 /* =========================================================
    OraDigit Order Helper (PET/CT) — Select UI version
    - Robust rules loader with built-in fallback
