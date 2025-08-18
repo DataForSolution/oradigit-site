@@ -14,22 +14,22 @@ description: Evidence-based PET/CT order helper with validation and export. No P
   <link rel="preload" href="{{ '/order-helper/app.js' | relative_url }}" as="script">
   <link rel="stylesheet" href="{{ '/order-helper/styles.css' | relative_url }}">
   <style>
-    /* Local tweaks that complement styles.css (kept your look & feel) */
     body { font-family: system-ui, Segoe UI, Arial; }
     .oh-label{display:block;margin:8px 0 4px;font-weight:600}
     .oh-input{padding:8px;width:100%;max-width:640px}
-    .oh-chip{margin:2px;padding:6px 10px;border:1px solid #bbb;border-radius:16px;background:#f8f8f8;cursor:pointer}
-    .oh-chips{display:flex;flex-wrap:wrap;gap:6px}
-    .oh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;max-width:960px}
+    .oh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;max-width:960px}
     #results[hidden]{display:none}
     .btn{padding:.6rem .9rem;border:none;border-radius:8px;background:#1e40af;color:#fff;cursor:pointer}
     .btn:hover{filter:brightness(0.95)}
+    .btn-secondary{background:#0f766e}
+    .btn-tertiary{background:#334155}
     .muted{color:#6b7280}
-    #errMsg{font-size:13px;color:#b91c1c;margin-left:10px}
     .status{margin:.75rem 0;padding:.6rem .8rem;border-radius:10px;border:1px solid #e6eaf0;background:#f7faff}
     .status.warn{background:#fff7ed;border-color:#ffedd5}
     .status.error{background:#fef2f2;border-color:#fee2e2}
     .status.success{background:#f0fdf4;border-color:#dcfce7}
+    .help{font-size:.9rem;color:#6b7280;margin-top:4px}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
   </style>
 </head>
 <body>
@@ -37,20 +37,17 @@ description: Evidence-based PET/CT order helper with validation and export. No P
     <h1>OraDigit PET/CT Order Helper</h1>
     <p class="muted">Reduce denials with consistent study headers and clear, defensible “reason for exam” language. All client-side. No PHI. Educational use only.</p>
 
-    <!-- Friendly status (used by app.js) -->
+    <!-- Status live area (populated by app.js) -->
     <div id="status" class="status" aria-live="polite"></div>
 
-    <!-- Use a form so Enter key works; app.js prevents default submit -->
+    <!-- Main form -->
     <form id="orderForm" novalidate>
-      <label class="oh-label" for="indication">Clinical indication (free text)</label>
-      <textarea id="indication" class="oh-input" rows="3" placeholder="e.g., Newly diagnosed DLBCL for staging; evaluate nodal/distant disease" aria-describedby="indicationHelp"></textarea>
-      <div id="indicationHelp" class="muted" style="margin-top:4px">Avoid PHI. Include diagnosis, purpose (staging/restaging/recurrence), and relevant details.</div>
+      <div class="oh-grid">
 
-      <div class="oh-grid" style="margin-top:8px">
         <div>
           <label class="oh-label" for="modality">Modality</label>
           <select id="modality" class="oh-input" required>
-            <option value="PETCT" selected>PET/CT</option>
+            <option value="PET/CT" selected>PET/CT</option>
             <option value="CT">CT</option>
             <option value="MRI">MRI</option>
           </select>
@@ -60,26 +57,47 @@ description: Evidence-based PET/CT order helper with validation and export. No P
           <label class="oh-label" for="region">Region</label>
           <select id="region" class="oh-input" required>
             <option value="Skull base to mid-thigh" selected>Skull base to mid-thigh</option>
-            <option value="Whole Body">Whole body</option>
+            <option value="Whole body">Whole body</option>
             <option value="Brain">Brain</option>
-            <option value="Head/Neck">Head & Neck</option>
+            <option value="Head/Neck">Head &amp; Neck</option>
             <option value="Cardiac">Cardiac</option>
             <option value="">Auto (let tool decide)</option>
           </select>
         </div>
 
         <div>
-          <span class="oh-label" id="contextLabel">Context</span>
-          <div id="contextChips" class="oh-chips" aria-labelledby="contextLabel"></div>
+          <label class="oh-label" for="context">Context</label>
+          <!-- Populated from rules.json by app.js -->
+          <select id="context" class="oh-input" required disabled>
+            <option value="">Loading contexts…</option>
+          </select>
+          <div class="help">Choose clinical context (e.g., staging, restaging, recurrence, viability).</div>
         </div>
+
+        <div>
+          <label class="oh-label" for="condition">Condition (structured)</label>
+          <!-- Autosuggest list is filled from rules keywords -->
+          <input id="condition" class="oh-input" list="conditionList" placeholder="e.g., DLBCL, NSCLC, melanoma…" />
+          <datalist id="conditionList"></datalist>
+          <div class="help">Optional but recommended for payers and templating.</div>
+        </div>
+
+        <div class="full" style="grid-column:1/-1">
+          <label class="oh-label" for="indication">Clinical indication (free text)</label>
+          <textarea id="indication" class="oh-input" rows="3" placeholder="e.g., Newly diagnosed DLBCL for staging; evaluate nodal/distant disease" aria-describedby="indicationHelp"></textarea>
+          <div id="indicationHelp" class="help">Avoid PHI. Include diagnosis, purpose (staging/restaging/recurrence), and relevant details.</div>
+        </div>
+
       </div>
 
-      <div style="margin-top:12px;display:flex;align-items:center;gap:10px">
+      <div class="actions">
         <button id="suggestBtn" type="submit" class="btn">Suggest Order</button>
-        <span id="errMsg" role="alert"></span>
+        <button id="submitBtn" type="button" class="btn btn-secondary">Submit Order</button>
+        <span id="errMsg" role="alert" class="muted"></span>
       </div>
     </form>
 
+    <!-- Results -->
     <section id="results" hidden style="margin-top:16px">
       <h2 id="outHeader"></h2>
 
@@ -101,10 +119,10 @@ description: Evidence-based PET/CT order helper with validation and export. No P
         </div>
       </div>
 
-      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+      <div class="actions">
         <button id="copyReasonBtn" type="button" class="btn">Copy Reason</button>
-        <button id="copyAllBtn" type="button" class="btn" style="background:#0f766e">Copy All</button>
-        <button id="printBtn" type="button" class="btn" style="background:#334155">Print</button>
+        <button id="copyAllBtn" type="button" class="btn btn-secondary">Copy All</button>
+        <button id="printBtn" type="button" class="btn btn-tertiary">Print</button>
       </div>
     </section>
 
@@ -123,7 +141,7 @@ description: Evidence-based PET/CT order helper with validation and export. No P
     </noscript>
   </section>
 
-  <!-- IMPORTANT: keep RELATIVE paths so it works anywhere -->
+  <!-- Firebase (kept; we will wire submit in the next file step) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" defer></script>
