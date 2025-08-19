@@ -1,467 +1,469 @@
-  /* =========================================================
-   OraDigit Order Helper (PET/CT, CT, MRI)
-   - Robust rules loader (meta hint + auto base + auth subdomain)
-   - Chips UI for Context (matches index.html)
-   - Keyword/context/region scoring with safe fallback
-   - Copy / Copy All / Print
-   - Optional Firebase submit (no-op if not configured)
-   ========================================================= */
+﻿/**
+ * OraDigit Order Helper – app.js
+ * - Works with #contextChips (chips UI) and mirrors to hidden #context <select multiple>
+ * - Loads rules.json from <meta name="oh-rules-path">
+ * - Supports CT contrast UI + auto-suggestions
+ * - Builds Clinical Indication from templates
+ * - Suggests studies from records by simple scoring
+ */
 
-/* ---------- DOM refs ---------- */
-const els = {
-  status:        document.getElementById("status"),
-  form:          document.getElementById("orderForm"),
-  indication:    document.getElementById("indication"),
-  modality:      document.getElementById("modality"),
-  region:        document.getElementById("region"),
-  contextChips:  document.getElementById("contextChips"),
-  condition:     document.getElementById("condition"),
-  errMsg:        document.getElementById("errMsg"),
-  results:       document.getElementById("results"),
-  outHeader:     document.getElementById("outHeader"),
-  outReason:     document.getElementById("outReason"),
-  outPrep:       document.getElementById("outPrep"),
-  outDocs:       document.getElementById("outDocs"),
-  outFlags:      document.getElementById("outFlags"),
-  suggestBtn:    document.getElementById("suggestBtn"),
-  submitBtn:     document.getElementById("submitBtn"),
-  copyReasonBtn: document.getElementById("copyReasonBtn"),
-  copyAllBtn:    document.getElementById("copyAllBtn"),
-  printBtn:      document.getElementById("printBtn"),
-  dbg:           document.getElementById("dbg"),
-};
+(function () {
+  "use strict";
 
-/* ---------- UI helpers ---------- */
-function setStatus(msg, kind = "info") {
-  if (!els.status) return;
-  els.status.textContent = msg || "";
-  els.status.className = `status ${kind}`;
-}
-function clearStatus(){ setStatus(""); }
-function setError(msg){ if (els.errMsg) els.errMsg.textContent = msg || ""; }
-function dbg(msg){ if (els.dbg) els.dbg.textContent = msg; console.log(msg); }
+  // -------- Config / Rules path --------
+  const RULES_URL =
+    document.querySelector('meta[name="oh-rules-path"]')?.content ||
+    "./data/rules.json";
 
-function normalizeModality(m){ return (m || "").replace(/\s+/g,"").replace("/","").toUpperCase(); }
-function normalizeRegion(r){ return (r || "").trim(); }
+  // -------- Elements --------
+  const els = {
+    status: document.getElementById("status"),
+    form: document.getElementById("orderForm"),
+    modality: document.getElementById("modality"),
+    region: document.getElementById("region"),
+    context: document.getElementById("context"),           // hidden mirror select (optional)
+    contextChips: document.getElementById("contextChips"), // primary UI
+    condition: document.getElementById("condition"),
+    conditionList: document.getElementById("conditionList"),
+    indication: document.getElementById("indication"),
+    contrastGroup: document.getElementById("contrastGroup"),
+    oral: document.getElementById("oralContrast"),
 
-/* ---------- Context chips ---------- */
-const DEFAULT_CONTEXTS = [
-  "staging","restaging","treatment response","surveillance",
-  "suspected infection","dementia","epilepsy","viability","oncology","neuro"
-];
+    // Results area (optional on page)
+    outHeader: document.getElementById("outHeader"),
+    outReason: document.getElementById("outReason"),
+    outPrep: document.getElementById("outPrep"),
+    outDocs: document.getElementById("outDocs"),
+    outFlags: document.getElementById("outFlags"),
+    results: document.getElementById("results"),
+    copyReasonBtn: document.getElementById("copyReasonBtn"),
+    copyAllBtn: document.getElementById("copyAllBtn"),
+    printBtn: document.getElementById("printBtn"),
+    suggestions: document.getElementById("suggestions"),
+    errMsg: document.getElementById("errMsg"),
+    dbg: document.getElementById("dbg"),
+  };
 
-function initChips() {
-  if (!els.contextChips) return;
-  els.contextChips.innerHTML = "";
-  DEFAULT_CONTEXTS.forEach(ctx => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "oh-chip";
-    btn.textContent = ctx;
-    btn.setAttribute("aria-pressed","false");
-    btn.addEventListener("click", () => {
-      const pressed = btn.getAttribute("aria-pressed") === "true";
-      btn.setAttribute("aria-pressed", String(!pressed));
+  // -------- Fallback (so UI still works if rules.json fails) --------
+  const FALLBACK_RULES = {
+    modalities: {
+      CT: {
+        regions: [
+          "Head/Brain","Sinuses","Maxillofacial/Facial Bones","Temporal Bones/IAC","Neck","Chest",
+          "Low‑Dose Lung CT (Screening)","Abdomen","Pelvis","Abdomen/Pelvis","CT Urogram","CT Enterography",
+          "Spine – Cervical","Spine – Thoracic","Spine – Lumbar","Upper Extremity","Lower Extremity",
+          "Cardiac Coronary CTA","Angiography – Head/Neck CTA","Angiography – Chest CTA (PE)",
+          "Angiography – Aorta CTA","Angiography – Run‑off CTA (LE)"
+        ],
+        contexts: [
+          "Staging","Restaging","Treatment response","Surveillance","Initial evaluation","Acute symptoms",
+          "Follow‑up","Pre‑operative planning","Post‑operative complication","Trauma","Screening","Infection / inflammation"
+        ],
+        conditions: [
+          "Headache (sudden / thunderclap)","Head trauma","Stroke symptoms / TIA","Sinusitis","Neck mass",
+          "Pulmonary embolism suspected","Aortic dissection / aneurysm suspected","Lung nodule","Pneumonia complication",
+          "Abdominal pain RLQ (appendicitis)","Kidney stone / renal colic","Pancreatitis","Liver lesion characterization",
+          "Diverticulitis","Inflammatory bowel disease flare","Bowel obstruction","Post‑op abdomen","Hematuria",
+          "Cancer staging (specify primary)","Metastatic disease restaging","Spine trauma","Cervical radiculopathy",
+          "Spinal stenosis","Extremity fracture","Suspected osteomyelitis","Peripheral arterial disease (LE run‑off)"
+        ],
+        indication_templates: [
+          "CT {region} – {context} for {condition}",
+          "CT {region} – rule out {condition}",
+          "CT {region} {contrast_text} – {context} ({condition})"
+        ],
+        contrast_recommendations: [
+          { match:["kidney stone","renal colic"], suggest:"without_iv" },
+          { match:["appendicitis","rlq"], suggest:"with_iv" },
+          { match:["pe","pulmonary embolism"], suggest:"with_iv" },
+          { match:["aortic","dissection","aneurysm"], suggest:"with_iv" },
+          { match:["liver lesion","pancreatitis"], suggest:"with_iv" },
+          { match:["bowel obstruction"], suggest:"without_iv" },
+          { match:["trauma"], suggest:"with_iv" },
+          { match:["low‑dose lung ct","screening"], suggest:"without_iv" }
+        ]
+      }
+    },
+    records: []
+  };
+
+  let RULES = null;
+
+  // -------- Utils --------
+  function setStatus(msg, level = "info") {
+    if (!els.status) return;
+    els.status.textContent = msg;
+    els.status.className = "status " + (level === "ok" || level === "success" ? "success" :
+                                        level === "warn" ? "warn" :
+                                        level === "error" ? "error" : "");
+  }
+
+  function fillSelect(selectEl, values, placeholder = "Select…") {
+    if (!selectEl) return;
+    selectEl.innerHTML = "";
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = placeholder;
+    selectEl.appendChild(ph);
+    (values || []).forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      selectEl.appendChild(opt);
     });
-    els.contextChips.appendChild(btn);
-  });
-}
-function getSelectedContexts(){
-  return [...document.querySelectorAll('.oh-chip[aria-pressed="true"]')]
-    .map(b => b.textContent.toLowerCase());
-}
-
-/* ---------- Built-in PET/CT fallback ---------- */
-const RULES_FALLBACK = [
-  {
-    modality: "PET/CT",
-    region: "Skull base to mid-thigh",
-    contexts: ["staging","restaging","treatment response","surveillance"],
-    keywords: ["lymphoma","nsclc","lung cancer","breast cancer","colorectal","colon cancer","melanoma","head and neck","hnscc","gastric","pancreatic"],
-    header: "PET/CT Skull Base to Mid-Thigh",
-    reasons: ["FDG PET/CT for {context} of {condition}; evaluate extent of disease, nodal involvement, and FDG-avid distant metastases."],
-    prep_notes: ["Fast 4–6 hours; avoid strenuous exercise for 24 hours.","Check blood glucose per facility protocol; avoid recent high-dose steroids if possible."],
-    supporting_docs: ["Recent clinic note documenting diagnosis and clinical question.","Prior imaging/report if available.","Therapy timeline (chemo/radiation/surgery) and relevant labs."],
-    flags: ["Recent G-CSF can increase marrow uptake.","Hyperglycemia may reduce FDG tumor-to-background contrast."],
-    tags: ["oncology-general"]
-  },
-  {
-    modality: "PET/CT",
-    region: "Whole body",
-    contexts: ["staging","restaging","surveillance"],
-    keywords: ["melanoma","myeloma","sarcoma","vasculitis","fever of unknown origin","fuo"],
-    header: "PET/CT Whole Body",
-    reasons: ["FDG PET/CT whole body for {context} of {condition}; evaluate for extra-axial/extremity involvement and FDG-avid metastatic or inflammatory disease."],
-    prep_notes: ["Standard FDG fasting instructions.","Ensure patient warmth to limit brown fat uptake when possible."],
-    supporting_docs: ["Referring note with suspicion/diagnosis.","Any biopsy/pathology available.","Prior imaging for correlation."],
-    flags: ["Consider coverage of extremities for melanoma/myeloma.","Consider inflammatory patterns in vasculitis/FOU."],
-    tags: ["whole-body"]
-  },
-  {
-    modality: "PET",
-    region: "Brain",
-    contexts: ["dementia","epilepsy"],
-    keywords: ["alzheim","dementia","frontotemporal","ftd","epilepsy","seizure","temporal lobe"],
-    header: "PET Brain FDG",
-    reasons: ["FDG brain PET to evaluate cerebral metabolic patterns in {condition}; correlate with clinical and prior imaging."],
-    prep_notes: ["Quiet, dim environment pre-injection.","For epilepsy protocols, follow ictal/interictal timing per local procedure."],
-    supporting_docs: ["Neurology note describing symptoms and clinical question.","Prior MRI/EEG as applicable."],
-    flags: ["FDG patterns vary by dementia subtype.","Medication/timing can affect epilepsy localization."],
-    tags: ["neuro"]
-  },
-  {
-    modality: "PET",
-    region: "Cardiac",
-    contexts: ["viability"],
-    keywords: ["viability","ischemic cardiomyopathy","hibernating myocardium"],
-    header: "PET Cardiac FDG Viability",
-    reasons: ["FDG PET to assess myocardial viability in ischemic cardiomyopathy; correlate with perfusion and echocardiographic findings."],
-    prep_notes: ["Cardiac viability glucose loading/insulin protocol per local SOP.","Coordinate with perfusion imaging if performed."],
-    supporting_docs: ["Cardiology note with revascularization question.","Prior echo/perfusion/coronary imaging reports."],
-    flags: ["Glycemic control critical for image quality.","Confirm compatibility with current therapies."],
-    tags: ["cardiac"]
-  },
-  {
-    modality: "PET/CT",
-    region: "Skull base to mid-thigh",
-    contexts: ["suspected infection"],
-    keywords: ["osteomyelitis","prosthetic joint","infection","endocarditis","fever of unknown origin","fuo"],
-    header: "PET/CT Skull Base to Mid-Thigh",
-    reasons: ["FDG PET/CT to evaluate suspected infection/inflammation related to {condition}; assess extent of disease and potential sites of involvement."],
-    prep_notes: ["Standard FDG fasting; review recent antibiotic therapy that may impact findings."],
-    supporting_docs: ["Clinical notes with symptoms/duration.","Relevant labs (WBC, CRP/ESR), culture results if available.","Prior imaging for comparison."],
-    flags: ["Device/prosthesis can show inflammatory uptake; interpret in clinical context.","Consider tailored coverage if peripheral involvement suspected."],
-    tags: ["infection"]
-  }
-];
-
-/* ---------- Rules loader ---------- */
-// Optional meta hint for PET/CT rules
-const META_RULES_URL =
-  document.querySelector('meta[name="oh-rules-path"]')?.content || null;
-
-function basePath() {
-  // e.g., "/order-helper/"
-  const p = location.pathname.endsWith('/')
-    ? location.pathname
-    : location.pathname.replace(/[^/]+$/, '');
-  return p;
-}
-
-function filenameForModality(mod) {
-  const m = normalizeModality(mod);
-  if (m === "CT")  return "ct_rules.json";
-  if (m === "MRI") return "mri_rules.json";
-  return "rules.json"; // PET/CT default
-}
-
-function candidateURLs(modality) {
-  const file = filenameForModality(modality);
-  const base = basePath(); // same-origin base dir
-
-  // If a meta URL is present and points at rules.json, also try it with the other file names
-  const fromMeta = [];
-  if (META_RULES_URL) {
-    try {
-      const u = new URL(META_RULES_URL, location.origin);
-      const parts = u.pathname.split('/');
-      parts.pop(); // drop filename
-      const metaDir = parts.join('/') + '/';
-      fromMeta.push(`${metaDir}${file}`);
-    } catch { /* ignore */ }
   }
 
-  const bust = (u) => (u.includes('?') ? `${u}&t=${Date.now()}` : `${u}?t=${Date.now()}`);
+  function fillDatalist(datalistEl, items) {
+    if (!datalistEl) return;
+    datalistEl.innerHTML = "";
+    (items || []).forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      datalistEl.appendChild(opt);
+    });
+  }
 
-  const candidates = [
-    // 1) same-directory relative
-    `${base}data/${file}`,
-    `./data/${file}`,
-
-    // 2) hardcoded known app root
-    `/order-helper/data/${file}`,
-
-    // 3) meta-derived sibling
-    ...fromMeta,
-
-    // 4) auth subdomain (requires CORS headers there)
-    `https://auth.oradigit.com/order-helper/data/${file}`,
-  ];
-
-  return candidates.map(bust);
-}
-
-async function fetchJSON(url) {
-  const res = await fetch(url, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  let txt = await res.text();
-  if (txt.charCodeAt(0) === 0xFEFF) txt = txt.slice(1);
-  if (txt.trim().startsWith('<!DOCTYPE')) throw new Error('Got HTML (likely 404)');
-  return JSON.parse(txt);
-}
-
-async function loadRulesFor(modality) {
-  const candidates = candidateURLs(modality);
-  let lastErr = null;
-  for (const url of candidates) {
-    try {
-      dbg(`Trying ${url} …`);
-      const json = await fetchJSON(url);
-      if (Array.isArray(json) && json.length) {
-        dbg(`✅ Loaded ${json.length} rule(s) from ${url}`);
-        return json;
-      }
-      // allow empty arrays for CT/MRI MVP
-      if (Array.isArray(json)) {
-        dbg(`⚠️ Loaded empty rule set from ${url}`);
-        return json;
-      }
-    } catch (e) {
-      lastErr = e;
-      console.warn(`Failed ${url}: ${e.message}`);
+  function showContrast(show) {
+    if (!els.contrastGroup) return;
+    els.contrastGroup.classList.toggle("hidden", !show);
+    if (!show) {
+      const checked = els.contrastGroup.querySelector('input[type=radio]:checked');
+      if (checked) checked.checked = false;
+      if (els.oral) els.oral.checked = false;
     }
   }
-  // Fallback only for PET/CT
-  if (normalizeModality(modality) === "PETCT") {
-    dbg("Using built-in PET/CT fallback rules.");
-    return RULES_FALLBACK;
+
+  function contrastTextFromForm() {
+    if (!els.contrastGroup || els.contrastGroup.classList.contains("hidden")) return "";
+    const radio = els.contrastGroup.querySelector('input[type=radio]:checked');
+    const oral = els.oral?.checked ? " + oral contrast" : "";
+    if (!radio) return oral ? "(" + oral.trim() + ")" : "";
+    if (radio.value === "with_iv") return "(with IV contrast" + oral + ")";
+    if (radio.value === "without_iv") return "(without IV contrast" + oral + ")";
+    return oral ? "(" + oral.trim() + ")" : "";
   }
-  throw new Error(`Failed to load rules for ${modality}. Last error: ${lastErr?.message || 'unknown'}`);
-}
 
-/* ---------- Scoring & suggestion ---------- */
-function scoreRule(rule, indication, region, contexts) {
-  let score = 0;
-  const text = (indication || "").toLowerCase();
-
-  const hits = (rule.keywords || []).filter(k => text.includes(String(k).toLowerCase()));
-  score += hits.length * 5;
-
-  const ctxOverlap = (rule.contexts || []).filter(c => contexts.includes(String(c).toLowerCase())).length;
-  score += ctxOverlap * 3;
-
-  if (region && rule.region?.toLowerCase() === region.toLowerCase()) score += 4;
-
-  if (/cancer|carcinoma|lymphoma|sarcoma|melanoma|tumou?r|malign/.test(text)
-      && Array.isArray(rule.tags) && rule.tags.includes('oncology-general')) {
-    score += 2;
+  // -------- Chips helpers --------
+  function renderContextChips(contexts) {
+    if (!els.contextChips) return;
+    els.contextChips.innerHTML = "";
+    (contexts || []).forEach(label => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "oh-chip";
+      btn.textContent = label;
+      btn.setAttribute("aria-pressed", "false");
+      els.contextChips.appendChild(btn);
+    });
   }
-  return { score, hits };
-}
 
-function pickBestRule(rules, indication, region, contexts) {
-  let best = null;
-  for (const rule of rules) {
-    const { score, hits } = scoreRule(rule, indication, region, contexts);
-    if (!best || score > best.score) best = { rule, score, hits };
+  function getSelectedContextsFromChips() {
+    if (!els.contextChips) return [];
+    return Array.from(els.contextChips.querySelectorAll('.oh-chip[aria-pressed="true"]'))
+      .map(el => (el.textContent || "").trim())
+      .filter(Boolean);
   }
-  if (!best || best.score < 3) {
-    const fallback = rules.find(r => Array.isArray(r.tags) && r.tags.includes('oncology-general')) || rules[0];
-    return { rule: fallback || null, hits: [] };
+
+  function mirrorChipsToHiddenSelect() {
+    if (!els.context) return;
+    const selected = getSelectedContextsFromChips();
+    els.context.innerHTML = "";
+    selected.forEach(label => {
+      const opt = document.createElement("option");
+      opt.value = label;
+      opt.textContent = label;
+      opt.selected = true;
+      els.context.appendChild(opt);
+    });
   }
-  return best;
-}
 
-function fillTemplate(tpl, { context, condition }) {
-  return String(tpl)
-    .replaceAll('{context}', context || 'staging')
-    .replaceAll('{condition}', condition || 'the stated condition');
-}
-
-function deriveConditionFrom(hits, conditionInput, indication){
-  if (conditionInput && conditionInput.trim()) return conditionInput.trim();
-  if (hits && hits.length) return String(hits[0]);
-  if (indication && indication.trim()) return indication.trim();
-  return 'the stated condition';
-}
-
-function listToText(id) {
-  return [...document.querySelectorAll(`#${id} li`)]
-    .map(li => `• ${li.textContent}`).join('\n');
-}
-
-function buildBundle() {
-  const header = els.outHeader?.textContent || '';
-  const reason = els.outReason?.value || '';
-  return `Study Header:
-${header}
-
-Reason for Exam:
-${reason}
-
-Prep / Contraindications:
-${listToText('outPrep')}
-
-Supporting Docs:
-${listToText('outDocs')}
-
-Clinical Flags:
-${listToText('outFlags')}
-`;
-}
-
-function renderResult(ruleMatch, userRegion, contexts) {
-  if (!ruleMatch || !ruleMatch.rule) {
-    setError('No matching rule found.');
-    dbg('No matching rule found.');
-    return;
+  // -------- Rules loading --------
+  async function loadRules() {
+    try {
+      const res = await fetch(RULES_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      RULES = await res.json();
+      setStatus("Rules loaded.", "success");
+    } catch (e) {
+      console.warn("Failed to load rules.json, using fallback", e);
+      RULES = FALLBACK_RULES;
+      setStatus("Using built-in fallback rules (could not fetch rules.json).", "warn");
+    }
   }
-  const rule = ruleMatch.rule;
-  const chosenRegion = userRegion || rule.region || 'Skull base to mid-thigh';
-  const ruleModality = rule.modality || els.modality.value || 'PET/CT';
-  const header = rule.header || `${ruleModality} ${chosenRegion}`;
 
-  const condition = deriveConditionFrom(ruleMatch.hits, els.condition?.value, els.indication?.value);
-  const ctx = contexts[0] || (Array.isArray(rule.contexts) && rule.contexts[0]) || 'staging';
-
-  const reasonTpl = (Array.isArray(rule.reasons) && rule.reasons[0])
-    || (normalizeModality(els.modality.value) === "PETCT"
-          ? "FDG PET/CT for {context} of {condition}; evaluate extent of disease and FDG-avid metastases."
-          : `${els.modality.value} for {context} of {condition}.`);
-
-  const reason = fillTemplate(reasonTpl, { context: ctx, condition });
-
-  els.outHeader.textContent = header;
-  els.outReason.value = reason;
-
-  const ulPrep  = els.outPrep;
-  const ulDocs  = els.outDocs;
-  const ulFlags = els.outFlags;
-  [ulPrep, ulDocs, ulFlags].forEach(ul => { if (ul) ul.innerHTML = ''; });
-
-  (rule.prep_notes || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; ulPrep?.appendChild(li); });
-  (rule.supporting_docs || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; ulDocs?.appendChild(li); });
-  (rule.flags || []).forEach(x => { const li = document.createElement('li'); li.textContent = x; ulFlags?.appendChild(li); });
-
-  els.results.hidden = false;
-  setStatus('Suggestion generated.', 'success');
-  dbg('Rendered suggestion.');
-}
-
-/* ---------- Copy / Print ---------- */
-async function copyText(text) {
-  try { await navigator.clipboard.writeText(text); setStatus('Copied to clipboard.', 'success'); }
-  catch { setStatus('Could not copy to clipboard.', 'error'); }
-}
-
-/* ---------- Optional Firebase submit ---------- */
-function initFirebaseIfPresent() {
-  const cfg = window.ORADIGIT_FIREBASE_CONFIG || null;
-  if (!cfg || !window.firebase) return null;
-  try {
-    if (!firebase.apps.length) firebase.initializeApp(cfg);
-    return { auth: firebase.auth(), db: firebase.firestore() };
-  } catch (e) {
-    console.warn("Firebase init failed:", e);
-    return null;
+  function getModalityNode(modality) {
+    return RULES?.modalities?.[modality] || null;
   }
-}
-async function ensureAnonAuth(auth) {
-  try {
-    if (auth.currentUser) return auth.currentUser;
-    const cred = await auth.signInAnonymously(); return cred.user;
-  } catch (e) { console.warn("Anonymous auth failed:", e); return null; }
-}
-async function submitOrder(db) {
-  const payload = {
-    modality: els.modality.value,
-    region: els.region.value,
-    contexts: getSelectedContexts(),
-    condition: els.condition?.value?.trim() || '',
-    indication: els.indication?.value?.trim() || '',
-    suggestion: {
-      header: els.outHeader.textContent,
-      reason: els.outReason.value,
-      prep:  [...document.querySelectorAll('#outPrep li')].map(li=>li.textContent),
-      docs:  [...document.querySelectorAll('#outDocs li')].map(li=>li.textContent),
-      flags: [...document.querySelectorAll('#outFlags li')].map(li=>li.textContent)
-    },
-    createdAt: new Date().toISOString(),
-    userAgent: navigator.userAgent,
-    path: location.pathname
-  };
-  const ref = await db.collection("petct_orders").add(payload);
-  return ref.id;
-}
 
-/* ---------- Global state ---------- */
-let RULES = []; // currently loaded rules for selected modality
+  // If no modalities entry, derive contexts/regions from records (best effort)
+  function deriveFromRecords(modality) {
+    const recs = (RULES?.records || []).filter(r => (r.modality || "").toUpperCase().includes(modality.toUpperCase()));
+    const setC = new Set();
+    const setR = new Set();
+    recs.forEach(r => {
+      (r.contexts || []).forEach(c => setC.add(titleCase(c)));
+      if (r.header_coverage) setR.add(r.header_coverage);
+    });
+    return {
+      contexts: Array.from(setC),
+      regions: Array.from(setR),
+      conditions: [] // leave empty; user types
+    };
+  }
 
-/* ---------- Wire & Boot ---------- */
-function wireEvents() {
-  // Submit = Suggest
-  els.form?.addEventListener('submit', (ev) => {
-    ev.preventDefault();
-    setError("");
-    clearStatus();
+  function titleCase(s) {
+    return (s || "").replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.slice(1));
+  }
 
-    const indication = els.indication?.value?.trim() || '';
-    const region     = els.region?.value?.trim() || '';
-    const contexts   = getSelectedContexts();
+  // -------- Populate UI for modality --------
+  function populateForModality(modality) {
+    const node = getModalityNode(modality) || deriveFromRecords(modality);
 
-    if (!RULES.length) return setError("Rules not loaded yet.");
-    const match = pickBestRule(RULES, indication, region, contexts);
-    renderResult(match, region, contexts);
-  });
+    // Regions & Contexts
+    fillSelect(els.region, node.regions || [], "Select region…");
 
-  // Buttons
-  els.copyReasonBtn?.addEventListener('click', () => copyText(els.outReason?.value || ''));
-  els.copyAllBtn?.addEventListener('click', () => copyText(buildBundle()));
-  els.printBtn?.addEventListener('click', () => window.print());
+    if (els.contextChips) {
+      renderContextChips(node.contexts || []);
+      mirrorChipsToHiddenSelect();
+    } else {
+      fillSelect(els.context, node.contexts || [], "Select context…");
+    }
 
-  // Optional Submit (Firestore)
-  const fb = initFirebaseIfPresent();
-  els.submitBtn?.addEventListener('click', async () => {
-    setError("");
-    if (els.results.hidden) return setError("Please click 'Suggest Order' first.");
-    if (!fb) {
-      setStatus("No Firebase config detected. This would submit to Firestore.", "warn");
-      console.info("Submit preview:", buildBundle());
+    // Conditions
+    fillDatalist(els.conditionList, node.conditions || []);
+
+    // Contrast only for CT
+    showContrast(modality === "CT");
+
+    // Reset textual fields
+    if (els.condition) els.condition.value = "";
+    if (els.indication) els.indication.value = "";
+
+    // Update preview if page script is listening
+    try { document.dispatchEvent(new Event("input", { bubbles: true })); } catch { /* ignore */ }
+  }
+
+  // -------- Contrast suggestions for CT --------
+  function suggestContrastIfCT(modalityNode, conditionText, regionText) {
+    if (!modalityNode?.contrast_recommendations) return;
+    const text = `${conditionText || ""} ${regionText || ""}`.toLowerCase();
+    for (const rule of modalityNode.contrast_recommendations) {
+      const allMatch = rule.match.every(token => text.includes(token));
+      if (allMatch) {
+        const target = els.contrastGroup?.querySelector(`input[type=radio][value="${rule.suggest}"]`);
+        if (target) target.checked = true;
+        break;
+      }
+    }
+    // Guardrail: any CTA should be with IV
+    if ((regionText || "").toLowerCase().includes("cta")) {
+      const withIV = els.contrastGroup?.querySelector('input[type=radio][value="with_iv"]');
+      if (withIV) withIV.checked = true;
+    }
+  }
+
+  // -------- Indication builder --------
+  function buildIndication(modalityNode, modality) {
+    if (!els.indication) return;
+    const region = els.region?.value || "";
+    const contexts =
+      els.contextChips ? getSelectedContextsFromChips().join(", ") :
+      (els.context?.value || "");
+    const condition = els.condition?.value || "";
+    const contrast_text = contrastTextFromForm(); // e.g., "(with IV contrast + oral contrast)"
+    const templates = modalityNode?.indication_templates ||
+      (modality === "CT" ? ["CT {region} – {context} for {condition}"] :
+       modality === "PET/CT" ? ["FDG PET/CT {region} – {context} for {condition}"] :
+       ["{region} – {context} for {condition}"]);
+    const t = templates[2] || templates[0]; // prefer contrast-capable template if present
+    const out = t
+      .replace("{region}", region)
+      .replace("{context}", contexts)
+      .replace("{condition}", condition)
+      .replace("{contrast_text}", contrast_text ? ` ${contrast_text}` : "");
+    els.indication.value = out.trim();
+  }
+
+  // -------- Basic record matcher (suggest studies) --------
+  function scoreRecord(rec, modality, region, contexts, condition) {
+    if (!(rec.modality || "").toUpperCase().includes(modality.toUpperCase())) return -1;
+    let s = 0;
+    if (rec.header_coverage && region && rec.header_coverage.toLowerCase().includes(region.toLowerCase())) s += 2;
+    (rec.contexts || []).forEach(c => {
+      if (contexts.some(ctx => ctx.toLowerCase() === (c || "").toLowerCase())) s += 2;
+    });
+    (rec.keywords || []).forEach(k => {
+      if (condition && condition.toLowerCase().includes((k || "").toLowerCase())) s += 2;
+    });
+    if ((rec.tags || []).includes("oncology-general") && condition && /c\d\d|malig|tumor|cancer/i.test(condition)) s += 1;
+    return s;
+    }
+
+  function suggestStudies(modality, region, contexts, condition) {
+    if (!els.suggestions) return;
+    const recs = RULES?.records || [];
+    const scored = recs
+      .map(r => ({ r, s: scoreRecord(r, modality, region, contexts, condition) }))
+      .filter(x => x.s >= 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 5);
+
+    els.suggestions.innerHTML = "";
+    if (!scored.length) {
+      const li = document.createElement("li");
+      li.className = "muted";
+      li.textContent = "No specific suggestions. Adjust context/condition.";
+      els.suggestions.appendChild(li);
       return;
     }
-    try {
-      setStatus("Submitting order…");
-      await ensureAnonAuth(fb.auth);
-      const id = await submitOrder(fb.db);
-      setStatus(`✅ Order submitted. Reference: ${id}`, "success");
-    } catch (e) {
-      console.error(e);
-      setStatus("Sorry—couldn’t save your order. Please try again.", "error");
-    }
-  });
 
-  // Reload rules when modality changes
-  els.modality?.addEventListener('change', async (e) => {
-    try {
-      RULES = await loadRulesFor(e.target.value);
-      els.results.hidden = true;
-      setError("");
-      dbg(`✅ Reloaded ${RULES.length} rules for ${e.target.value}`);
-    } catch (err) {
-      setError(err.message);
-      dbg('❌ ' + err.message);
-    }
-  });
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-  initChips();
-  setStatus("Loading rules…");
-  try {
-    const initial = els.modality?.value || 'PET/CT';
-    RULES = await loadRulesFor(initial);
-    clearStatus();
-    dbg(`✅ Loaded ${RULES.length} rules for ${initial}`);
-  } catch (err) {
-    // Only PET/CT falls back; CT/MRI throws
-    setError(err.message);
-    setStatus("Using built-in PET/CT rules (if PET/CT selected).", "warn");
-    if (normalizeModality(els.modality?.value) === "PETCT") {
-      RULES = RULES_FALLBACK;
-    } else {
-      RULES = [];
-    }
+    scored.forEach(({ r, s }) => {
+      const li = document.createElement("li");
+      const cpts = (r.cpt || []).join(", ");
+      li.innerHTML = `<strong>${r.study_name}</strong> <span class="muted">[${cpts}]</span>`;
+      li.title = (r.reasons || [])[0] || "";
+      els.suggestions.appendChild(li);
+    });
   }
-  wireEvents();
-});
 
+  // -------- Results panel fill --------
+  function fillResults(topRec, contextStr, conditionStr) {
+    if (!els.results || !topRec) return;
+    if (els.outHeader) els.outHeader.textContent = `${topRec.study_name} — CPT: ${(topRec.cpt || []).join(", ")}`;
+
+    if (els.outReason) {
+      const tmpl = (topRec.reasons || [])[0] || "{context} {condition}";
+      els.outReason.value = tmpl
+        .replace("{context}", contextStr || "")
+        .replace("{condition}", conditionStr || "");
+    }
+
+    function fillUL(ul, arr) {
+      if (!ul) return;
+      ul.innerHTML = "";
+      (arr || []).forEach(t => {
+        const li = document.createElement("li");
+        li.textContent = t;
+        ul.appendChild(li);
+      });
+    }
+    fillUL(els.outPrep, topRec.prep ? [topRec.prep] : []);
+    fillUL(els.outDocs, topRec.supporting_docs);
+    fillUL(els.outFlags, topRec.flags);
+
+    els.results.hidden = false;
+  }
+
+  // -------- Event wiring --------
+  function wireEvents() {
+    // Modality change -> repopulate
+    els.modality?.addEventListener("change", () => {
+      const modality = els.modality.value;
+      populateForModality(modality);
+      const node = getModalityNode(modality);
+      buildIndication(node, modality);
+    });
+
+    // Region / Condition input -> suggest contrast if CT and rebuild indication
+    ["change", "input"].forEach(evt => {
+      els.region?.addEventListener(evt, () => {
+        if (els.modality?.value === "CT") {
+          const node = getModalityNode("CT") || FALLBACK_RULES.modalities.CT;
+          suggestContrastIfCT(node, els.condition?.value, els.region?.value);
+        }
+        buildIndication(getModalityNode(els.modality?.value), els.modality?.value);
+      });
+      els.condition?.addEventListener(evt, () => {
+        if (els.modality?.value === "CT") {
+          const node = getModalityNode("CT") || FALLBACK_RULES.modalities.CT;
+          suggestContrastIfCT(node, els.condition?.value, els.region?.value);
+        }
+        buildIndication(getModalityNode(els.modality?.value), els.modality?.value);
+      });
+    });
+
+    // Contrast change -> rebuild indication
+    els.contrastGroup?.addEventListener("change", () => {
+      if (els.modality?.value === "CT") {
+        buildIndication(getModalityNode("CT") || FALLBACK_RULES.modalities.CT, "CT");
+      }
+    });
+
+    // Chips delegation: toggle aria-pressed, mirror to hidden select, rebuild indication
+    document.addEventListener("click", (e) => {
+      const chip = e.target.closest("#contextChips .oh-chip");
+      if (!chip) return;
+      const cur = chip.getAttribute("aria-pressed") === "true";
+      chip.setAttribute("aria-pressed", cur ? "false" : "true");
+      mirrorChipsToHiddenSelect();
+      buildIndication(getModalityNode(els.modality?.value), els.modality?.value);
+    });
+
+    // Form submit -> suggest order + fill results
+    els.form?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const modality = els.modality?.value || "";
+      const region = els.region?.value || "";
+      const contexts = els.contextChips ? getSelectedContextsFromChips() : (els.context?.value ? [els.context.value] : []);
+      const condition = els.condition?.value || "";
+
+      // Suggestions
+      suggestStudies(modality, region, contexts, condition);
+
+      // Fill results with top hit if available
+      const recs = RULES?.records || [];
+      const ranked = recs
+        .map(r => ({ r, s: scoreRecord(r, modality, region, contexts, condition) }))
+        .filter(x => x.s >= 0)
+        .sort((a, b) => b.s - a.s);
+      fillResults(ranked[0]?.r, contexts.join(", "), condition);
+
+      // Status message
+      setStatus("Order suggested below. Review, copy, or print.", "success");
+    });
+
+    // Copy buttons
+    els.copyReasonBtn?.addEventListener("click", async () => {
+      const v = els.outReason?.value?.trim();
+      if (!v) return;
+      try { await navigator.clipboard.writeText(v); setStatus("Reason copied to clipboard.", "success"); }
+      catch { setStatus("Unable to copy reason. Select and copy manually.", "warn"); }
+    });
+
+    els.copyAllBtn?.addEventListener("click", async () => {
+      const parts = [];
+      if (els.outHeader) parts.push(els.outHeader.textContent);
+      if (els.outReason?.value) parts.push("Reason: " + els.outReason.value);
+      if (els.outPrep?.children?.length) parts.push("Prep: " + Array.from(els.outPrep.children).map(li => li.textContent).join("; "));
+      if (els.outDocs?.children?.length) parts.push("Docs: " + Array.from(els.outDocs.children).map(li => li.textContent).join("; "));
+      if (els.outFlags?.children?.length) parts.push("Flags: " + Array.from(els.outFlags.children).map(li => li.textContent).join("; "));
+      const text = parts.join("\n");
+      if (!text.trim()) return;
+      try { await navigator.clipboard.writeText(text); setStatus("All details copied to clipboard.", "success"); }
+      catch { setStatus("Unable to copy. Select and copy manually.", "warn"); }
+    });
+
+    els.printBtn?.addEventListener("click", () => window.print());
+  }
+
+  // -------- Init --------
+  (async function init() {
+    await loadRules();
+    wireEvents();
+
+    // Default modality (respect current selection)
+    const current = els.modality?.value || "PET/CT";
+    populateForModality(current);
+
+    // If CT selected at load, pre-run contrast suggestion
+    if (current === "CT") {
+      const node = getModalityNode("CT") || FALLBACK_RULES.modalities.CT;
+      suggestContrastIfCT(node, els.condition?.value, els.region?.value);
+      buildIndication(node, "CT");
+    } else {
+      buildIndication(getModalityNode(current), current);
+    }
+
+    if (els.dbg) els.dbg.textContent = `[OH] Ready (${new Date().toLocaleString()})`;
+  })();
+})();
