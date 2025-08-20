@@ -1,173 +1,241 @@
 ---
 layout: default
-title: PET/CT Order Helper
+title: OraDigit Order Helper
 permalink: /order-helper/
-description: Evidence-based PET/CT order helper with validation and export. No PHI. Educational use only.
+description: Evidence-based PET/CT, CT, and MRI order helper with validation and export. No PHI. Educational use only.
 ---
 
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>OraDigit PET/CT Order Helper</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Page-scoped stylesheet -->
+ <link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250819">
 
-  <!-- Optional meta hints (kept) -->
-  <meta name="oh-rules-path" content="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250818">
-  <meta name="oh-version" content="20250818">
+<!-- Tell app.js where to load the rules -->
+<meta name="oh-rules-path" content="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250819">
+<meta name="oh-version" content="20250819">
 
-  <!-- Preload (kept) -->
-  <link rel="preload" href="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250818" as="fetch" crossorigin="anonymous">
-  <link rel="preload" href="{{ '/order-helper/app.js' | relative_url }}?v=20250818" as="script">
+<section class="order-helper container" aria-labelledby="oh-title">
+  <header class="oh-header">
+    <h1 id="oh-title">OraDigit Order Helper</h1>
+    <p class="lead">
+      Structure clear, payer-ready imaging orders. Select modality and context; we’ll generate
+      a professional clinical indication and surface prep/flags. All client-side. No PHI.
+    </p>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+    <div id="rulesErrors" class="status error" style="display:none"></div>
+  </header>
 
-  <!-- Styles (kept + a few tiny additions) -->
-  <link rel="stylesheet" href="{{ '/order-helper/styles.css' | relative_url }}?v=20250818">
-  <style>
-    body { font-family: system-ui, Segoe UI, Arial; }
-    .oh-label{display:block;margin:8px 0 4px;font-weight:600}
-    .oh-input{padding:8px;width:100%;max-width:640px}
-    .oh-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;max-width:960px}
-    #results[hidden]{display:none}
-    .btn{padding:.6rem .9rem;border:none;border-radius:8px;background:#1e40af;color:#fff;cursor:pointer}
-    .btn:hover{filter:brightness(0.95)}
-    .btn-secondary{background:#0f766e}
-    .btn-tertiary{background:#334155}
-    .btn-light{background:#64748b}
-    .muted{color:#6b7280}
-    .status{margin:.75rem 0;padding:.6rem .8rem;border-radius:10px;border:1px solid #e6eaf0;background:#f7faff}
-    .status.warn{background:#fff7ed;border-color:#ffedd5}
-    .status.error{background:#fef2f2;border-color:#fee2e2}
-    .status.success{background:#f0fdf4;border-color:#dcfce7}
-    .help{font-size:.9rem;color:#6b7280;margin-top:4px}
-    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
-    #rulesErrors{display:none;border:1px solid #c33;background:#fff5f5;color:#5a0000;padding:12px;margin:12px 0;border-radius:10px}
+  <div class="oh-grid">
+    <!-- ================= LEFT: FORM ================= -->
+    <form id="orderForm" class="oh-form" novalidate>
+      <!-- Modality -->
+      <div class="field">
+        <label for="modality">Modality <span aria-hidden="true">*</span></label>
+        <select id="modality" name="modality" required>
+          <option value="">Select…</option>
+          <option value="PET/CT" selected>PET/CT</option>
+          <option value="CT">CT</option>
+          <option value="MRI">MRI</option>
+        </select>
+        <small class="hint">Regions, contexts, and conditions adapt to your selection.</small>
+      </div>
 
-    /* Context “chips” to match app.js */
-    .oh-chips{display:flex;flex-wrap:wrap;gap:6px}
-    .oh-chip{margin:2px;padding:6px 10px;border:1px solid #bbb;border-radius:16px;background:#f8f8f8;cursor:pointer}
-    .oh-chip[aria-pressed="true"]{background:#e7f0ff;border-color:#79a5ff}
-  </style>
-</head>
-<body>
-  <section class="container">
-    <h1>OraDigit PET/CT Order Helper</h1>
-    <p class="muted">Reduce denials with consistent study headers and clear, defensible “reason for exam” language. All client-side. No PHI. Educational use only.</p>
+      <!-- Region -->
+      <div class="field">
+        <label for="region">Region <span aria-hidden="true">*</span></label>
+        <select id="region" name="region" required></select>
+      </div>
+    <!-- Context (chips UI expected by app.js) -->
+<div class="field">
+  <label>Context <span aria-hidden="true">*</span></label>
 
-    <!-- Live status (app.js writes here if needed) -->
-    <div id="status" class="status" aria-live="polite"></div>
+  <!-- Chips rendered dynamically by app.js -->
+  <div id="contextChips" class="oh-chips" role="group" aria-label="Context"></div>
 
-    <!-- Validator error box (kept for future rules validation UI) -->
-    <div id="rulesErrors"></div>
+  <!-- Hidden mirror for compatibility (optional but helpful) -->
+  <select id="context" name="context" multiple hidden></select>
 
-    <!-- Main form -->
-    <!-- IMPORTANT: ids here match app.js (modality, region, contextChips, indication, suggestBtn, errMsg) -->
-    <form id="orderForm" novalidate>
-      <div class="oh-grid">
+  <small class="hint">Click one or more (e.g., staging, restaging, surveillance, acute, follow-up).</small>
+</div>
 
-        <div>
-          <label class="oh-label" for="modality">Modality</label>
-          <select id="modality" class="oh-input" required>
-            <option value="PET/CT" selected>PET/CT</option>
-            <option value="CT">CT</option>
-            <option value="MRI">MRI</option>
-          </select>
-        </div>
 
-        <div>
-          <label class="oh-label" for="region">Region</label>
-          <select id="region" class="oh-input" required>
-            <option value="Skull base to mid-thigh" selected>Skull base to mid-thigh</option>
-            <option value="Whole body">Whole body</option>
-            <option value="Brain">Brain</option>
-            <option value="Head & Neck">Head &amp; Neck</option>
-            <option value="Cardiac">Cardiac</option>
-            <option value="">Auto (let tool decide)</option>
-          </select>
-          <div class="help">Header/coverage. Some studies override this (e.g., PET whole body for melanoma).</div>
-        </div>
+    
 
-        <div>
-          <span class="oh-label">Context</span>
-          <!-- Changed from <select id="context"> to chips to match app.js -->
-          <div id="contextChips" class="oh-chips" aria-label="Context chips"></div>
-          <div class="help">Click one or more (staging, restaging, treatment response, surveillance, viability, etc.).</div>
-        </div>
+      <!-- Condition (with datalist suggestions) -->
+      <div class="field">
+        <label for="condition">Condition</label>
+        <input id="condition" name="condition" list="conditionList" placeholder="e.g., NSCLC, renal colic, PE, appendicitis"/>
+        <datalist id="conditionList"></datalist>
+        <small class="hint">Start typing to see common conditions for the chosen modality.</small>
+      </div>
 
-        <div>
-          <label class="oh-label" for="condition">Condition (optional)</label>
-          <!-- Kept as a free text input; app.js infers condition from keywords too -->
-          <input id="condition" class="oh-input" placeholder="e.g., DLBCL, NSCLC, melanoma…" />
-          <div class="help">Optional; you can also just type it in the indication.</div>
-        </div>
+      <!-- Contrast (CT only; shown/hidden by JS) -->
+      <fieldset id="contrastGroup" class="oh-contrast hidden">
+        <legend>CT Contrast</legend>
+        <label class="inline"><input type="radio" name="contrast" value="with_iv"> With IV contrast</label>
+        <label class="inline"><input type="radio" name="contrast" value="without_iv"> Without IV contrast</label>
+        <label class="inline"><input type="checkbox" id="oralContrast" value="oral"> Add oral contrast (abd/pelvis)</label>
+        <small class="hint">We’ll auto-suggest based on condition (e.g., “renal colic” → without IV; “PE/CTA” → with IV).</small>
+      </fieldset>
 
-        <div class="full" style="grid-column:1/-1">
-          <label class="oh-label" for="indication">Clinical indication (free text)</label>
-          <textarea id="indication" class="oh-input" rows="3" placeholder="e.g., Newly diagnosed DLBCL for staging; evaluate nodal/distant disease" aria-describedby="indicationHelp"></textarea>
-          <div id="indicationHelp" class="help">Avoid PHI. Include diagnosis, purpose (staging/restaging/recurrence), and relevant details.</div>
-        </div>
-
+      <!-- Indication (auto-built but editable) -->
+      <div class="field">
+        <label for="indication">Clinical Indication</label>
+        <textarea id="indication" name="indication" rows="3"
+          placeholder="Auto-generated (you can edit)…"></textarea>
       </div>
 
       <div class="actions">
-        <button id="suggestBtn" type="submit" class="btn">Suggest Order</button>
-        <!-- Submit flow kept for later back-end; currently no-op -->
-        <button id="submitBtn" type="button" class="btn btn-secondary">Submit Order</button>
+        <button type="submit" class="btn-primary">Suggest Order</button>
+        <button type="button" id="copyIndication" class="btn-ghost" aria-label="Copy clinical indication">Copy Indication</button>
         <span id="errMsg" role="alert" class="muted"></span>
-        <!-- Little green debug line (app.js writes here) -->
-        <div id="dbg" aria-live="polite" style="color:#065f46;font-size:12px"></div>
+        <div id="dbg" aria-live="polite" class="muted" style="font-size:12px"></div>
       </div>
     </form>
 
-    <!-- Results -->
-    <section id="results" hidden style="margin-top:16px">
-      <h2 id="outHeader"></h2>
-
-      <label class="oh-label" for="outReason">Reason for exam</label>
-      <textarea id="outReason" class="oh-input" rows="3"></textarea>
-
-      <div class="oh-grid" style="margin-top:12px">
-        <div>
-          <h3>Prep / Contraindications</h3>
-          <ul id="outPrep"></ul>
-        </div>
-        <div>
-          <h3>Supporting Docs</h3>
-          <ul id="outDocs"></ul>
-        </div>
-        <div>
-          <h3>Clinical Flags</h3>
-          <ul id="outFlags"></ul>
+    <!-- ================= RIGHT: PREVIEW / SUGGESTIONS ================= -->
+    <aside class="oh-aside" aria-label="Order preview and suggestions">
+      <div class="card">
+        <h2>Order Preview</h2>
+        <div class="preview">
+          <div><strong>Modality:</strong> <span id="pv-modality">—</span></div>
+          <div><strong>Region:</strong> <span id="pv-region">—</span></div>
+          <div><strong>Context:</strong> <span id="pv-context">—</span></div>
+          <div><strong>Condition:</strong> <span id="pv-condition">—</span></div>
+          <div><strong>Contrast:</strong> <span id="pv-contrast">—</span></div>
+          <hr>
+          <div><strong>Clinical Indication</strong></div>
+          <pre id="pv-indication" class="indication-box">—</pre>
         </div>
       </div>
 
-      <div class="actions">
-        <button id="copyReasonBtn" type="button" class="btn btn-light">Copy Reason</button>
-        <button id="copyAllBtn" type="button" class="btn btn-secondary">Copy All</button>
-        <button id="printBtn" type="button" class="btn btn-tertiary">Print</button>
+      <div class="card">
+        <h2>Suggested Studies</h2>
+        <ul id="suggestions" class="suggest-list" aria-live="polite">
+          <li class="muted">Suggestions will appear when available.</li>
+        </ul>
       </div>
-    </section>
+    </aside>
+  </div>
 
-    <hr class="soft" />
+  <!-- ================= RESULTS (filled by app.js) ================= -->
+  <section id="results" hidden style="margin-top:16px">
+    <h2 id="outHeader"></h2>
 
-    <details>
-      <summary>What rules are applied?</summary>
-      <p>
-        This tool loads a rules file at <code>/order-helper/data/*.json</code> (resolved at runtime). Update that JSON anytime without touching code.
-        A simple selector scores by keywords, context overlap, and region match; if weak, it falls back to <code>oncology-general</code> tags.
-      </p>
-    </details>
+    <label class="oh-label" for="outReason">Reason for exam</label>
+    <textarea id="outReason" class="oh-input" rows="3"></textarea>
 
-    <noscript>
-      <p class="status error">JavaScript is required for the Order Helper to function.</p>
-    </noscript>
+    <div class="oh-grid" style="margin-top:12px">
+      <div>
+        <h3>Prep / Contraindications</h3>
+        <ul id="outPrep"></ul>
+      </div>
+      <div>
+        <h3>Supporting Docs</h3>
+        <ul id="outDocs"></ul>
+      </div>
+      <div>
+        <h3>Clinical Flags</h3>
+        <ul id="outFlags"></ul>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="copyReasonBtn" type="button" class="btn btn-light">Copy Reason</button>
+      <button id="copyAllBtn" type="button" class="btn btn-secondary">Copy All</button>
+      <button id="printBtn" type="button" class="btn btn-tertiary">Print</button>
+    </div>
   </section>
 
-  <!-- Firebase (kept for future submit flow) -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" defer></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" defer></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" defer></script>
+  <details style="margin-top:1rem">
+    <summary>What rules are applied?</summary>
+    <p>
+      Rules load from <code>/order-helper/data/rules.json</code>. You can update that file anytime
+      (no code changes). The selector scores by keywords, context, and region; if weak, it falls
+      back to generic oncology tags.
+    </p>
+  </details>
 
-  <!-- App logic (cache-busted; path kept) -->
-  <script src="{{ '/order-helper/app.js' | relative_url }}?v=20250818" defer></script>
-</body>
-</html>
+  <noscript>
+    <p class="status error">JavaScript is required for the Order Helper to function.</p>
+  </noscript>
+</section>
+
+<!-- Firebase (Compat CDN) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" defer></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" defer></script>
+
+<!-- Lightweight auto-init (only runs if you define window.ORADIGIT_FIREBASE_CONFIG somewhere site-wide) -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
+      if (window.ORADIGIT_FIREBASE_CONFIG && !window.firebase?.apps?.length) {
+        firebase.initializeApp(window.ORADIGIT_FIREBASE_CONFIG);
+        // Optional: export for app.js if it checks for window.OH_FIREBASE
+        window.OH_FIREBASE = {
+          app: firebase.app(),
+          auth: firebase.auth(),
+          db: firebase.firestore()
+        };
+        const s = document.getElementById('status');
+        if (s) { s.textContent = 'Firebase ready.'; s.className = 'status success'; }
+      }
+    } catch (e) {
+      const s = document.getElementById('status');
+      if (s) { s.textContent = 'Firebase failed to initialize. Check your config.'; s.className = 'status warn'; }
+      console.warn('Firebase init error:', e);
+    }
+  });
+</script>
+
+<!-- App logic -->
+<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250819"></script>
+
+<!-- Tiny UX helpers (non-invasive; does not touch business logic) -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const $ = (s) => document.querySelector(s);
+    const form = $('#orderForm');
+
+    // Keep preview in sync with the form
+    const syncPreview = () => {
+      $('#pv-modality').textContent  = $('#modality')?.value || '—';
+      $('#pv-region').textContent    = $('#region')?.value || '—';
+      $('#pv-context').textContent   = $('#context')?.value || '—';
+      $('#pv-condition').textContent = $('#condition')?.value || '—';
+
+      const grp = document.getElementById('contrastGroup');
+      if (grp && !grp.classList.contains('hidden')) {
+        const r = grp.querySelector('input[type=radio]:checked');
+        const oral = document.getElementById('oralContrast')?.checked;
+        let txt = r ? (r.value === 'with_iv' ? 'With IV contrast' : 'Without IV contrast') : '—';
+        if (oral) txt += ' + oral';
+        $('#pv-contrast').textContent = txt;
+      } else {
+        $('#pv-contrast').textContent = '—';
+      }
+
+      $('#pv-indication').textContent = $('#indication')?.value?.trim() || '—';
+    };
+
+    ['change','input','click'].forEach(evt => {
+      form.addEventListener(evt, syncPreview, true);
+    });
+
+    // Copy indication button
+    $('#copyIndication')?.addEventListener('click', async () => {
+      const text = $('#indication')?.value || '';
+      if (!text.trim()) return;
+      try {
+        await navigator.clipboard.writeText(text.trim());
+        const s = document.getElementById('status');
+        if (s) { s.textContent = 'Clinical indication copied to clipboard.'; s.className='status success'; }
+      } catch {
+        const s = document.getElementById('status');
+        if (s) { s.textContent = 'Unable to copy. Please select and copy manually.'; s.className='status warn'; }
+      }
+    });
+
+    // Initial render
+    syncPreview();
+  });
+</script>
