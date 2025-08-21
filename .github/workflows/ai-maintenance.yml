@@ -1,0 +1,114 @@
+﻿name: AI Site Maintenance
+on:
+  schedule:
+    - cron: "17 2 * * *"   # daily 02:17 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  audit_and_fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install audit tools
+        run: |
+          npm i -g linkinator@6 htmlhint@1 markdownlint-cli@0.41 lighthouse@12
+
+      - name: Link check (live site)
+        run: |
+          linkinator --recurse --timeout 10000 https://www.oradigit.com \
+            --format JSON > link-report.json || true
+
+      - name: HTML lint
+        run: |
+          htmlhint "**/*.html" --format json > htmlhint-report.json || true
+
+      - name: Markdown lint
+        run: |
+          markdownlint "**/*.md" -j > md-report.json || true
+
+      - name: Lighthouse (homepage)
+        run: |
+          npx lighthouse https://www.oradigit.com --quiet \
+            --output=json --output-path=./lighthouse-home.json \
+            --only-categories=performance,accessibility,seo || true
+
+      - name: Summarize audit
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          function load(p){ try { return JSON.parse(fs.readFileSync(p,'utf8')) } catch { return null } }
+          const summary = {
+            when: new Date().toISOString(),
+            linkReport: load('link-report.json'),
+            htmlhint: load('htmlhint-report.json'),
+            mdlint: load('md-report.json'),
+            lighthouse: load('lighthouse-home.json')
+          };
+          fs.writeFileSync('audit-summary.json', JSON.stringify(summary, null, 2));
+          console.log('Wrote audit-summary.json');
+          NODE
+
+      - name: Ask OpenAI for safe patch
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          cat > prompt.txt << 'EOF'
+          You are an expert web engineer/editor for a GitHub Pages (Jekyll) site: oradigit.com.
+          Based on the audit JSON below, propose small, safe improvements.
+          Prioritize:
+          - Fix broken/redirected links (relative vs absolute if needed).
+          - Improve <title>, meta description, OpenGraph where missing.
+          - Add schema.org JSON-LD (Organization, WebSite) to index.html if missing.
+          - Accessibility tweaks (alt text, labels, contrast) that do not change design intent.
+          - Do not introduce build-breaking changes.
+          Return a SINGLE UNIFIED DIFF (git patch) against the repository root. No commentary, only the diff.
+          AUDIT:
+          EOF
+          sed -e 's/"/\\"/g' -e ':a;N;$!ba;s/\n/\\n/g' audit-summary.json > audit-escaped.txt
+
+          curl -sS https://api.openai.com/v1/responses \
+            -H "Authorization: Bearer ${OPENAI_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{\"model\":\"gpt-5-thinking\",\"input\":\"$(cat prompt.txt; cat audit-escaped.txt)\",\"temperature\":0.2}" \
+            > response.json
+
+          node - <<'NODE'
+          const fs = require('fs');
+          const data = JSON.parse(fs.readFileSync('response.json','utf8'));
+          const text = data.output_text || (data.content && data.content[0] && data.content[0].text) || '';
+          fs.writeFileSync('ai.patch', text);
+          if(!text.includes('--- ') || !text.includes('+++ ')) {
+            console.log('No valid diff returned. Exiting.');
+            process.exit(0);
+          }
+          NODE
+
+      - name: Apply patch and commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BR=ai/maint-${GITHUB_RUN_ID}
+          git checkout -b "$BR"
+          git apply --whitespace=fix ai.patch || { echo "Patch failed"; exit 0; }
+          git add -A
+          git commit -m "AI maintenance: automated fixes" || { echo "Nothing to commit"; exit 0; }
+          echo "PR_BRANCH=$BR" >> $GITHUB_ENV
+
+      - name: Create Pull Request
+        if: env.PR_BRANCH != ''
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ${{ env.PR_BRANCH }}
+          title: AI maintenance: automated fixes
+          body: Automated PR with small, safe improvements based on nightly audits.
+          commit-message: AI maintenance: automated fixes
+          base: main
