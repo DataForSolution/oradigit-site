@@ -1,0 +1,80 @@
+﻿name: AI Ops Issue to PR
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+
+jobs:
+  issue_to_pr:
+    if: contains(github.event.issue.labels.*.name, 'ai-change')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Ask Firebase Function for patch (from issue request)
+        env:
+          FB_FUNCTION_URL: ${{ vars.FB_FUNCTION_URL }}
+          FB_AUTHTOKEN: ${{ secrets.FIREBASE_AUTOMATION_TOKEN }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const url = process.env.FB_FUNCTION_URL;
+          const token = process.env.FB_AUTHTOKEN;
+          const audit = {
+            mode: 'issue',
+            title: process.env.ISSUE_TITLE || '',
+            body: process.env.ISSUE_BODY || ''
+          };
+          const promptExtras = 'Create a small, safe unified diff to implement the request above.';
+          (async () => {
+            const r = await fetch(url, {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ audit, promptExtras })
+            });
+            const data = await r.json().catch(() => ({}));
+            fs.writeFileSync('fb-response.json', JSON.stringify(data, null, 2));
+            if (data.ok && data.patch && data.patch.includes('--- ') && data.patch.includes('+++ ')) {
+              fs.writeFileSync('ai.patch', data.patch);
+              console.log('Got patch from Firebase function.');
+            } else {
+              console.log('No valid diff from Firebase function; exiting gracefully.');
+              process.exit(0);
+            }
+          })();
+          NODE
+
+      - name: Apply patch and commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BR=ai/ops-${GITHUB_RUN_ID}
+          git checkout -b "$BR"
+          git apply --whitespace=fix ai.patch || { echo "Patch failed"; exit 0; }
+          git add -A
+          git commit -m "AI Ops: ${ISSUE_TITLE}" || { echo "Nothing to commit"; exit 0; }
+          echo "PR_BRANCH=$BR" >> $GITHUB_ENV
+
+      - name: Create Pull Request
+        if: env.PR_BRANCH != ''
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ${{ env.PR_BRANCH }}
+          title: AI Ops: ${{ github.event.issue.title }}
+          body: |
+            Change generated from issue #${{ github.event.issue.number }} (label: ai-change).
+
+            Closes #${{ github.event.issue.number }}
+          commit-message: AI Ops: ${{ github.event.issue.title }}
+          base: main
