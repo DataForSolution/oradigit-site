@@ -1,0 +1,9 @@
+﻿name: AI Site Maintenance (manual v2)
+on:
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Manual v2 workflow is wired correctly."
