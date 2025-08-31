@@ -1634,3 +1634,7 @@ textarea { resize:vertical; }
   font-size: 0.95rem;
   color: #333;
 }
+/* Optional polish for selection summarize UI */
+#gpt5-sel-btn { transition: transform .06s ease; }
+#gpt5-sel-btn:active { transform: scale(.98); }
+#gpt5-sel-panel { backdrop-filter: saturate(1.2); }
