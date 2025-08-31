@@ -1,7 +1,10 @@
-﻿name: AI Site Maintenance (v3, manual)
+name: AI Site Maintenance (v3, manual)
 on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
-
 permissions:
   contents: write
   pull-requests: write

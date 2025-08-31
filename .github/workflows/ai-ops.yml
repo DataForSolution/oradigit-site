@@ -1,8 +1,10 @@
-﻿name: AI Ops Issue to PR
+name: AI Ops Issue to PR
 on:
-  issues:
-    types: [opened, edited, labeled]
-
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 permissions:
   contents: write
   pull-requests: write
