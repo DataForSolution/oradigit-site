@@ -28,40 +28,54 @@
       if (label != null) b.textContent = label;
     }
   }
+ document.addEventListener("DOMContentLoaded", function () {
+  var btn = document.getElementById("ai-summary-btn");
+  var stop = document.getElementById("ai-summary-stop");
+  var out = document.getElementById("ai-summary");
+  if (!btn || !out || !stop) return;
 
-  document.addEventListener("DOMContentLoaded", function () {
-    var btn = $("ai-summary-btn");
-    var out = $("ai-summary");
-    if (!btn || !out) return;
+  function setBtn(disabled, label) {
+    btn.disabled = !!disabled;
+    if (label != null) btn.textContent = label;
+  }
 
-    btn.addEventListener("click", function () {
-      var content = textFromPage();
-      if (!content) {
-        out.textContent = "Sorry—no readable content found on this page.";
-        return;
-      }
+  stop.addEventListener("click", function () {
+    try { gpt5.abort(); } catch (e) {}
+    setBtn(false, "AI Summary");
+  });
 
-      out.textContent = "Thinking…";
-      setBtn(true, "Summarizing…");
-      var full = "";
+  btn.addEventListener("click", function () {
+    var el =
+      document.querySelector("main") ||
+      document.querySelector("article") ||
+      document.querySelector(".content") ||
+      document.querySelector(".post-content") ||
+      document.getElementById("content") ||
+      document.body;
+    var content = el && (el.innerText || el.textContent) || "";
+    content = (content || "").replace(/\s+/g, " ").trim();
+    if (content.length > 6000) content = content.slice(0, 6000);
 
-      gpt5.stream({
-        system:
-          "You are LLbot for OraDigit.com. Summarize for executives and prospects. 5–7 bullet points. Clear, concrete, jargon-light.",
-        messages: [{
-          role: "user",
-          content: "Summarize this page for a prospective client:\n\n" + content
-        }],
-        onToken: function (t) {
-          full += t;
-          out.textContent = full;
-        }
-      })
-      .then(function () { setBtn(false, "AI Summary"); })
-      .catch(function (e) {
-        out.textContent = "Error: " + (e && e.message ? e.message : e);
-        setBtn(false, "AI Summary");
-      });
+    if (!content) {
+      out.textContent = "Sorry—no readable content found on this page.";
+      return;
+    }
+
+    out.textContent = "Thinking…";
+    setBtn(true, "Summarizing…");
+    var full = "";
+
+    gpt5.stream({
+      system: "You are LLbot for OraDigit.com. Summarize for executives and prospects. 5–7 bullet points. Clear, concrete, jargon-light.",
+      messages: [{ role: "user", content: "Summarize this page for a prospective client:\n\n" + content }],
+      onToken: function (t) { full += t; out.textContent = full; }
+    })
+    .then(function () { setBtn(false, "AI Summary"); })
+    .catch(function (e) {
+      out.textContent = "Error: " + (e && e.message ? e.message : e);
+      setBtn(false, "AI Summary");
     });
   });
-})();
+});
+
+  
