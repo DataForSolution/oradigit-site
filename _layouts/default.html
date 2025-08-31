@@ -91,7 +91,9 @@
     Last updated: {{ page.last_updated }}
   </p>
 {% endif %}
-  <script src="{{ '/assets/gpt5.js' | relative_url }}" defer></script>
+  <script src="{{ '/assets/gpt5.js' | relative_url }}?v=2" defer></script>
+<script src="{{ '/assets/gpt5-actions.js' | relative_url }}?v=1" defer></script>
+
 
   </main>
   {% include footer.html %}
