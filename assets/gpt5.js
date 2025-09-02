@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  var API_URL = 'https://auth.oradigit.com/api/chat'; // maps to your proxy
+  var API_URL = 'https://auth.oradigit.com/api/chat'; // your HTTPS proxy
   var _controller = null;
 
   // Insert a space if two alphanumerics would touch across token boundaries.
@@ -16,30 +16,8 @@
     return /[A-Za-z0-9]/.test(a) && /[A-Za-z0-9]/.test(b);
   }
 
-  // Basic JSON post for non-stream fallback
-  function postJSON(url, body, signal) {
-    return fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: signal
-    }).then(function (resp) {
-      return resp.text().then(function (txt) {
-        var ct = resp.headers.get('content-type') || '';
-        var isJSON = ct.indexOf('application/json') !== -1;
-        var payload = isJSON ? (function () { try { return JSON.parse(txt); } catch (e) { return null; } })() : null;
-
-        if (!resp.ok) {
-          var msg = (payload && (payload.error || payload.message)) || txt || ('HTTP ' + resp.status);
-          throw new Error(msg);
-        }
-        return payload != null ? payload : {};
-      });
-    });
-  }
-
   function stream(opts) {
-    if (!opts) opts = {};
+    opts = opts || {};
     if (!opts.messages || !opts.messages.length) {
       throw new Error('messages[] required');
     }
@@ -59,19 +37,20 @@
     }).then(function (resp) {
       var ct = resp.headers.get('content-type') || '';
 
-      // If server provided SSE
+      // Server-Sent Events (streaming)
       if (ct.indexOf('text/event-stream') !== -1 && resp.body && resp.body.getReader) {
         var reader = resp.body.getReader();
         var decoder = new TextDecoder();
         var buffer = '';
-        var full = '';
+        var full   = '';
 
         function pump() {
           return reader.read().then(function (res) {
             if (res.done) return full;
 
             buffer += decoder.decode(res.value, { stream: true });
-            // SSE events are separated by a blank line
+
+            // SSE events separated by a blank line
             var events = buffer.split('\n\n');
             buffer = events.pop() || '';
 
@@ -79,7 +58,7 @@
               var block = events[i];
               if (!block.trim()) continue;
 
-              // Typical lines: "event: message" then "data: <chunk>"
+              // Parse lines like: "event: message" / "data: ..."
               var lines = block.split('\n');
               var type = '';
               var data = '';
@@ -100,10 +79,9 @@
                   try { opts.onToken(chunk); } catch (e) {}
                 }
               } else if (type === 'error') {
-                // Try to surface server error message
                 try {
                   var je = JSON.parse(data);
-                  throw new Error(je && (je.error || je.message) || 'Server error');
+                  throw new Error((je && (je.error || je.message)) || 'Server error');
                 } catch (e) {
                   throw new Error('Server error');
                 }
@@ -118,7 +96,7 @@
         return pump();
       }
 
-      // Fallback: non-stream JSON response
+      // Non-stream fallback (JSON)
       return resp.text().then(function (txt) {
         var isJSON = (resp.headers.get('content-type') || '').indexOf('application/json') !== -1;
         var payload = isJSON ? (function () { try { return JSON.parse(txt); } catch (e) { return null; } })() : null;
@@ -128,11 +106,10 @@
           throw new Error(msg);
         }
 
-        // If the API returns {text: "..."} or similar, emit it at once
+        // If API returns {text: "..."} immediately, emit it
         if (payload && payload.text && typeof opts.onToken === 'function') {
           var output = String(payload.text);
-          // naive tokenization for uniform behavior
-          if (needsSpace('', output)) { /* no-op for first token */ }
+          // first token prints as-is
           opts.onToken(output);
           return output;
         }
@@ -159,10 +136,5 @@
     }
   }
 
-  // public API
-  window.gpt5 = {
-    stream: stream,
-    ask: ask,
-    abort: abort
-  };
+  window.gpt5 = { stream: stream, ask: ask, abort: abort };
 })();
