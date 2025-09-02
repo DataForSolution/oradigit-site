@@ -1,16 +1,33 @@
-name: AI Ops Issue to PR
+name: AI Ops: Issue to PR
+
 on:
+  issues:
+    types: [labeled]
   workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to turn into a PR"
+        required: true
 
 permissions:
   contents: write
   pull-requests: write
   issues: read
+  actions: write
 
 jobs:
   issue_to_pr:
-    if: contains(github.event.issue.labels.*.name, 'ai-change')
+    # Run when: (A) an issue is labeled 'ai-change' OR (B) manual dispatch
+    if: |
+      (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'ai-change') ||
+      (github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    env:
+      # For 'issues' events these are available; for manual runs we override below
+      ISSUE_TITLE: ${{ github.event.issue.title }}
+      ISSUE_BODY: ${{ github.event.issue.body }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -18,13 +35,31 @@ jobs:
         with:
           node-version: "20"
 
+      # For manual runs, fetch the issue details using GITHUB_TOKEN
+      - name: Load issue details (manual run)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          ISSUE_NUM_INPUT: ${{ inputs.issue_number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          json=$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUM_INPUT}")
+          title=$(printf '%s' "$json" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).title||''))")
+          body=$(printf '%s' "$json" | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).body||''))")
+          echo "ISSUE_TITLE=$title" >> $GITHUB_ENV
+          echo "ISSUE_BODY<<EOF" >> $GITHUB_ENV
+          echo "$body" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+          echo "ISSUE_NUMBER=${ISSUE_NUM_INPUT}" >> $GITHUB_ENV
+
       - name: Ask Firebase Function for patch (from issue request)
         env:
           FB_FUNCTION_URL: ${{ vars.FB_FUNCTION_URL }}
           FB_AUTHTOKEN: ${{ secrets.FIREBASE_AUTOMATION_TOKEN }}
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ env.ISSUE_TITLE }}
+          ISSUE_BODY: ${{ env.ISSUE_BODY }}
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
         run: |
           node - <<'NODE'
           const fs = require('fs');
@@ -70,10 +105,10 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           branch: ${{ env.PR_BRANCH }}
-          title: AI Ops: ${{ github.event.issue.title }}
+          title: AI Ops: ${{ env.ISSUE_TITLE }}
           body: |
-            Change generated from issue #${{ github.event.issue.number }} (label: ai-change).
+            Change generated from issue #${{ env.ISSUE_NUMBER }} (label: ai-change).
 
-            Closes #${{ github.event.issue.number }}
-          commit-message: AI Ops: ${{ github.event.issue.title }}
+            Closes #${{ env.ISSUE_NUMBER }}
+          commit-message: AI Ops: ${{ env.ISSUE_TITLE }}
           base: main
