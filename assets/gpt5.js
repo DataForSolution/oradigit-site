@@ -1,87 +1,140 @@
-// Minimal client for OraDigit's GPT proxy (SSE). ES5-compatible (no spread / optional chaining).
+// OraDigit GPT helper (ES5-safe) — streaming + smart spacing + abort()
+// Exposes: window.gpt5.stream({messages, system?, model?, onToken?, signal?})
+//          window.gpt5.ask(prompt, {system?, model?, onToken?, signal?})
+//          window.gpt5.abort()
 (function () {
-  var API = "https://auth.oradigit.com/api/chat"; // mapped to chat5
+  'use strict';
+
+  var API_URL = 'https://auth.oradigit.com/api/chat'; // your HTTPS proxy
+  var _controller = null;
+
+  // Insert a space if two alphanumerics would touch across token boundaries.
+  function needsSpace(prev, next) {
+    if (!prev || !next) return false;
+    var a = prev.charAt(prev.length - 1);
+    var b = next.charAt(0);
+    return /[A-Za-z0-9]/.test(a) && /[A-Za-z0-9]/.test(b);
+  }
 
   function stream(opts) {
-    if (!opts) opts = {};
-    if (!Array.isArray(opts.messages)) throw new Error("messages[] required");
+    opts = opts || {};
+    if (!opts.messages || !opts.messages.length) {
+      throw new Error('messages[] required');
+    }
 
-    var payload = { messages: opts.messages };
-    if (opts.system) payload.system = opts.system;
-    if (opts.model) payload.model = opts.model;
+    var body = { messages: opts.messages };
+    if (opts.system) body.system = opts.system;
+    if (opts.model)  body.model  = opts.model;
 
-    var controller = new AbortController();
-    var useSignal = opts.signal || controller.signal;
+    _controller = new AbortController();
+    var signal = opts.signal || _controller.signal;
 
-    return fetch(API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: useSignal
+    return fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: signal
     }).then(function (resp) {
-      var ct = resp.headers.get("content-type");
-      if (!resp.ok) {
-        return resp.text().then(function (txt) {
-          try { var j = JSON.parse(txt); throw new Error(j.error || j.message || ("HTTP " + resp.status)); }
-          catch (e) { throw new Error(txt || ("HTTP " + resp.status)); }
-        });
-      }
+      var ct = resp.headers.get('content-type') || '';
 
-      // If SSE, parse events
-      if (ct && ct.indexOf("text/event-stream") !== -1) {
+      // Server-Sent Events (streaming)
+      if (ct.indexOf('text/event-stream') !== -1 && resp.body && resp.body.getReader) {
         var reader = resp.body.getReader();
         var decoder = new TextDecoder();
-        var buffer = "";
-        var full = "";
+        var buffer = '';
+        var full   = '';
 
         function pump() {
-          return reader.read().then(function (r) {
-            if (r.done) return full;
+          return reader.read().then(function (res) {
+            if (res.done) return full;
 
-            buffer += decoder.decode(r.value, { stream: true });
-            var parts = buffer.split("\n\n");
-            buffer = parts.pop() || "";
+            buffer += decoder.decode(res.value, { stream: true });
 
-            for (var i = 0; i < parts.length; i++) {
-              var evt = parts[i];
-              if (!evt.trim()) continue;
-              var lines = evt.split("\n");
-              var type = (lines[0] || "").replace(/^event:\s*/, "").trim();
-              var data = (lines.slice(1).join("\n") || "").replace(/^data:\s*/, "");
+            // SSE events separated by a blank line
+            var events = buffer.split('\n\n');
+            buffer = events.pop() || '';
 
-              if (type === "message") {
-                full += data;
-                if (typeof opts.onToken === "function") opts.onToken(data);
-              } else if (type === "error") {
-                try { var j = JSON.parse(data); throw new Error(j.message || "Server error"); }
-                catch (e) { throw new Error("Server error"); }
+            for (var i = 0; i < events.length; i++) {
+              var block = events[i];
+              if (!block.trim()) continue;
+
+              // Parse lines like: "event: message" / "data: ..."
+              var lines = block.split('\n');
+              var type = '';
+              var data = '';
+              for (var j = 0; j < lines.length; j++) {
+                var line = lines[j];
+                if (line.indexOf('event:') === 0) {
+                  type = line.replace(/^event:\s*/, '').trim();
+                } else if (line.indexOf('data:') === 0) {
+                  data += (data ? '\n' : '') + line.replace(/^data:\s*/, '');
+                }
               }
-              // ignore: open/info/done (informational)
+
+              if (type === 'message') {
+                var chunk = data;
+                if (needsSpace(full, chunk)) chunk = ' ' + chunk;
+                full += chunk;
+                if (typeof opts.onToken === 'function') {
+                  try { opts.onToken(chunk); } catch (e) {}
+                }
+              } else if (type === 'error') {
+                try {
+                  var je = JSON.parse(data);
+                  throw new Error((je && (je.error || je.message)) || 'Server error');
+                } catch (e) {
+                  throw new Error('Server error');
+                }
+              }
+              // ignore: open/info/done
             }
+
             return pump();
           });
         }
+
         return pump();
       }
 
-      // Non-SSE fallback (shouldn’t happen now)
-      return resp.json().then(function (json) {
-        if (json && json.error) throw new Error(json.error);
-        return json;
-      })["catch"](function () { return {}; });
+      // Non-stream fallback (JSON)
+      return resp.text().then(function (txt) {
+        var isJSON = (resp.headers.get('content-type') || '').indexOf('application/json') !== -1;
+        var payload = isJSON ? (function () { try { return JSON.parse(txt); } catch (e) { return null; } })() : null;
+
+        if (!resp.ok) {
+          var msg = (payload && (payload.error || payload.message)) || txt || ('HTTP ' + resp.status);
+          throw new Error(msg);
+        }
+
+        // If API returns {text: "..."} immediately, emit it
+        if (payload && payload.text && typeof opts.onToken === 'function') {
+          var output = String(payload.text);
+          // first token prints as-is
+          opts.onToken(output);
+          return output;
+        }
+
+        return payload != null ? payload : {};
+      });
     });
   }
 
   function ask(prompt, opts) {
     opts = opts || {};
     return stream({
-      system: opts.system || "You are LLbot for OraDigit.com. Be concise.",
-      model: opts.model,
-      messages: [{ role: "user", content: prompt }],
+      system: opts.system || 'You are LLbot for OraDigit.com. Be concise.',
+      model:  opts.model,
+      messages: [{ role: 'user', content: String(prompt || '') }],
       onToken: opts.onToken,
-      signal: opts.signal
+      signal:  opts.signal
     });
   }
 
-  window.gpt5 = { stream: stream, ask: ask };
+  function abort() {
+    if (_controller && typeof _controller.abort === 'function') {
+      try { _controller.abort(); } catch (e) {}
+    }
+  }
+
+  window.gpt5 = { stream: stream, ask: ask, abort: abort };
 })();

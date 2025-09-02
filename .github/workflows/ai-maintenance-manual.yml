@@ -1,14 +1,19 @@
-﻿name: AI Site Maintenance (manual)
+name: AI Site Maintenance (manual)
+
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
 
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
   audit_and_fix:
+    # Only run when manually dispatched from the UI
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
