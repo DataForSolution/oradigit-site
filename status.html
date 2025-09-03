@@ -20,6 +20,19 @@ permalink: /status/
 
 <pre id="out" style="margin-top:1rem;white-space:pre-wrap;border:1px solid #e5e7eb;padding:.75rem;border-radius:8px;min-height:60px"></pre>
 
+<!-- Fallback: ensure gpt5.js is present even if layout didn't inject it -->
+<script>
+(function () {
+  var already = !!document.querySelector('script[src*="/assets/gpt5.js"]');
+  if (!already) {
+    var s = document.createElement('script');
+    s.src = '{{ "/assets/gpt5.js" | relative_url }}';
+    s.defer = true;
+    document.head.appendChild(s);
+  }
+})();
+</script>
+
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
@@ -30,12 +43,12 @@ permalink: /status/
     c1.textContent = (typeof window.gpt5 === 'object') ? 'OK' : 'MISSING';
   }
 
-  // Wait briefly after DOMContentLoaded so deferred gpt5.js has time to register
+  // Wait so deferred gpt5.js has time to register
   document.addEventListener('DOMContentLoaded', function(){
     var tries = 0;
     var iv = setInterval(function(){
       tries++;
-      if (typeof window.gpt5 === 'object' || tries > 10) {
+      if (typeof window.gpt5 === 'object' || tries > 20) {
         clearInterval(iv);
         markGpt5Status();
       }
@@ -47,11 +60,11 @@ permalink: /status/
     var tries = 0;
     var iv = setInterval(function(){
       if (typeof window.gpt5 === 'object') { clearInterval(iv); cb(); }
-      else if (++tries > 20) { // ~2s
+      else if (++tries > 40) { // ~4–6s
         clearInterval(iv);
         out.textContent = 'Error: gpt5.js did not load';
       }
-    }, 100);
+    }, 150);
   }
 
   run.onclick = function(){
