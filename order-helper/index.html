@@ -198,10 +198,30 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 
     // Keep preview in sync with the form
     const syncPreview = () => {
-      $('#pv-modality').textContent  = $('#modality')?.value || '—';
-      $('#pv-region').textContent    = $('#region')?.value || '—';
-      $('#pv-context').textContent   = $('#context')?.value || '—';
-      $('#pv-condition').textContent = $('#condition')?.value || '—';
+  $('#pv-modality').textContent  = $('#modality')?.value || '—';
+  $('#pv-region').textContent    = $('#region')?.value || '—';
+
+  // NEW: show all selected contexts
+  { const sel = document.getElementById('context');
+    const ctx = sel ? [...sel.selectedOptions].map(o => o.textContent.trim()).filter(Boolean) : [];
+    document.getElementById('pv-context').textContent = ctx.length ? ctx.join(', ') : '—';
+  }
+
+  $('#pv-condition').textContent = $('#condition')?.value || '—';
+
+  const grp = document.getElementById('contrastGroup');
+  if (grp && !grp.classList.contains('hidden')) {
+    const r = grp.querySelector('input[type=radio]:checked');
+    const oral = document.getElementById('oralContrast')?.checked;
+    let txt = r ? (r.value === 'with_iv' ? 'With IV contrast' : 'Without IV contrast') : '—';
+    if (oral) txt += ' + oral';
+    document.getElementById('pv-contrast').textContent = txt;
+  } else {
+    document.getElementById('pv-contrast').textContent = '—';
+  }
+
+  document.getElementById('pv-indication').textContent = document.getElementById('indication')?.value?.trim() || '—';
+};
 
       const grp = document.getElementById('contrastGroup');
       if (grp && !grp.classList.contains('hidden')) {
