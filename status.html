@@ -1,0 +1,49 @@
+---
+layout: default
+title: AI Status
+permalink: /status/
+---
+
+<h1>AI Status</h1>
+<p>Quick on-site checks for OraDigit GPT integration.</p>
+
+<div id="checks" style="margin:1rem 0;display:grid;gap:.5rem">
+  <div>1) gpt5.js loaded: <strong id="c1">pending</strong></div>
+  <div>2) SSE first token time: <strong id="c2">pending</strong></div>
+  <div>3) Abort works: <strong id="c3">pending</strong></div>
+</div>
+
+<div style="display:flex;gap:.5rem">
+  <button id="run">Run test</button>
+  <button id="cancel">Abort</button>
+</div>
+
+<pre id="out" style="margin-top:1rem;white-space:pre-wrap;border:1px solid #e5e7eb;padding:.75rem;border-radius:8px;min-height:60px"></pre>
+
+<script>
+(function(){
+  var $ = (id)=>document.getElementById(id);
+  var c1=$('c1'), c2=$('c2'), c3=$('c3');
+  var out=$('out'), run=$('run'), cancel=$('cancel');
+
+  c1.textContent = (typeof window.gpt5 === 'object') ? 'OK' : 'MISSING';
+
+  run.onclick = function(){
+    out.textContent=''; c2.textContent='pending'; c3.textContent='pending';
+    var t0=performance.now(), got=false;
+    window.gpt5.ask("Say 'OK' then stop.", {
+      onToken:function(tok){
+        if (!got){ got=true; c2.textContent = Math.round(performance.now()-t0)+' ms'; }
+        out.textContent += tok;
+      }
+    }).catch(function(e){
+      out.textContent = 'Error: ' + e.message;
+    });
+  };
+
+  cancel.onclick = function(){
+    window.gpt5.abort();
+    c3.textContent='OK';
+  };
+})();
+</script>
