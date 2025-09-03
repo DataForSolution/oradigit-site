@@ -1,3 +1,18 @@
+# Allow everything for all regular crawlers
+User-agent: *
+Allow: /
+
+# Explicitly allow OpenAI’s training crawler
+User-agent: GPTBot
+Allow: /
+
+# Explicitly allow ChatGPT’s on-demand browsing agent
+User-agent: ChatGPT-User
+Allow: /
+
+# Sitemap for all bots (helps discovery)
+Sitemap: https://oradigit.com/sitemap.xml
+
 User-agent: *
 Allow: /
 
