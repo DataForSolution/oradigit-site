@@ -19,31 +19,59 @@ permalink: /status/
 </div>
 
 <pre id="out" style="margin-top:1rem;white-space:pre-wrap;border:1px solid #e5e7eb;padding:.75rem;border-radius:8px;min-height:60px"></pre>
-
 <script>
 (function(){
-  var $ = (id)=>document.getElementById(id);
+  var $ = function(id){ return document.getElementById(id); };
   var c1=$('c1'), c2=$('c2'), c3=$('c3');
   var out=$('out'), run=$('run'), cancel=$('cancel');
 
-  c1.textContent = (typeof window.gpt5 === 'object') ? 'OK' : 'MISSING';
+  function markGpt5Status(){
+    c1.textContent = (typeof window.gpt5 === 'object') ? 'OK' : 'MISSING';
+  }
+
+  // Defer scripts run before DOMContentLoaded; check shortly after it fires.
+  document.addEventListener('DOMContentLoaded', function(){
+    var tries = 0;
+    var iv = setInterval(function(){
+      tries++;
+      if (typeof window.gpt5 === 'object' || tries > 10) {
+        clearInterval(iv);
+        markGpt5Status();
+      }
+    }, 150);
+  });
+
+  function ensureGpt5(cb){
+    if (typeof window.gpt5 === 'object') return cb();
+    var tries = 0;
+    var iv = setInterval(function(){
+      if (typeof window.gpt5 === 'object') { clearInterval(iv); cb(); }
+      else if (++tries > 20) { // ~2s
+        clearInterval(iv);
+        out.textContent = 'Error: gpt5.js did not load';
+      }
+    }, 100);
+  }
 
   run.onclick = function(){
     out.textContent=''; c2.textContent='pending'; c3.textContent='pending';
-    var t0=performance.now(), got=false;
-    window.gpt5.ask("Say 'OK' then stop.", {
-      onToken:function(tok){
-        if (!got){ got=true; c2.textContent = Math.round(performance.now()-t0)+' ms'; }
-        out.textContent += tok;
-      }
-    }).catch(function(e){
-      out.textContent = 'Error: ' + e.message;
+    ensureGpt5(function(){
+      var t0=performance.now(), got=false;
+      window.gpt5.ask("Say 'OK' then stop.", {
+        onToken:function(tok){
+          if (!got){ got=true; c2.textContent = Math.round(performance.now()-t0)+' ms'; }
+          out.textContent += tok;
+        }
+      }).catch(function(e){
+        out.textContent = 'Error: ' + e.message;
+      });
     });
   };
 
   cancel.onclick = function(){
-    window.gpt5.abort();
+    if (typeof window.gpt5 === 'object') window.gpt5.abort();
     c3.textContent='OK';
   };
 })();
 </script>
+
