@@ -1,0 +1,32 @@
+name: AI Health Check
+on:
+  schedule: [{ cron: "17 5 * * *" }]  # daily ~1:17am ET
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+
+      - name: SSE smoke test
+        run: |
+          node - <<'NODE'
+          const ctrl = new AbortController();
+          setTimeout(()=>ctrl.abort(), 15000); // 15s timeout
+          fetch("https://auth.oradigit.com/api/chat", {
+            method:"POST",
+            headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ messages:[{role:"user",content:"ping"}] }),
+            signal: ctrl.signal
+          }).then(async resp=>{
+            if (!resp.ok) throw new Error("HTTP "+resp.status);
+            const ct = resp.headers.get("content-type")||"";
+            if (!ct.includes("text/event-stream")) throw new Error("Not SSE: "+ct);
+            const reader = resp.body.getReader();
+            const { value } = await reader.read();
+            if (!value || !value.length) throw new Error("No bytes in first chunk");
+            console.log("OK: SSE bytes received");
+          }).catch(e=>{ console.error(e); process.exit(1); });
+          NODE
