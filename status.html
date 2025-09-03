@@ -20,8 +20,8 @@ permalink: /status/
 
 <pre id="out" style="margin-top:1rem;white-space:pre-wrap;border:1px solid #e5e7eb;padding:.75rem;border-radius:8px;min-height:60px"></pre>
 
+<!-- Fallback: ensure gpt5.js is present even if layout didn't inject it -->
 <script>
-// Fallback: ensure gpt5.js is loaded on this page even if layout didn't inject it
 (function () {
   var already = !!document.querySelector('script[src*="/assets/gpt5.js"]');
   if (!already) {
@@ -43,7 +43,7 @@ permalink: /status/
     c1.textContent = (typeof window.gpt5 === 'object') ? 'OK' : 'MISSING';
   }
 
-  // Wait briefly so deferred gpt5.js has time to register
+  // Wait so deferred gpt5.js has time to register
   document.addEventListener('DOMContentLoaded', function(){
     var tries = 0;
     var iv = setInterval(function(){
