@@ -19,6 +19,7 @@ permalink: /status/
 </div>
 
 <pre id="out" style="margin-top:1rem;white-space:pre-wrap;border:1px solid #e5e7eb;padding:.75rem;border-radius:8px;min-height:60px"></pre>
+
 <script>
 (function(){
   var $ = function(id){ return document.getElementById(id); };
@@ -29,7 +30,7 @@ permalink: /status/
     c1.textContent = (typeof window.gpt5 === 'object') ? 'OK' : 'MISSING';
   }
 
-  // Defer scripts run before DOMContentLoaded; check shortly after it fires.
+  // Wait briefly after DOMContentLoaded so deferred gpt5.js has time to register
   document.addEventListener('DOMContentLoaded', function(){
     var tries = 0;
     var iv = setInterval(function(){
@@ -74,4 +75,3 @@ permalink: /status/
   };
 })();
 </script>
-
