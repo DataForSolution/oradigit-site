@@ -188,6 +188,14 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 </script>
 
 <!-- App logic -->
+<script>
+  // Surface any JS errors to the status banner
+  window.addEventListener('error', e => {
+    const s = document.getElementById('status');
+    if (s) { s.textContent = 'JavaScript error: ' + (e.message || 'Unknown'); s.className = 'status error'; }
+  });
+</script>
+
 <script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250819"></script>
 
 <!-- Tiny UX helpers (non-invasive; does not touch business logic) -->
@@ -202,12 +210,16 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
   $('#pv-region').textContent    = $('#region')?.value || '—';
 
   // NEW: show all selected contexts
-  { const sel = document.getElementById('context');
-    const ctx = sel ? [...sel.selectedOptions].map(o => o.textContent.trim()).filter(Boolean) : [];
-    document.getElementById('pv-context').textContent = ctx.length ? ctx.join(', ') : '—';
-  }
+  const syncPreview = () => {
+  const $s = (sel) => document.querySelector(sel);
+  $s('#pv-modality').textContent  = $s('#modality')?.value || '—';
+  $s('#pv-region').textContent    = $s('#region')?.value || '—';
 
-  $('#pv-condition').textContent = $('#condition')?.value || '—';
+  // Read from the hidden <select multiple> that mirrors the chips
+  const ctxOpt = Array.from(document.querySelectorAll('#context option:checked')).map(o => o.value);
+  $s('#pv-context').textContent   = ctxOpt.length ? ctxOpt.join(', ') : '—';
+
+  $s('#pv-condition').textContent = $s('#condition')?.value || '—';
 
   const grp = document.getElementById('contrastGroup');
   if (grp && !grp.classList.contains('hidden')) {
@@ -215,27 +227,14 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
     const oral = document.getElementById('oralContrast')?.checked;
     let txt = r ? (r.value === 'with_iv' ? 'With IV contrast' : 'Without IV contrast') : '—';
     if (oral) txt += ' + oral';
-    document.getElementById('pv-contrast').textContent = txt;
+    $s('#pv-contrast').textContent = txt;
   } else {
-    document.getElementById('pv-contrast').textContent = '—';
+    $s('#pv-contrast').textContent = '—';
   }
 
-  document.getElementById('pv-indication').textContent = document.getElementById('indication')?.value?.trim() || '—';
+  $s('#pv-indication').textContent = $s('#indication')?.value?.trim() || '—';
 };
 
-      const grp = document.getElementById('contrastGroup');
-      if (grp && !grp.classList.contains('hidden')) {
-        const r = grp.querySelector('input[type=radio]:checked');
-        const oral = document.getElementById('oralContrast')?.checked;
-        let txt = r ? (r.value === 'with_iv' ? 'With IV contrast' : 'Without IV contrast') : '—';
-        if (oral) txt += ' + oral';
-        $('#pv-contrast').textContent = txt;
-      } else {
-        $('#pv-contrast').textContent = '—';
-      }
-
-      $('#pv-indication').textContent = $('#indication')?.value?.trim() || '—';
-    };
 
     ['change','input','click'].forEach(evt => {
       form.addEventListener(evt, syncPreview, true);
