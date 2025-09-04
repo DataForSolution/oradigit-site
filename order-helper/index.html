@@ -6,10 +6,11 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 ---
 
 <!-- Page-scoped stylesheet -->
- <link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250819">
+<link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250903">
 
 <!-- Tell app.js where to load the rules -->
-<meta name="oh-rules-path" content="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250819">
+<meta name="oh-rules-path" content="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250904">
+
 <meta name="oh-version" content="20250819">
 
 <section class="order-helper container" aria-labelledby="oh-title">
@@ -37,6 +38,11 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
         </select>
         <small class="hint">Regions, contexts, and conditions adapt to your selection.</small>
       </div>
+      <div>
+  <h3>ICD-10 Suggestions</h3>
+  <ul id="outICD"></ul>
+</div>
+
 
       <!-- Region -->
       <div class="field">
@@ -144,6 +150,26 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       <button id="printBtn" type="button" class="btn btn-tertiary">Print</button>
     </div>
   </section>
+  <section id="results" hidden style="margin-top:16px">
+  <h2 id="outHeader"></h2>
+  ...
+  <div class="oh-grid" style="margin-top:12px">
+    <div>
+      <h3>Prep / Contraindications</h3>
+      <ul id="outPrep"></ul>
+    </div>
+    <div>
+      <h3>Supporting Docs</h3>
+      <ul id="outDocs"></ul>
+    </div>
+    <div>
+      <h3>Clinical Flags</h3>
+      <ul id="outFlags"></ul>
+    </div>
+  </div>
+  ...
+</section>
+
 
   <details style="margin-top:1rem">
     <summary>What rules are applied?</summary>

@@ -16,6 +16,12 @@
     "./data/rules.json";
 
   // -------- Elements --------
+   const els = {
+  // ...existing
+  outICD: document.getElementById("outICD"),   // <-- add this line
+  // ...existing
+};
+
   const els = {
     status: document.getElementById("status"),
     form: document.getElementById("orderForm"),
@@ -110,6 +116,37 @@
   };
 
   let RULES = null;
+  // -------- Matching helpers (aliases + fuzzy) --------
+const ALIASES = {
+  "nsclc": ["non small cell lung cancer","lung adenocarcinoma","lung squamous","lung ca"],
+  "mets": ["metastasis","metastases","metastatic","secondary tumor"],
+  "tia": ["transient ischemic attack"],
+  "pe": ["pulmonary embolism","embolus"],
+  "fuo": ["fever of unknown origin"],
+  "pji": ["prosthetic joint infection","prosthesis infection"],
+  "lbp": ["low back pain","lumbago"],
+  "hnscc": ["head and neck squamous cell carcinoma","head & neck scc"]
+};
+
+function norm(s){ return (s||"").toLowerCase().replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim(); }
+function tokens(s){ return norm(s).split(" ").filter(Boolean); }
+function bigrams(arr){ const out=[]; for(let i=0;i<arr.length-1;i++) out.push(arr[i]+" "+arr[i+1]); return out; }
+function diceSim(a,b){
+  const A=new Set(bigrams(tokens(a))), B=new Set(bigrams(tokens(b)));
+  if(!A.size || !B.size) return 0;
+  let inter=0; for(const x of A) if(B.has(x)) inter++;
+  return (2*inter)/(A.size+B.size);
+}
+function aliasExpand(arr){
+  const out=new Set(arr.map(norm));
+  for(const t of Array.from(out)){
+    for(const [k,vals] of Object.entries(ALIASES)){
+      if(t===k || vals.some(v=>t===norm(v))) { out.add(k); vals.forEach(v=>out.add(norm(v))); }
+    }
+  }
+  return Array.from(out);
+}
+
 
   // -------- Utils --------
   function setStatus(msg, level = "info") {
@@ -224,24 +261,47 @@
     const hasRecords = Array.isArray(obj.records);
     return hasModalities || hasRecords;
   }
-
-  async function loadRules() {
-    try {
-      const res = await fetch(RULES_URL, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      if (!looksLikeRules(json)) throw new Error("Invalid rules schema");
-      RULES = json;
-      setStatus("Rules loaded.", "success");
-    } catch (e) {
-      console.warn("Failed to load rules.json, using fallback", e);
-      RULES = FALLBACK_RULES;
-      setStatus(
-        "Using built-in fallback rules (could not fetch rules.json).",
-        "warn"
-      );
-    }
+  
+   async function loadRules() {
+  function buildSiblingUrls(rulesUrl) {
+    const meta = new URL(rulesUrl, location.origin);
+    const search = meta.search; // keeps ?v=...
+    const dir = new URL(meta.pathname.replace(/[^/]+$/, ''), location.origin);
+    const mk = (name) => new URL(name + search, dir).toString();
+    return [
+      rulesUrl,            // rules.json (PET/CT)
+      mk("ct_rules.json"), // CT
+      mk("mri_rules.json") // MRI
+    ];
   }
+
+  async function tryFetch(url) {
+    try { const r = await fetch(url, { cache: "no-store" }); if (!r.ok) return null; return await r.json(); }
+    catch { return null; }
+  }
+
+  try {
+    const urls = buildSiblingUrls(RULES_URL);
+    const loaded = (await Promise.all(urls.map(tryFetch))).filter(Boolean);
+
+    if (!loaded.length) throw new Error("No rules files available");
+
+    RULES = { modalities: {}, records: [] };
+    for (const j of loaded) {
+      if (j.modalities && typeof j.modalities === "object") Object.assign(RULES.modalities, j.modalities);
+      if (Array.isArray(j.records)) RULES.records.push(...j.records);
+    }
+    if (!RULES.records.length && !Object.keys(RULES.modalities).length) throw new Error("Invalid rules schema after merge");
+
+    setStatus("Rules loaded.", "success");
+  } catch (e) {
+    console.warn("Rules load/merge failed; using fallback", e);
+    RULES = FALLBACK_RULES;
+    setStatus("Using built-in fallback rules (could not fetch rules.json).", "warn");
+  }
+}
+
+ 
 
   function getModalityNode(modality) {
     return RULES?.modalities?.[modality] || null;
@@ -351,32 +411,46 @@
   }
 
   // -------- Basic record matcher (suggest studies) --------
-  function scoreRecord(rec, modality, region, contexts, condition) {
-    if (!(rec.modality || "").toUpperCase().includes(modality.toUpperCase()))
-      return -1;
-    let s = 0;
-    if (
-      rec.header_coverage &&
-      region &&
-      rec.header_coverage.toLowerCase().includes(region.toLowerCase())
-    )
-      s += 2;
-    (rec.contexts || []).forEach((c) => {
-      if (contexts.some((ctx) => ctx.toLowerCase() === (c || "").toLowerCase()))
-        s += 2;
-    });
-    (rec.keywords || []).forEach((k) => {
-      if (condition && condition.toLowerCase().includes((k || "").toLowerCase()))
-        s += 2;
-    });
-    if (
-      (rec.tags || []).includes("oncology-general") &&
-      condition &&
-      /c\d\d|malig|tumor|cancer/i.test(condition)
-    )
-      s += 1;
-    return s;
+   function scoreRecord(rec, modality, region, contexts, condition) {
+  // modality gate
+  if (!(rec.modality || "").toUpperCase().includes((modality||"").toUpperCase())) return -1;
+
+  const ctxNorm = contexts.map(norm);
+  const cond = norm(condition);
+  const condExpanded = aliasExpand([cond, ...(rec.keywords||[]).map(norm)]);
+
+  let s = 0;
+
+  // Region match (partial ok)
+  if (rec.header_coverage && region) {
+    const rSim = diceSim(rec.header_coverage, region);
+    if (rSim >= 0.8) s += 4; else if (rSim >= 0.5) s += 2;
   }
+
+  // Context overlap (exact token or fuzzy)
+  (rec.contexts||[]).forEach(c=>{
+    const cN = norm(c);
+    if (ctxNorm.includes(cN)) s += 3;
+    else if (ctxNorm.some(u=>diceSim(u,cN)>=0.65)) s += 1.5;
+  });
+
+  // Keyword/condition overlap (alias + fuzzy)
+  (rec.keywords||[]).forEach(k=>{
+    const kN = norm(k);
+    if (!kN) return;
+    if (condExpanded.includes(kN)) s += 3;
+    else {
+      const sim = diceSim(cond,kN);
+      if (sim>=0.75) s += 2; else if (sim>=0.55) s += 1;
+    }
+  });
+
+  // Oncology general bump if user typed cancer-ish words
+  if ((rec.tags||[]).includes("oncology-general") && /cancer|tumou?r|carcinoma|lymphoma|melanoma|mets?/i.test(condition)) s += 1;
+
+  return s;
+}
+
 
   function suggestStudies(modality, region, contexts, condition) {
     if (!els.suggestions) return;
@@ -404,39 +478,141 @@
       els.suggestions.appendChild(li);
     });
   }
+    // -------- ICD-10 suggestions --------
+// NOTE: Always verify final codes per ICD-10-CM 2025 and payer policy.
+const ICD_RULES = [
+  // PET/CT oncology
+  { tokens: ["dlbcl","lymphoma","hodgkin","nhl"], codes: [
+    { code:"C83.30", label:"Diffuse large B-cell lymphoma, unspecified site" },
+    { code:"C81.90", label:"Hodgkin lymphoma, unspecified, unspecified site" }
+  ]},
+  { tokens: ["nsclc","lung cancer","pulmonary nodule","lung"], codes: [
+    { code:"C34.90", label:"Malignant neoplasm of unspecified part of unspecified lung" },
+    { code:"R91.1", label:"Solitary pulmonary nodule" }
+  ]},
+  { tokens: ["melanoma"], codes: [{ code:"C43.9", label:"Malignant melanoma of skin, unspecified" }]},
+  { tokens: ["colorectal","colon cancer"], codes: [{ code:"C18.9", label:"Malignant neoplasm of colon, unspecified" }]},
+  { tokens: ["hnscc","head and neck"], codes: [{ code:"C76.0", label:"Malignant neoplasm of head, face and neck" }]},
+  { tokens: ["fever of unknown origin","fuo"], codes: [{ code:"R50.9", label:"Fever, unspecified" }]},
+  { tokens: ["viability","ischemic cardiomyopathy","myocardial"], codes: [{ code:"I25.5", label:"Ischemic cardiomyopathy" }]},
+
+  // CT common
+  { tokens: ["pulmonary embolism","pe"], codes: [{ code:"I26.99", label:"Other pulmonary embolism without acute cor pulmonale" }]},
+  { tokens: ["appendicitis","rlq"], codes: [{ code:"K35.80", label:"Unspecified acute appendicitis" }]},
+  { tokens: ["renal colic","kidney stone","flank pain","hematuria"], codes: [
+    { code:"N20.0", label:"Calculus of kidney" },
+    { code:"N23", label:"Unspecified renal colic" }
+  ]},
+  { tokens: ["pneumonia"], codes: [{ code:"J18.9", label:"Pneumonia, unspecified organism" }]},
+
+  // MRI neuro
+  { tokens: ["stroke","cerebral infarction"], codes: [{ code:"I63.9", label:"Cerebral infarction, unspecified" }]},
+  { tokens: ["tia"], codes: [{ code:"G45.9", label:"Transient cerebral ischemic attack, unspecified" }]},
+  { tokens: ["intracranial hemorrhage","ich"], codes: [{ code:"I62.9", label:"Nontraumatic intracranial hemorrhage, unspecified" }]},
+
+  // MRI spine
+  { tokens: ["cervical radiculopathy"], codes: [{ code:"M54.12", label:"Radiculopathy, cervical region" }]},
+  { tokens: ["lumbar radiculopathy","sciatica"], codes: [{ code:"M54.16", label:"Radiculopathy, lumbar region" }]},
+  { tokens: ["spinal stenosis","stenosis"], codes: [{ code:"M48.061", label:"Spinal stenosis, lumbar region w/o neurogenic claudication" }]},
+  { tokens: ["disc herniation"], codes: [{ code:"M51.26", label:"Other intervertebral disc displacement, lumbar region" }]},
+
+  // Ortho
+  { tokens: ["meniscal tear"], codes: [{ code:"S83.209A", label:"Tear of unsp meniscus, unsp knee, initial encounter" }]},
+  { tokens: ["acl tear"], codes: [{ code:"S83.511A", label:"Sprain of ACL of right knee, initial encounter" }]},
+  { tokens: ["rotator cuff"], codes: [{ code:"M75.100", label:"Unspecified rotator cuff tear or rupture, not specified as traumatic" }]}
+];
+
+function suggestICD10(text) {
+  const t = (text || "").toLowerCase();
+  const out = [];
+  const seen = new Set();
+  for (const rule of ICD_RULES) {
+    if (rule.tokens.some(tok => t.includes(tok))) {
+      for (const c of rule.codes) {
+        if (!seen.has(c.code)) {
+          out.push(c);
+          seen.add(c.code);
+        }
+      }
+    }
+    if (out.length >= 6) break; // keep list tidy
+  }
+  return out;
+}
 
   // -------- Results panel fill --------
-  function fillResults(topRec, contextStr, conditionStr) {
-    if (!els.results || !topRec) return;
-    const header =
-      topRec.study_name || topRec.header_coverage || "Suggested Study";
-    if (els.outHeader)
-      els.outHeader.textContent = `${header} — CPT: ${(topRec.cpt || []).join(
-        ", "
-      )}`;
-
-    if (els.outReason) {
-      const tmpl = (topRec.reasons || [])[0] || "{context} {condition}";
-      els.outReason.value = tmpl
-        .replace("{context}", contextStr || "")
-        .replace("{condition}", conditionStr || "");
-    }
-
-    function fillUL(ul, arr) {
-      if (!ul) return;
-      ul.innerHTML = "";
-      (arr || []).forEach((t) => {
-        const li = document.createElement("li");
-        li.textContent = t;
-        ul.appendChild(li);
-      });
-    }
-    fillUL(els.outPrep, topRec.prep ? [topRec.prep] : []);
-    fillUL(els.outDocs, topRec.supporting_docs);
-    fillUL(els.outFlags, topRec.flags);
-
-    els.results.hidden = false;
+  function chooseReasonTemplate(rec, contextStr, conditionStr){
+  const list = rec.reasons || ["{context} {condition}"];
+  // score each reason by overlap with user text
+  let best = list[0], bestS = -1;
+  for(const r of list){
+    const s = (r.includes("{context}")?1:0) + (r.includes("{condition}")?1:0) + diceSim(r, (contextStr||"")+" "+(conditionStr||""));
+    if (s > bestS) { bestS = s; best = r; }
   }
+  return best.replace("{context}", contextStr||"").replace("{condition}", conditionStr||"");
+}
+
+function fillResults(topRec, contextStr, conditionStr) {
+  if (!els.results || !topRec) return;
+  const header = topRec.study_name || topRec.header_coverage || "Suggested Study";
+  if (els.outHeader) els.outHeader.textContent = `${header} — CPT: ${(topRec.cpt || []).join(", ")}`;
+
+  if (els.outReason) els.outReason.value = chooseReasonTemplate(topRec, contextStr, conditionStr);
+
+  function fillUL(ul, arr) {
+    if (!ul) return;
+    ul.innerHTML = "";
+    (arr || []).forEach((t) => {
+      const li = document.createElement("li");
+      li.textContent = t;
+      ul.appendChild(li);
+    });
+  }
+  // ICD-10 suggestions from context+condition text
+if (els.outICD) {
+  const icds = suggestICD10(`${contextStr || ""} ${conditionStr || ""}`);
+  els.outICD.innerHTML = "";
+  if (icds.length) {
+    icds.forEach(({code,label}) => {
+      const li = document.createElement("li");
+      li.textContent = `${code} — ${label}`;
+      els.outICD.appendChild(li);
+    });
+  } else {
+    const li = document.createElement("li");
+    li.className = "muted";
+    li.textContent = "No suggestions. Edit condition text for better matches.";
+    els.outICD.appendChild(li);
+  }
+}
+
+  const flags = Array.from(topRec.flags||[]);
+  if (Array.isArray(topRec.icd10) && topRec.icd10.length) {
+    flags.unshift("ICD-10: " + topRec.icd10.join(", "));
+  }
+
+  fillUL(els.outPrep, topRec.prep ? [topRec.prep] : []);
+  fillUL(els.outDocs, topRec.supporting_docs);
+  fillUL(els.outFlags, flags);
+
+  els.results.hidden = false;
+}
+function updateSuggestions() {
+  const modality = els.modality?.value || "";
+  const region = els.region?.value || "";
+  const contexts = els.contextChips ? getSelectedContextsFromChips()
+                 : els.context ? [...els.context.selectedOptions].map(o=>o.value) : [];
+  const condition = els.condition?.value || "";
+
+  suggestStudies(modality, region, contexts, condition);
+
+  // Also prefill result with the current top (if exists) so right panel isn’t “dead”
+  const recs = RULES?.records || [];
+  const ranked = recs.map(r=>({ r, s: scoreRecord(r, modality, region, contexts, condition) }))
+                     .filter(x=>x.s>=0).sort((a,b)=>b.s-a.s);
+  if (ranked[0]) fillResults(ranked[0].r, contexts.join(", "), condition);
+}
+
 
   // -------- Event wiring --------
   function wireEvents() {
@@ -558,6 +734,13 @@
               .map((li) => li.textContent)
               .join("; ")
         );
+      if (els.outICD?.children?.length) {
+  parts.push(
+    "ICD-10: " +
+      Array.from(els.outICD.children).map(li => li.textContent).join("; ")
+  );
+}
+
       const text = parts.join("\n");
       if (!text.trim()) return;
       try {
