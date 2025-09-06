@@ -458,7 +458,7 @@
 
   function suggestICD10(text) {
     const t = (text || "").toLowerCase();
-       const out = [];
+    const out = [];
     const seen = new Set();
     for (const rule of ICD_RULES) {
       if (rule.tokens.some(tok => t.includes(tok))) {
