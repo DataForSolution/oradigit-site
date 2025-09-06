@@ -1,46 +1,19 @@
-# ----- Jekyll / GitHub Pages -----
-_site/
-.jekyll-cache/
-.jekyll-metadata
-.sass-cache/
+OPENAI_KEY.txt
+OPenAI-sk-proj-*.txt
 
-# ----- Node / tooling -----
-node_modules/
-functions/node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+OPENAI_KEY.txt
+OPenAI-sk-proj-*.txt
 
-# ----- Build & temp -----
-dist/
-build/
-coverage/
-*.log
-*.tmp
-*.temp
-*.orig
-*.lock
-*.bak
-*.old
-*~
-*.swp
-*.swo
+OPENAI_KEY.txt
+OPenAI-sk-proj-*.txt
+OPENAI_KEY.txt
+OPenAI-sk-proj-*.txt
+OPENAI_KEY.txt
+OPenAI-sk-proj-*.txt
+# OraDigit local backups
+order-helper/*.bak.*
+order-helper/*.backup.html
 
-# ----- IDE / OS -----
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-
-# ----- Firebase / Hosting -----
-.firebase/
-.firebaserc.local
-
-# ----- Env / secrets (never commit) -----
-.env
-.env.*
-!.env.example
-
-# ----- Vercel / misc -----
-.vercel/
+# OraDigit local backups
+order-helper/*.bak.*
+order-helper/*.backup.html
