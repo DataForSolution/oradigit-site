@@ -61,6 +61,7 @@
     const src = r.modalities ? r.modalities : { "PET/CT": r["PET/CT"], "CT": r["CT"], "MRI": r["MRI"] };
     const out = { modalities: {} };
 
+<<<<<<< HEAD
     for (const [mod, spec] of Object.entries(src || {})) {
       if (!spec) continue;
       const regions = Array.isArray(spec.regions) ? spec.regions
@@ -73,6 +74,194 @@
         contexts: [...new Set(contexts)].filter(Boolean),
         conditions: [...new Set(conditions)].filter(Boolean),
       };
+=======
+    fillSelect(els.region, node.regions || [], "Select region…");
+
+    if (els.contextChips) {
+      renderContextChips(node.contexts || []);
+      mirrorChipsToHiddenSelect();
+    } else {
+      fillSelect(els.context, node.contexts || [], "Select context…");
+    }
+
+    fillDatalist(els.conditionList, node.conditions || []);
+
+    // Contrast only for CT
+    showContrast(modality === "CT");
+
+    // Reset textual fields
+    if (els.condition) els.condition.value = "";
+    if (els.indication) els.indication.value = "";
+
+    // Ask any external preview sync to re-render
+    try { document.dispatchEvent(new Event("input", { bubbles: true })); } catch {}
+  }
+
+  // -------- Contrast suggestions for CT --------
+  function suggestContrastIfCT(modalityNode, conditionText, regionText) {
+    if (!modalityNode?.contrast_recommendations) return;
+    const text = `${conditionText || ""} ${regionText || ""}`.toLowerCase();
+    for (const rule of modalityNode.contrast_recommendations) {
+      const allMatch = rule.match.every((token) => text.includes(token));
+      if (allMatch) {
+        const target = els.contrastGroup?.querySelector(
+          `input[type=radio][value="${rule.suggest}"]`
+        );
+        if (target) target.checked = true;
+        break;
+      }
+    }
+    // Guardrail: any CTA should be with IV
+    if ((regionText || "").toLowerCase().includes("cta")) {
+      const withIV = els.contrastGroup?.querySelector(
+        'input[type=radio][value="with_iv"]'
+      );
+      if (withIV) withIV.checked = true;
+    }
+  }
+
+  // -------- Indication builder --------
+  function buildIndication(modalityNode, modality) {
+    if (!els.indication) return;
+    const region = els.region?.value || "";
+    const contexts = els.contextChips
+      ? getSelectedContextsFromChips().join(", ")
+      : (() => {
+          const sel = els.context;
+          return sel ? [...sel.selectedOptions].map((o) => o.textContent.trim()).join(", ") : "";
+        })();
+    const condition = els.condition?.value || "";
+    const contrast_text = contrastTextFromForm();
+    const templates =
+      modalityNode?.indication_templates ||
+      (modality === "CT"
+        ? ["CT {region} – {context} for {condition}"]
+        : modality === "PET/CT"
+        ? ["FDG PET/CT {region} – {context} for {condition}"]
+        : ["{region} – {context} for {condition}"]);
+    const t =
+      (contrast_text && templates.find((x) => x.includes("{contrast_text}"))) ||
+      templates[0];
+
+    const out = t
+      .replace("{region}", region)
+      .replace("{context}", contexts)
+      .replace("{condition}", condition)
+      .replace("{contrast_text}", contrast_text ? ` ${contrast_text}` : "");
+    els.indication.value = out.trim();
+  }
+
+  // -------- Basic record matcher (suggest studies) --------
+  function scoreRecord(rec, modality, region, contexts, condition) {
+    if (!(rec.modality || "").toUpperCase().includes(modality.toUpperCase()))
+      return -1;
+    let s = 0;
+    if (
+      rec.header_coverage &&
+      region &&
+      rec.header_coverage.toLowerCase().includes(region.toLowerCase())
+    ) s += 2;
+    (rec.contexts || []).forEach((c) => {
+      if (contexts.some((ctx) => ctx.toLowerCase() === (c || "").toLowerCase()))
+        s += 2;
+    });
+    (rec.keywords || []).forEach((k) => {
+      if (condition && condition.toLowerCase().includes((k || "").toLowerCase()))
+        s += 2;
+    });
+    if (
+      (rec.tags || []).includes("oncology-general") &&
+      condition && /c\d\d|malig|tumor|cancer/i.test(condition)
+    ) s += 1;
+    return s;
+  }
+
+  function suggestStudies(modality, region, contexts, condition) {
+    if (!els.suggestions) return;
+    const recs = RULES?.records || [];
+    const scored = recs
+      .map((r) => ({ r, s: scoreRecord(r, modality, region, contexts, condition) }))
+      .filter((x) => x.s >= 0)
+      .sort((a, b) => b.s - a.s)
+      .slice(0, 5);
+
+    els.suggestions.innerHTML = "";
+    if (!scored.length) {
+      const li = document.createElement("li");
+      li.className = "muted";
+      li.textContent = "No specific suggestions. Adjust context/condition.";
+      els.suggestions.appendChild(li);
+      return;
+    }
+
+    scored.forEach(({ r }) => {
+      const li = document.createElement("li");
+      const cpts = (r.cpt || []).join(", ");
+      li.innerHTML = `<strong>${r.study_name || r.header_coverage || "Suggested study"}</strong> <span class="muted">${cpts ? "[" + cpts + "]" : ""}</span>`;
+      li.title = (r.reasons || [])[0] || "";
+      els.suggestions.appendChild(li);
+    });
+  }
+
+  // -------- ICD-10 suggestions (lightweight helper) --------
+  // NOTE: Verify final billing codes per ICD-10-CM and payer policy.
+  const ICD_RULES = [
+    // PET/CT oncology
+    { tokens: ["dlbcl","lymphoma","hodgkin","nhl"], codes: [
+      { code:"C83.30", label:"Diffuse large B-cell lymphoma, unspecified site" },
+      { code:"C81.90", label:"Hodgkin lymphoma, unspecified, unspecified site" }
+    ]},
+    { tokens: ["nsclc","lung cancer","pulmonary nodule","lung"], codes: [
+      { code:"C34.90", label:"Malignant neoplasm of unspecified part of unspecified lung" },
+      { code:"R91.1",  label:"Solitary pulmonary nodule" }
+    ]},
+    { tokens: ["melanoma"], codes: [{ code:"C43.9", label:"Malignant melanoma of skin, unspecified" }]},
+    { tokens: ["colorectal","colon cancer"], codes: [{ code:"C18.9", label:"Malignant neoplasm of colon, unspecified" }]},
+    { tokens: ["hnscc","head and neck"], codes: [{ code:"C76.0", label:"Malignant neoplasm of head, face and neck" }]},
+    { tokens: ["fever of unknown origin","fuo"], codes: [{ code:"R50.9", label:"Fever, unspecified" }]},
+    { tokens: ["viability","ischemic cardiomyopathy","myocardial"], codes: [{ code:"I25.5", label:"Ischemic cardiomyopathy" }]},
+
+    // CT common
+    { tokens: ["pulmonary embolism","pe"], codes: [{ code:"I26.99", label:"Other pulmonary embolism without acute cor pulmonale" }]},
+    { tokens: ["appendicitis","rlq"], codes: [{ code:"K35.80", label:"Unspecified acute appendicitis" }]},
+    { tokens: ["renal colic","kidney stone","flank pain","hematuria"], codes: [
+      { code:"N20.0", label:"Calculus of kidney" },
+      { code:"N23",   label:"Unspecified renal colic" }
+    ]},
+    { tokens: ["pneumonia"], codes: [{ code:"J18.9", label:"Pneumonia, unspecified organism" }]},
+
+    // MRI neuro
+    { tokens: ["stroke","cerebral infarction"], codes: [{ code:"I63.9", label:"Cerebral infarction, unspecified" }]},
+    { tokens: ["tia"], codes: [{ code:"G45.9", label:"Transient cerebral ischemic attack, unspecified" }]},
+    { tokens: ["intracranial hemorrhage","ich"], codes: [{ code:"I62.9", label:"Nontraumatic intracranial hemorrhage, unspecified" }]},
+
+    // MRI spine
+    { tokens: ["cervical radiculopathy"], codes: [{ code:"M54.12", label:"Radiculopathy, cervical region" }]},
+    { tokens: ["lumbar radiculopathy","sciatica"], codes: [{ code:"M54.16", label:"Radiculopathy, lumbar region" }]},
+    { tokens: ["spinal stenosis","stenosis"], codes: [{ code:"M48.061", label:"Spinal stenosis, lumbar region w/o neurogenic claudication" }]},
+    { tokens: ["disc herniation"], codes: [{ code:"M51.26", label:"Other intervertebral disc displacement, lumbar region" }]},
+
+    // Ortho
+    { tokens: ["meniscal tear"], codes: [{ code:"S83.209A", label:"Tear of unsp meniscus, unsp knee, initial encounter" }]},
+    { tokens: ["acl tear"], codes: [{ code:"S83.511A", label:"Sprain of ACL of right knee, initial encounter" }]},
+    { tokens: ["rotator cuff"], codes: [{ code:"M75.100", label:"Unspecified rotator cuff tear or rupture, not specified as traumatic" }]}
+  ];
+
+  function suggestICD10(text) {
+    const t = (text || "").toLowerCase();
+    const out = [];
+    const seen = new Set();
+    for (const rule of ICD_RULES) {
+      if (rule.tokens.some(tok => t.includes(tok))) {
+        for (const c of rule.codes) {
+          if (!seen.has(c.code)) {
+            out.push(c);
+            seen.add(c.code);
+          }
+        }
+      }
+      if (out.length >= 6) break; // keep tidy
+>>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
     }
     return out;
   }
