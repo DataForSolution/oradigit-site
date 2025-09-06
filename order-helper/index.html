@@ -14,20 +14,10 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 <script>
   window.addEventListener('error', e => {
     const s = document.getElementById('status');
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
     if (s) {
       s.textContent = 'JavaScript error: ' + (e.message || 'Unknown');
       s.className = 'status error';
     }
-<<<<<<< HEAD
-=======
-    if (s) { s.textContent = 'JavaScript error: ' + (e.message || 'Unknown'); s.className = 'status error'; }
->>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
-=======
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
   });
 </script>
 
@@ -115,7 +105,8 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       <!-- Indication (auto-built but editable) -->
       <div class="field">
         <label for="indication">Clinical Indication</label>
-        <textarea id="indication" name="indication" rows="3" placeholder="Auto-generated (you can edit)…"></textarea>
+        <textarea id="indication" name="indication" rows="3"
+          placeholder="Auto-generated (you can edit)…"></textarea>
       </div>
 
       <div class="actions">
@@ -231,10 +222,6 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
   });
 </script>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
 <!-- Tiny UX helpers (keeps the preview in sync; app.js handles business logic) -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -291,13 +278,5 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 </script>
 
 <!-- App logic (must be last so helpers & probes are ready) -->
-<<<<<<< HEAD
-<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250905"></script>
+<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250904"></script>
 
-=======
-<!-- App logic (keep last) -->
-<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250904"></script>
->>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
-=======
-<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250904"></script>
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
