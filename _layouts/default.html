@@ -65,12 +65,12 @@
     gtag('js', new Date());
     gtag('config','G-FKVXD8061R',{ send_page_view:true });
   </script>
-
-  {% if page.custom_css %}
+<link rel="stylesheet" href="{{ '/assets/css/style.css?v=2' | relative_url }}">
+{% if page.custom_css %}
 <link rel="stylesheet" href="{{ page.custom_css | relative_url }}">
 {% endif %}
 
-
+ 
 </head>
 <body>
   <!-- 4) Google Tag Manager (noscript fallback) -->
