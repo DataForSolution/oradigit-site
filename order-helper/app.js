@@ -1,4 +1,4 @@
-﻿/**
+/**
  * OraDigit Order Helper – app.js (golden rev for steps 1–5)
  * - Auto-merges rules.json + ct_rules.json + mri_rules.json (respects ?v= cache-buster)
  * - Chips UI + keyboard support; mirrors to hidden <select multiple>
@@ -7,7 +7,6 @@
  * - Study suggestions + Results panel + ICD-10 suggestions + improved copy-all
  * - Fallback rules so UI stays usable if JSON fetch fails
  */
-
 (function () {
   "use strict";
 
@@ -22,8 +21,8 @@
     form: document.getElementById("orderForm"),
     modality: document.getElementById("modality"),
     region: document.getElementById("region"),
-    context: document.getElementById("context"),           // hidden mirror select (optional)
-    contextChips: document.getElementById("contextChips"), // primary UI
+    context: document.getElementById("context"),
+    contextChips: document.getElementById("contextChips"),
     condition: document.getElementById("condition"),
     conditionList: document.getElementById("conditionList"),
     indication: document.getElementById("indication"),
@@ -52,13 +51,8 @@
     modalities: {
       "PET/CT": {
         regions: [
-          "Skull base to mid-thigh",
-          "Whole body",
-          "Head/Neck",
-          "Chest",
-          "Abdomen/Pelvis",
-          "Brain",
-          "Cardiac viability"
+          "Skull base to mid-thigh","Whole body","Head/Neck",
+          "Chest","Abdomen/Pelvis","Brain","Cardiac viability"
         ],
         contexts: [
           "Staging","Restaging","Treatment response","Surveillance",
@@ -76,9 +70,9 @@
       },
       CT: {
         regions: [
-          "Head/Brain","Neck","Chest",
-          "Low-Dose Lung CT (Screening)","Abdomen","Pelvis","Abdomen/Pelvis",
-          "CT Urogram","Spine – Cervical","Spine – Thoracic","Spine – Lumbar"
+          "Head/Brain","Neck","Chest","Low-Dose Lung CT (Screening)",
+          "Abdomen","Pelvis","Abdomen/Pelvis","CT Urogram",
+          "Spine – Cervical","Spine – Thoracic","Spine – Lumbar"
         ],
         contexts: [
           "Staging","Restaging","Treatment response","Surveillance","Initial evaluation",
@@ -95,17 +89,17 @@
           "CT {region}{contrast_text} – evaluate {condition}"
         ],
         contrast_recommendations: [
-          { match:["kidney stone","renal colic"], suggest:"without_iv" },
-          { match:["appendicitis","rlq"],         suggest:"with_iv"    },
-          { match:["pe","pulmonary embolism"],    suggest:"with_iv"    },
-          { match:["aortic","dissection","aneurysm"], suggest:"with_iv"},
-          { match:["liver lesion","pancreatitis"], suggest:"with_iv"   },
-          { match:["bowel obstruction"],           suggest:"without_iv"},
+          { match:["kidney stone","renal colic"],        suggest:"without_iv" },
+          { match:["appendicitis","rlq"],                suggest:"with_iv"    },
+          { match:["pe","pulmonary embolism"],           suggest:"with_iv"    },
+          { match:["aortic","dissection","aneurysm"],    suggest:"with_iv"    },
+          { match:["liver lesion","pancreatitis"],       suggest:"with_iv"    },
+          { match:["bowel obstruction"],                  suggest:"without_iv"},
           { match:["low-dose lung ct","screening","ldct"], suggest:"without_iv" }
         ]
       }
     },
-    records: [] // real records come from your JSON files
+    records: []
   };
 
   let RULES = null;
@@ -157,16 +151,14 @@
     if (!els.contrastGroup) return;
     els.contrastGroup.classList.toggle("hidden", !show);
     if (!show) {
-      const checked =
-        els.contrastGroup.querySelector('input[type=radio]:checked');
+      const checked = els.contrastGroup.querySelector('input[type=radio]:checked');
       if (checked) checked.checked = false;
       if (els.oral) els.oral.checked = false;
     }
   }
 
   function contrastTextFromForm() {
-    if (!els.contrastGroup || els.contrastGroup.classList.contains("hidden"))
-      return "";
+    if (!els.contrastGroup || els.contrastGroup.classList.contains("hidden")) return "";
     const radio = els.contrastGroup.querySelector('input[type=radio]:checked');
     const oral = els.oral?.checked ? " + oral contrast" : "";
     if (!radio) return oral ? "(" + oral.trim() + ")" : "";
@@ -217,27 +209,24 @@
   async function loadRules() {
     function buildSiblingUrls(rulesUrl) {
       const meta = new URL(rulesUrl, location.origin);
-      const search = meta.search; // keeps ?v=...
+      const search = meta.search; // keep ?v=...
       const dir = new URL(meta.pathname.replace(/[^/]+$/, ''), location.origin);
       const mk = (name) => new URL(name + search, dir).toString();
       return [
-        rulesUrl,            // rules.json (PET/CT)
+        rulesUrl,            // rules.json (PET/CT + general)
         mk("ct_rules.json"), // CT
         mk("mri_rules.json") // MRI
       ];
     }
-
     async function tryFetch(url) {
       try { const r = await fetch(url, { cache: "no-store" }); if (!r.ok) return null; return await r.json(); }
       catch { return null; }
     }
-
     try {
       const urls = buildSiblingUrls(RULES_URL);
       const loaded = (await Promise.all(urls.map(tryFetch))).filter(Boolean);
       if (!loaded.length) throw new Error("No rules files available");
 
-      // Merge modalities (shallow) + records (concat)
       RULES = { modalities: {}, records: [] };
       for (const j of loaded) {
         if (j.modalities && typeof j.modalities === "object") {
@@ -245,6 +234,9 @@
         }
         if (Array.isArray(j.records)) {
           RULES.records.push(...j.records);
+        } else if (Array.isArray(j)) {
+          // support legacy "pure records array" JSON files
+          RULES.records.push(...j);
         }
       }
       if (!RULES.records.length && !Object.keys(RULES.modalities).length) {
@@ -302,11 +294,11 @@
     if (els.condition) els.condition.value = "";
     if (els.indication) els.indication.value = "";
 
-    // Ask any external preview sync to re-render
+    // Notify preview helpers to re-render
     try { document.dispatchEvent(new Event("input", { bubbles: true })); } catch {}
   }
 
-  // -------- Contrast suggestions for CT --------
+  // -------- CT contrast suggestions --------
   function suggestContrastIfCT(modalityNode, conditionText, regionText) {
     if (!modalityNode?.contrast_recommendations) return;
     const text = `${conditionText || ""} ${regionText || ""}`.toLowerCase();
@@ -322,9 +314,7 @@
     }
     // Guardrail: any CTA should be with IV
     if ((regionText || "").toLowerCase().includes("cta")) {
-      const withIV = els.contrastGroup?.querySelector(
-        'input[type=radio][value="with_iv"]'
-      );
+      const withIV = els.contrastGroup?.querySelector('input[type=radio][value="with_iv"]');
       if (withIV) withIV.checked = true;
     }
   }
@@ -360,7 +350,7 @@
     els.indication.value = out.trim();
   }
 
-  // -------- Basic record matcher (suggest studies) --------
+  // -------- Study suggestions --------
   function scoreRecord(rec, modality, region, contexts, condition) {
     if (!(rec.modality || "").toUpperCase().includes(modality.toUpperCase()))
       return -1;
@@ -412,10 +402,8 @@
     });
   }
 
-  // -------- ICD-10 suggestions (lightweight helper) --------
-  // NOTE: Verify final billing codes per ICD-10-CM and payer policy.
+  // -------- ICD-10 suggestions (informational only) --------
   const ICD_RULES = [
-    // PET/CT oncology
     { tokens: ["dlbcl","lymphoma","hodgkin","nhl"], codes: [
       { code:"C83.30", label:"Diffuse large B-cell lymphoma, unspecified site" },
       { code:"C81.90", label:"Hodgkin lymphoma, unspecified, unspecified site" }
@@ -429,8 +417,6 @@
     { tokens: ["hnscc","head and neck"], codes: [{ code:"C76.0", label:"Malignant neoplasm of head, face and neck" }]},
     { tokens: ["fever of unknown origin","fuo"], codes: [{ code:"R50.9", label:"Fever, unspecified" }]},
     { tokens: ["viability","ischemic cardiomyopathy","myocardial"], codes: [{ code:"I25.5", label:"Ischemic cardiomyopathy" }]},
-
-    // CT common
     { tokens: ["pulmonary embolism","pe"], codes: [{ code:"I26.99", label:"Other pulmonary embolism without acute cor pulmonale" }]},
     { tokens: ["appendicitis","rlq"], codes: [{ code:"K35.80", label:"Unspecified acute appendicitis" }]},
     { tokens: ["renal colic","kidney stone","flank pain","hematuria"], codes: [
@@ -438,24 +424,17 @@
       { code:"N23",   label:"Unspecified renal colic" }
     ]},
     { tokens: ["pneumonia"], codes: [{ code:"J18.9", label:"Pneumonia, unspecified organism" }]},
-
-    // MRI neuro
     { tokens: ["stroke","cerebral infarction"], codes: [{ code:"I63.9", label:"Cerebral infarction, unspecified" }]},
     { tokens: ["tia"], codes: [{ code:"G45.9", label:"Transient cerebral ischemic attack, unspecified" }]},
     { tokens: ["intracranial hemorrhage","ich"], codes: [{ code:"I62.9", label:"Nontraumatic intracranial hemorrhage, unspecified" }]},
-
-    // MRI spine
     { tokens: ["cervical radiculopathy"], codes: [{ code:"M54.12", label:"Radiculopathy, cervical region" }]},
     { tokens: ["lumbar radiculopathy","sciatica"], codes: [{ code:"M54.16", label:"Radiculopathy, lumbar region" }]},
     { tokens: ["spinal stenosis","stenosis"], codes: [{ code:"M48.061", label:"Spinal stenosis, lumbar region w/o neurogenic claudication" }]},
     { tokens: ["disc herniation"], codes: [{ code:"M51.26", label:"Other intervertebral disc displacement, lumbar region" }]},
-
-    // Ortho
     { tokens: ["meniscal tear"], codes: [{ code:"S83.209A", label:"Tear of unsp meniscus, unsp knee, initial encounter" }]},
     { tokens: ["acl tear"], codes: [{ code:"S83.511A", label:"Sprain of ACL of right knee, initial encounter" }]},
     { tokens: ["rotator cuff"], codes: [{ code:"M75.100", label:"Unspecified rotator cuff tear or rupture, not specified as traumatic" }]}
   ];
-
   function suggestICD10(text) {
     const t = (text || "").toLowerCase();
     const out = [];
@@ -463,13 +442,10 @@
     for (const rule of ICD_RULES) {
       if (rule.tokens.some(tok => t.includes(tok))) {
         for (const c of rule.codes) {
-          if (!seen.has(c.code)) {
-            out.push(c);
-            seen.add(c.code);
-          }
+          if (!seen.has(c.code)) { out.push(c); seen.add(c.code); }
         }
       }
-      if (out.length >= 6) break; // keep tidy
+      if (out.length >= 6) break;
     }
     return out;
   }
@@ -482,28 +458,21 @@
       const cptStr = (topRec.cpt || []).join(", ");
       els.outHeader.textContent = cptStr ? `${header} — CPT: ${cptStr}` : header;
     }
-
     if (els.outReason) {
       const tmpl = (topRec.reasons || [])[0] || "{context} {condition}";
       els.outReason.value = tmpl
         .replace("{context}", contextStr || "")
         .replace("{condition}", conditionStr || "");
     }
-
     function fillUL(ul, arr) {
       if (!ul) return;
       ul.innerHTML = "";
-      (arr || []).forEach((t) => {
-        const li = document.createElement("li");
-        li.textContent = t;
-        ul.appendChild(li);
-      });
+      (arr || []).forEach((t) => { const li = document.createElement("li"); li.textContent = t; ul.appendChild(li); });
     }
     fillUL(els.outPrep,  topRec.prep ? [topRec.prep] : []);
     fillUL(els.outDocs,  topRec.supporting_docs);
     fillUL(els.outFlags, topRec.flags);
 
-    // ICD-10 suggestions
     if (els.outICD) {
       const icds = suggestICD10(`${contextStr || ""} ${conditionStr || ""}`);
       els.outICD.innerHTML = "";
@@ -520,7 +489,6 @@
         els.outICD.appendChild(li);
       }
     }
-
     els.results.hidden = false;
   }
 
@@ -574,10 +542,7 @@
     document.addEventListener("keydown", (e) => {
       const chip = e.target.closest("#contextChips .oh-chip");
       if (!chip) return;
-      if (e.key === " " || e.key === "Enter") {
-        e.preventDefault();
-        chip.click();
-      }
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); chip.click(); }
     });
 
     // Form submit -> suggest order + fill results
@@ -590,7 +555,6 @@
         : (els.context ? [...els.context.selectedOptions].map((o) => o.value) : []);
       const condition = els.condition?.value || "";
 
-      // Suggestions + Results
       suggestStudies(modality, region, contexts, condition);
 
       const recs = RULES?.records || [];
