@@ -10,3 +10,10 @@ OPENAI_KEY.txt
 OPenAI-sk-proj-*.txt
 OPENAI_KEY.txt
 OPenAI-sk-proj-*.txt
+# OraDigit local backups
+order-helper/*.bak.*
+order-helper/*.backup.html
+
+# OraDigit local backups
+order-helper/*.bak.*
+order-helper/*.backup.html
