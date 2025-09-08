@@ -1,836 +1,251 @@
-<!-- /order-helper/app.js -->
-<script>
-/* =========================================================
-   OraDigit Order Helper v2 — app.js
-   - Robust rules loader (meta-config + local JSON; optional Firestore overlay)
-   - Populates all dropdowns (CT/MRI/PET-CT/US/XR/…)
-   - Live Order Review builder
-   - Suggest Reason, Copy, Share, Reset
-   - Optional Firebase write on submit (orders collection)
-   - Defensive error handling with status beacons + debug panel
-   - STEP 4: Merge modality ICD-10 into global catalog + auto-select first modality
-========================================================= */
+/* OraDigit Order Helper – robust init + live preview
+   - Reads rules URL from <meta name="oh-rules-path">
+   - Works if rules.json is missing or has a different shape
+   - Populates Region, Context chips, Condition suggestions
+   - Keeps the right-side Order Preview live
+*/
 
 (() => {
-  // ---------- App version (used for cache-busting) ----------
-  const APP_VERSION = document.querySelector('meta[name="oh-version"]')?.content || String(Date.now());
-
-  // ---------- Shorthands & elements ----------
   const $ = (s) => document.querySelector(s);
-  const els = {
-    form: $('#orderForm'),
-    status: $('#status'),
-    review: $('#review'),
-    btnSuggest: $('#btnSuggest'),
-    btnCopy: $('#btnCopy'),
-    btnShare: $('#btnShare'),
-    btnReset: $('#btnReset'),
-    modality: $('#modality'),
-    region: $('#region'),
-    bodyPart: $('#bodyPart'),
-    contrast: $('#contrast'),
-    laterality: $('#laterality'),
-    context: $('#context'),
-    urgency: $('#urgency'),
-    condition: $('#condition'),
-    conditionList: $('#conditionList'),
-    icd10: $('#icd10'),
-    icdList: $('#icdList'),
-    cpt: $('#cpt'),
-    indication: $('#indication'),
-    pregnant: $('#pregnant'),
-    creatinineDate: $('#creatinineDate'),
-    allergies: $('#allergies'),
-    special: $('#special'),
+
+  const FALLBACK = {
+    CONTEXTS: [
+      "Staging",
+      "Restaging",
+      "Treatment response",
+      "Surveillance",
+      "Suspected recurrence",
+      "Infection / inflammation",
+      "Viability",
+    ],
+    REGIONS: {
+      "PET/CT": ["Whole body", "Head & neck", "Thorax/Chest", "Abdomen/Pelvis", "Brain"],
+      CT: ["Head", "Neck", "Chest", "Abdomen", "Pelvis", "Abdomen/Pelvis", "Angio/PE", "Sinus", "Spine", "Extremity"],
+      MRI: ["Brain", "C-spine", "T-spine", "L-spine", "Shoulder", "Knee", "Hip", "Abdomen", "Pelvis", "Prostate", "Cardiac"],
+    },
+    CONDITIONS: {
+      CT: ["Renal colic", "Pulmonary embolism", "Appendicitis", "Diverticulitis", "Kidney stone"],
+      MRI: ["Multiple sclerosis", "Lumbar radiculopathy", "Rotator cuff tear", "Meniscal tear", "Hip labral tear"],
+      "PET/CT": ["NSCLC", "Lymphoma", "Breast cancer", "Colorectal cancer", "Melanoma"],
+    },
   };
 
-  // ---------- Status beacons ----------
-  function setStatus(msg, cls = 'oh-status success', persist = true) {
-    if (!els.status) return;
-    els.status.textContent = msg;
-    els.status.className = cls;
-    if (!persist) {
-      setTimeout(() => {
-        if (els.status.textContent === msg) {
-          els.status.textContent = 'Ready.';
-          els.status.className = 'oh-status';
-        }
-      }, 4000);
-    }
-    const tag = cls.includes('error') ? 'error' : cls.includes('warn') ? 'warn' : 'log';
-    console[tag](`[OH] ${msg}`);
+  function setStatus(msg, kind = "success") {
+    const s = $("#status");
+    if (!s) return;
+    s.textContent = msg;
+    s.className = `status ${kind}`;
   }
 
-  // Catch sync + async errors globally
-  window.addEventListener('error', e =>
-    setStatus('JavaScript error: ' + (e.message || 'Unknown'), 'oh-status error')
-  );
-  window.addEventListener('unhandledrejection', e =>
-    setStatus('App error: ' + (e.reason?.message || e.reason || 'Unknown'), 'oh-status error')
-  );
+  function rulesURL() {
+    const meta = document.querySelector('meta[name="oh-rules-path"]');
+    const url = meta?.content?.trim();
+    return url || "/order-helper/data/rules.json";
+  }
 
-  // ---------- State ----------
-  const state = { rules: null, rulesSource: '' };
-
-  // ---------- Init ----------
-  document.addEventListener('DOMContentLoaded', init);
-
-  async function init () {
+  async function loadRules() {
     try {
-      await loadRules();         // populates state.rules & state.rulesSource
-      ensureMinimumModalities(); // guard: UI never empty even if rules sparse
-      populateModalities();      // now also auto-selects first modality
-      wireEvents();
-      buildReview();
-      attachDebugPanel();
-
-      // If URL has hash payload (from share fallback), hydrate review
-      if (location.hash && els.review) {
-        const txt = decodeURIComponent(location.hash.slice(1));
-        els.review.textContent = txt;
-      }
-      setStatus(`Rules ready from ${state.rulesSource}`, 'oh-status success');
+      const r = await fetch(rulesURL(), { cache: "no-store" });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const json = await r.json();
+      setStatus("Rules loaded.", "success");
+      return json;
     } catch (e) {
-      console.error(e);
-      setStatus('Failed to initialize Order Helper.', 'oh-status error');
-    }
-  }
-
-  // ---------- Cache-busting + safe JSON fetch ----------
-  function cacheUrl(url) {
-    try {
-      const u = new URL(url, window.location.origin);
-      if (!u.searchParams.has('v')) u.searchParams.set('v', APP_VERSION);
-      return u.toString();
-    } catch {
-      return url + (url.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(APP_VERSION);
-    }
-  }
-
-  async function fetchJSON(url) {
-    try {
-      const r = await fetch(cacheUrl(url), { cache: 'no-store' });
-      if (!r.ok) return null;
-      return await r.json();
-    } catch {
+      setStatus("Using built-in defaults (rules not available).", "warn");
       return null;
     }
   }
 
-  // ---------- Rules loading ----------
-  async function loadRules () {
-    setStatus('Loading rules…', 'oh-status');
+  // Try multiple likely shapes, return array or null
+  function listFromRules(rules, modality, key) {
+    if (!rules) return null;
 
-    let source = null;
-    const metaPath = document.querySelector('meta[name="oh-rules-path"]')?.content;
-    const tryPaths = [
-      metaPath,
-      '/order-helper/data/rules.json',
-      './data/rules.json',
-      'data/rules.json'
-    ].filter(Boolean);
+    // Common shapes we support:
+    // 1) { modalities: { "CT": { regions:[...], contexts:[...], conditions:[...] } } }
+    if (rules.modalities?.[modality]?.[key]) return rules.modalities[modality][key];
 
-    // 1) Primary rules.json attempts
-    let base = null;
-    for (const p of tryPaths) {
-      const data = await fetchJSON(p);
-      if (data && (data.modalities || data.CT || data.MRI)) {
-        base = data; source = p; break;
-      }
+    // 2) { "CT": { regions:[...], contexts:[...], conditions:[...] } }
+    if (rules[modality]?.[key]) return rules[modality][key];
+
+    // 3) { regions: { "CT":[...] }, contexts: { "CT":[...] }, conditions: { "CT":[...] } }
+    if (rules[key]?.[modality]) return rules[key][modality];
+
+    // 4) Global arrays: { regions:[...]} (rare)
+    if (Array.isArray(rules[key])) return rules[key];
+
+    // Handle singular miskeys
+    if (key === "contexts") {
+      if (rules.modalities?.[modality]?.context) return rules.modalities[modality].context;
+      if (rules[modality]?.context) return rules[modality].context;
     }
+    return null;
+  }
 
-    // 2) Legacy split files (ct_rules.json / mri_rules.json)
-    if (!base) {
-      const ct  = await fetchJSON('/order-helper/data/ct_rules.json')
-              || await fetchJSON('./data/ct_rules.json')
-              || await fetchJSON('data/ct_rules.json');
-      const mri = await fetchJSON('/order-helper/data/mri_rules.json')
-              || await fetchJSON('./data/mri_rules.json')
-              || await fetchJSON('data/mri_rules.json');
-      if (ct || mri) {
-        base = { modalities: {} };
-        if (ct)  base.modalities['CT']  = ct.modalities?.CT  || ct.CT  || ct;
-        if (mri) base.modalities['MRI'] = mri.modalities?.MRI || mri.MRI || mri;
-        source = 'legacy ct_rules.json + mri_rules.json';
-      }
-    }
+  function buildRegionOptions(rules, modality) {
+    const sel = $("#region");
+    if (!sel) return;
+    sel.innerHTML = "";
 
-    // 3) Embedded emergency defaults (UI never empty)
-    if (!base) {
-      console.warn('[OH] No rules file found; using embedded defaults.');
-      base = {
-        modalities: {
-          'CT': {
-            regions: ['Head/Brain', 'Chest', 'Abdomen/Pelvis'],
-            body_parts: ['Brain', 'Thorax', 'Abdomen and pelvis'],
-            contrast_options: ['None','With contrast','Without contrast','With and without'],
-            contexts: ['Acute','Oncology staging','Follow-up'],
-            conditions: ['Stroke/TIA','Lung nodule','RLQ pain/appendicitis'],
-            common_cpt: ['70450','71260','74177'],
-            cpt_map: {
-              'Head/Brain | Brain | Without contrast': ['70450'],
-              'Chest | Thorax | With contrast': ['71260'],
-              'Abdomen/Pelvis | Abdomen and pelvis | With contrast': ['74177']
-            },
-            icd10: ['I63.9','R91.1','R10.31'] // seed
-          },
-          'MRI': {
-            regions: ['Brain','Lumbar spine','Prostate (PI-RADS)'],
-            body_parts: ['Brain','Lumbar spine','Prostate'],
-            contrast_options: ['None','With and without'],
-            contexts: ['Problem solving','Staging','Follow-up'],
-            conditions: ['Tumor','Radiculopathy','Prostate cancer'],
-            common_cpt: ['70553','72148','72197'],
-            cpt_map: {
-              'Brain | Brain | With and without': ['70553'],
-              'Lumbar spine | Lumbar spine | Without contrast': ['72148'],
-              'Prostate (PI-RADS) | Prostate | With and without': ['72197']
-            },
-            icd10: ['C61','G35'] // seed
-          }
-        },
-        icd10_catalog: ['I63.9','R91.1','R10.31','C61','G35']
-      };
-      source = 'embedded defaults';
-    }
+    const regions = listFromRules(rules, modality, "regions") || FALLBACK.REGIONS[modality] || [];
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = "Select region…";
+    sel.appendChild(opt0);
 
-    // 4) Facility overlay (optional)
-    const facility =
-        await fetchJSON('/order-helper/data/rules.facility.json')
-     || await fetchJSON('./data/rules.facility.json')
-     || await fetchJSON('data/rules.facility.json');
-    if (facility) {
-      base = mergeRules(base, facility);
-      source += ' + facility overlay';
-    }
-
-    // 5) Optional Firestore overlay
-    const overlaid = await overlayRemoteRules(base).catch(err => {
-      console.warn('[OH] Remote overlay failed:', err);
-      return base;
+    regions.forEach((r) => {
+      const o = document.createElement("option");
+      o.value = r;
+      o.textContent = r;
+      sel.appendChild(o);
     });
-    if (overlaid !== base) source += ' + remote overlay';
-
-    // 6) Normalize to app schema (includes STEP 4 ICD-10 merge)
-    state.rules = normalizeRules(overlaid);
-    state.rulesSource = source || 'unknown';
-
-    // 7) Sanity guard
-    if (!state.rules || !state.rules.modalities || !Object.keys(state.rules.modalities).length) {
-      await loadRulesFallback();
-      state.rulesSource = 'emergency defaults';
-    }
-
-    const mods = Object.keys(state.rules.modalities || {});
-    setStatus(`Rules ready from ${state.rulesSource} — ${mods.length} modalities.`, 'oh-status success');
   }
 
-  // Last-resort fallback
-  async function loadRulesFallback() {
-    state.rules = {
-      modalities: {
-        'CT': {
-          regions: ['Head/Brain'],
-          body_parts: ['Brain'],
-          contrast_options: ['Without contrast'],
-          contexts: ['Acute'],
-          conditions: ['Stroke/TIA'],
-          common_cpt: ['70450'],
-          cpt_map: { 'Head/Brain | Brain | Without contrast': ['70450'] },
-          icd10: ['I63.9']
-        }
-      },
-      icd10_catalog: ['I63.9']
-    };
-    setStatus('Using emergency defaults. Please fix rules.json path/schema.', 'oh-status warn');
-  }
+  function buildContextChips(rules, modality) {
+    const wrap = $("#contextChips");
+    const hidden = $("#context");
+    if (!wrap || !hidden) return;
 
-  // Optional: overlay from Firestore (if configured globally)
-  async function overlayRemoteRules (local) {
-    if (!(window.ORADIGIT_FIREBASE_CONFIG && window.firebase)) return local;
-    const app = firebase.apps?.length ? firebase.app() : firebase.initializeApp(window.ORADIGIT_FIREBASE_CONFIG);
-    const db = firebase.firestore();
-    const snap = await db.collection('order_helper_rules').doc('current').get();
-    if (!snap.exists) return local;
-    const remote = snap.data() || {};
-    return mergeRules(local, remote);
-  }
+    wrap.innerHTML = "";
+    hidden.innerHTML = "";
 
-  // Conservative deep merge for fields we use
-  function mergeRules (base, overlay) {
-    const out = JSON.parse(JSON.stringify(base || {}));
-    if (!overlay) return out;
-    if (overlay.modalities) {
-      out.modalities = { ...(out.modalities || {}), ...overlay.modalities };
-    }
-    if (Array.isArray(overlay.icd10_catalog)) {
-      const set = new Set([...(out.icd10_catalog || []), ...overlay.icd10_catalog]);
-      out.icd10_catalog = [...set];
-    }
-    return out;
-  }
-
-  // Normalize to a stable shape the UI expects
-  // STEP 4: while normalizing, also fold each modality's icd10 list into the global catalog (de-dupe)
-  function normalizeRules (r) {
-    const src = r?.modalities ? r.modalities : r || {};
-    const globalIcdSet = new Set(Array.isArray(r?.icd10_catalog) ? r.icd10_catalog : []);
-    const out = { modalities: {} , icd10_catalog: [] };
-
-    for (const [mod, specRaw] of Object.entries(src || {})) {
-      if (!specRaw) continue;
-      const spec = { ...specRaw };
-
-      const regions    = arr(spec.regions);
-      const body_parts = arr(spec.body_parts);
-      const contrast   = arr(spec.contrast_options, ['None','With contrast','Without contrast','With and without']);
-      const laterality = arr(spec.laterality, ['N/A','Left','Right','Bilateral']);
-      const contexts   = arr(spec.contexts, ['Staging','Restaging','Treatment response','Surveillance','Screening','Acute']);
-      const conditions = arr(spec.conditions);
-      const icd10      = arr(spec.icd10);
-      const common_cpt = arr(spec.common_cpt);
-      const cpt_map    = spec.cpt_map && typeof spec.cpt_map === 'object' ? spec.cpt_map : {};
-
-      // STEP 4: merge per-modality ICD-10 into global set
-      icd10.forEach(code => code && globalIcdSet.add(code));
-
-      out.modalities[mod] = {
-        regions, body_parts,
-        contrast_options: contrast,
-        laterality, contexts, conditions, icd10,
-        common_cpt, cpt_map
-      };
-    }
-
-    out.icd10_catalog = [...globalIcdSet];
-    return out;
-
-    function arr (x, fallback = []) {
-      if (Array.isArray(x)) return x.filter(Boolean);
-      if (x && Array.isArray(x.list)) return x.list.filter(Boolean);
-      return fallback.slice();
-    }
-  }
-
-  // Ensure we always have at least baseline modality specs
-  function ensureMinimumModalities() {
-    const base = state.rules?.modalities || {};
-    const inject = (name, spec) => {
-      if (!base[name] || !Object.keys(base[name]).length) base[name] = spec;
-    };
-    inject('CT', {
-      regions: ['Head/Brain','Chest','Abdomen/Pelvis'],
-      body_parts: ['Brain','Thorax','Abdomen and pelvis'],
-      contrast_options: ['None','With contrast','Without contrast','With and without'],
-      contexts: ['Acute','Oncology staging','Follow-up'],
-      conditions: ['Stroke/TIA','Lung nodule','RLQ pain/appendicitis'],
-      common_cpt: ['70450','71260','74177'],
-      cpt_map: {
-        'Head/Brain | Brain | Without contrast': ['70450'],
-        'Chest | Thorax | With contrast': ['71260'],
-        'Abdomen/Pelvis | Abdomen and pelvis | With contrast': ['74177']
-      },
-      icd10: ['I63.9','R91.1','R10.31']
-    });
-    inject('MRI', {
-      regions: ['Brain','Cervical spine','Thoracic spine','Lumbar spine','Prostate (PI-RADS)'],
-      body_parts: ['Brain','Cervical spine','Thoracic spine','Lumbar spine','Prostate'],
-      contrast_options: ['None','With and without','With contrast','Without contrast'],
-      contexts: ['Problem solving','Staging','Follow-up','Acute'],
-      conditions: ['Tumor','MS','Seizure','Radiculopathy','Prostate cancer'],
-      common_cpt: ['70553','72141','72146','72148','72197'],
-      cpt_map: {
-        'Brain | Brain | With and without': ['70553'],
-        'Lumbar spine | Lumbar spine | Without contrast': ['72148'],
-        'Cervical spine | Cervical spine | Without contrast': ['72141'],
-        'Thoracic spine | Thoracic spine | Without contrast': ['72146'],
-        'Prostate (PI-RADS) | Prostate | With and without': ['72197']
-      },
-      icd10: ['C61','G35']
-    });
-    inject('PET/CT', {
-      regions: ['Skull base to mid-thigh','Whole body','Brain'],
-      body_parts: ['Skull base to mid-thigh','Whole body','Brain'],
-      contrast_options: ['None'],
-      contexts: ['Staging','Restaging','Treatment response','Surveillance'],
-      conditions: ['NSCLC','Lymphoma','Colorectal cancer','Melanoma','Head & neck'],
-      common_cpt: ['78815','78816'],
-      cpt_map: { 'Skull base to mid-thigh | Skull base to mid-thigh | None': ['78815'] },
-      icd10: ['C34.90','C83.30']
-    });
-    inject('Ultrasound', {
-      regions: ['Abdomen','Pelvis','Carotid (bilateral)','LE Venous (bilateral)'],
-      body_parts: ['Abdomen','Pelvis','Carotid arteries','LE veins'],
-      contrast_options: ['None'],
-      contexts: ['Initial evaluation','Follow-up','Screening'],
-      conditions: ['RUQ pain','AUB','DVT','TIA'],
-      common_cpt: ['76700','76856','93880','93970'],
-      icd10: ['R10.11','I82.4Z3']
-    });
-    inject('X-Ray', {
-      regions: ['Chest','Abdomen (KUB)','Pelvis','Cervical spine','Thoracic spine','Lumbar spine','Upper extremity','Lower extremity'],
-      body_parts: ['Chest','Abdomen','Pelvis','Cervical spine','Thoracic spine','Lumbar spine','Upper extremity','Lower extremity'],
-      contrast_options: ['None'],
-      contexts: ['Acute','Trauma','Follow-up','Infection'],
-      conditions: ['Fracture','Pneumonia','Effusion','Osteomyelitis'],
-      common_cpt: ['71046','74018'],
-      icd10: ['T14.90XA','J18.9']
-    });
-    state.rules.modalities = base;
-
-    // also ensure global catalog includes these (in case normalizeRules ran earlier without them)
-    const set = new Set(state.rules.icd10_catalog || []);
-    Object.values(base).forEach(m => (m.icd10 || []).forEach(code => code && set.add(code)));
-    state.rules.icd10_catalog = [...set];
-  }
-
-  // ---------- UI population ----------
-  function populateModalities () {
-    const mods = Object.keys(state.rules.modalities || {});
-    els.modality.innerHTML = optionize(mods, 'Select modality');
-
-    // Auto-select first modality to ensure dependent selects populate (STEP 4)
-    if (mods.length) {
-      // If nothing selected or previous value missing, pick first
-      if (!els.modality.value || !mods.includes(els.modality.value)) {
-        els.modality.value = mods[0];
-      }
-      populateForModality(els.modality.value);
-      buildReview();
-    }
-  }
-
-  function populateForModality (mod) {
-    const m = state.rules.modalities[mod] || {};
-    els.region.innerHTML     = optionize(m.regions, 'Select region');
-    els.bodyPart.innerHTML   = optionize(m.body_parts, 'Select body part');
-    els.contrast.innerHTML   = optionize(m.contrast_options || ['None'], 'Select contrast');
-    els.laterality.innerHTML = optionize(m.laterality || ['N/A','Left','Right','Bilateral'], 'Select laterality');
-    els.context.innerHTML    = optionize(m.contexts || ['Staging','Restaging','Treatment response','Surveillance'], 'Select context');
-
-    // Datalists
-    // Merge global + per-modality ICD-10 (STEP 4 already merged globally, but keep per-modality first for convenience)
-    const mergedICD = [...new Set([...(m.icd10 || []), ...(state.rules.icd10_catalog || [])])];
-    renderDatalist(els.icdList, mergedICD);
-    renderDatalist(els.conditionList, m.conditions || []);
-
-    // Seed CPT with common until we can compute from selections
-    els.cpt.innerHTML = optionize(m.common_cpt || [], 'Suggested CPT');
-  }
-
-  function optionize (arr, placeholder) {
-    const opts = (arr || []).map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
-    return `<option value="" disabled selected>${escapeHtml(placeholder)}</option>${opts}`;
-  }
-
-  function renderDatalist (node, arr) {
-    if (!node) return;
-    node.innerHTML = (arr || []).map(v => `<option value="${escapeHtml(v)}"></option>`).join('');
-  }
-
-  function escapeHtml (s = '') {
-    return s.replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  }
-
-  // ---------- CPT suggestion ----------
-  function suggestCPT () {
-    const mod = els.modality.value;
-    if (!mod) return [];
-    const m = state.rules.modalities[mod] || {};
-    const key = [els.region.value, els.bodyPart.value, els.contrast.value].join(' | ');
-    const table = m.cpt_map || {};
-    const hits = table[key] || [];
-    return hits.length ? hits : (m.common_cpt || []);
-  }
-
-  // ---------- Reason / Review builders ----------
-  function buildReason () {
-    const cond = els.condition.value || els.icd10.value || '(no coded condition)';
-    const ctx  = els.context.value ? `${els.context.value.toLowerCase()}` : 'diagnostic';
-
-    if (els.indication.value && els.indication.value.trim()) {
-      return els.indication.value.trim();
-    }
-    const base = `Evaluate ${cond} with ${els.modality.value} ${els.bodyPart.value || els.region.value}`.trim();
-    const bits = [];
-    if (els.contrast.value && els.contrast.value !== 'None') bits.push(els.contrast.value.toLowerCase());
-    if (els.laterality.value && els.laterality.value !== 'N/A') bits.push(els.laterality.value.toLowerCase());
-    if (els.context.value) bits.push(`for ${ctx}`);
-    return [base, bits.join(', ')].filter(Boolean).join(', ').replace(/, for/, ' for');
-  }
-
-  function buildReview () {
-    if (!els.review) return;
-    const lines = [];
-    const cptList = suggestCPT();
-
-    const study = `${val(els.modality)} ${val(els.bodyPart) || val(els.region)} ${val(els.contrast)}`.replace(/\s+/g,' ').trim();
-    if (study) lines.push(`Study: ${study}`);
-    if (els.laterality.value && els.laterality.value !== 'N/A') lines.push(`Laterality: ${els.laterality.value}`);
-    if (els.context.value) lines.push(`Context: ${els.context.value}`);
-    if (els.urgency.value) lines.push(`Urgency: ${els.urgency.value}`);
-    if (els.condition.value) lines.push(`Condition: ${els.condition.value}`);
-    if (els.icd10.value) lines.push(`ICD-10: ${els.icd10.value}`);
-    if (cptList.length) lines.push(`Suggested CPT: ${cptList.join(', ')}`);
-    if (els.pregnant.value && els.pregnant.value!=='Unknown') lines.push(`Pregnancy: ${els.pregnant.value}`);
-    if (els.creatinineDate.value) lines.push(`Most recent creatinine: ${els.creatinineDate.value}`);
-    if (els.allergies.value) lines.push(`Allergies/precautions: ${els.allergies.value}`);
-    if (els.special.value) lines.push(`Special instructions: ${els.special.value}`);
-
-    const reason = buildReason();
-    if (reason) lines.push(`Reason for exam: ${reason}`);
-
-    els.review.textContent = lines.filter(Boolean).join('\n');
-  }
-
-  function val (el) {
-    return (el && el.value && el.value !== 'None' && el.value !== 'N/A') ? el.value : '';
-  }
-
-  // ---------- Events ----------
-  function wireEvents () {
-    // Change of modality populates dependent fields and refreshes review
-    els.modality.addEventListener('change', () => {
-      populateForModality(els.modality.value);
-      buildReview();
-    });
-
-    // Rebuild review on inputs + refresh CPT when key selectors change
-    [
-      els.region, els.bodyPart, els.contrast, els.laterality, els.context,
-      els.condition, els.icd10, els.cpt, els.urgency,
-      els.pregnant, els.creatinineDate, els.allergies, els.special, els.indication
-    ].forEach(el => el && el.addEventListener('input', () => {
-      if ([els.region, els.bodyPart, els.contrast].includes(el)) {
-        const options = suggestCPT();
-        els.cpt.innerHTML = optionize(options, 'Suggested CPT');
-      }
-      buildReview();
-    }));
-
-    // Suggest Reason
-    els.btnSuggest?.addEventListener('click', () => {
-      els.indication.value = buildReason();
-      buildReview();
-      setStatus('Suggested reason inserted.');
-    });
-
-    // Copy review
-    els.btnCopy?.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(els.review.textContent || '');
-        setStatus('Copied to clipboard.');
-      } catch {
-        setStatus('Unable to copy. Select and copy manually.', 'oh-status warn');
-      }
-    });
-
-    // Share review
-    els.btnShare?.addEventListener('click', async () => {
-      const text = els.review.textContent || '';
-      const title = 'Radiology Order';
-      try {
-        if (navigator.share) {
-          await navigator.share({ title, text });
-        } else {
-          const url = new URL(window.location);
-          url.hash = encodeURIComponent(text);
-          await navigator.clipboard.writeText(url.toString());
-          alert('Share not supported. A sharable URL has been copied to your clipboard.');
-        }
-        setStatus('Shared.');
-      } catch (e) {
-        console.warn(e);
-        setStatus('Share canceled.', 'oh-status warn');
-      }
-    });
-
-    // Reset
-    els.btnReset?.addEventListener('click', () => {
-      els.form.reset();
-      populateModalities(); // this will auto-select first and repopulate
-      els.review.textContent = 'Select options to build the order…';
-      setStatus('Form reset.');
-    });
-
-    // Submit
-    els.form?.addEventListener('submit', onSubmit);
-  }
-
-  // ---------- Submit (Firestore write or PDF export) ----------
-  async function onSubmit (evt) {
-    evt.preventDefault();
-    const payload = {
-      created_at: new Date().toISOString(),
-      modality: els.modality.value,
-      region: els.region.value,
-      bodyPart: els.bodyPart.value,
-      contrast: els.contrast.value,
-      laterality: els.laterality.value,
-      context: els.context.value,
-      urgency: els.urgency.value,
-      condition: els.condition.value,
-      icd10: els.icd10.value,
-      cpt: els.cpt.value,
-      indication: els.indication.value || buildReason(),
-      pregnant: els.pregnant.value,
-      creatinineDate: els.creatinineDate.value,
-      allergies: els.allergies.value,
-      special: els.special.value,
-      review: els.review.textContent
-    };
-
-    // Optional Firestore write
-    if (window.ORADIGIT_FIREBASE_CONFIG && window.firebase) {
-      try {
-        const app = firebase.apps?.length ? firebase.app() : firebase.initializeApp(window.ORADIGIT_FIREBASE_CONFIG);
-        const db = firebase.firestore();
-        await db.collection('orders').add(payload);
-        setStatus('Submitted to Firestore.');
-        els.form.reset();
-        populateModalities();
-        buildReview();
-        return;
-      } catch (e) {
-        console.warn('Firestore submit failed:', e);
-        setStatus('Saved locally (Firestore unavailable).', 'oh-status warn');
-      }
-    }
-
-    // Generate a PDF of the order
-    try {
-      await generatePDF(payload);
-      setStatus('PDF generated.');
-    } catch (e) {
-      console.warn('PDF generation failed:', e);
-      setStatus('PDF generation failed. Use Copy as fallback.', 'oh-status warn');
-    }
-  }
-
-  // ---------- Debug panel (query ?debug=1) ----------
-  function attachDebugPanel() {
-    if (new URLSearchParams(location.search).get('debug') !== '1') return;
-    const host = document.querySelector('.oh-hero .container') || document.body;
-    const el = document.createElement('div');
-    el.style.cssText = 'margin-top:.75rem;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;color:#64748b';
-    el.id = 'oh-debug';
-    host.appendChild(el);
-
-    const update = () => {
-      try {
-        const mods = Object.keys(state?.rules?.modalities || {});
-        const mod = document.querySelector('#modality')?.value || '(none)';
-        el.textContent = `[OH DEBUG] v=${APP_VERSION} | source=${state.rulesSource} | modalities=${mods.length} [${mods.join(', ')}] | selected=${mod}`;
-      } catch {
-        el.textContent = `[OH DEBUG] v=${APP_VERSION} | (no rules yet)`;
-      }
-    };
-    update();
-    document.addEventListener('input', update, true);
-    document.addEventListener('change', update, true);
-  }
-
-  // ---------- PDF generation ----------
-  async function generatePDF(payload) {
-    const { jsPDF } = window.jspdf || {};
-    if (!jsPDF) {
-      console.warn('jsPDF not available');
-      alert('PDF generator unavailable. Please try again or use Copy.');
-      return;
-    }
-
-    const doc = new jsPDF({ unit: 'pt', format: 'letter' }); // 612x792pt
-    const marginX = 54; // 0.75"
-    const lineH = 18;
-    let y = 72; // 1" top
-
-    // Header
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text('Radiology Order', marginX, y);
-    y += 8;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, marginX, y + lineH);
-    y += (lineH * 2);
-
-    // Utility: wrapped text block
-    function write(label, value) {
-      if (!value) return;
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(30);
-      doc.setFontSize(11);
-      doc.text(label, marginX, y);
-      y += 14;
-
-      doc.setFont('courier', 'normal'); // mono for aligned look
-      doc.setTextColor(30);
-      doc.setFontSize(11);
-
-      const maxWidth = 612 - marginX * 2;
-      const rows = doc.splitTextToSize(String(value), maxWidth);
-      rows.forEach(row => {
-        doc.text(row, marginX, y);
-        y += lineH;
-        if (y > 760) { // page break safety
-          doc.addPage();
-          y = 72;
-        }
+    const contexts = listFromRules(rules, modality, "contexts") || FALLBACK.CONTEXTS;
+    contexts.forEach((c) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "chip";
+      btn.textContent = c;
+      btn.dataset.value = c;
+      btn.addEventListener("click", () => {
+        btn.classList.toggle("active");
+        syncContextHidden();
+        syncPreview();
       });
-      y += 6;
+      wrap.appendChild(btn);
+
+      const opt = document.createElement("option");
+      opt.value = c;
+      hidden.appendChild(opt);
+    });
+  }
+
+  function syncContextHidden() {
+    const hidden = $("#context");
+    if (!hidden) return;
+    const active = Array.from(document.querySelectorAll("#contextChips .chip.active")).map((b) => b.dataset.value);
+    Array.from(hidden.options).forEach((o) => (o.selected = active.includes(o.value)));
+  }
+
+  function buildConditionList(rules, modality) {
+    const dl = $("#conditionList");
+    if (!dl) return;
+    dl.innerHTML = "";
+    const list = listFromRules(rules, modality, "conditions") || FALLBACK.CONDITIONS[modality] || [];
+    list.forEach((v) => {
+      const o = document.createElement("option");
+      o.value = v;
+      dl.appendChild(o);
+    });
+  }
+
+  function toggleContrast(show) {
+    const g = $("#contrastGroup");
+    if (!g) return;
+    g.classList.toggle("hidden", !show);
+  }
+
+  function syncPreview() {
+    const mod = $("#modality")?.value || "—";
+    $("#pv-modality").textContent = mod;
+    $("#pv-region").textContent = $("#region")?.value || "—";
+
+    const ctx = Array.from(document.querySelectorAll("#context option:checked")).map((o) => o.value);
+    $("#pv-context").textContent = ctx.length ? ctx.join(", ") : "—";
+
+    $("#pv-condition").textContent = $("#condition")?.value || "—";
+
+    const cg = $("#contrastGroup");
+    if (cg && !cg.classList.contains("hidden")) {
+      const r = cg.querySelector("input[type=radio]:checked");
+      const oral = $("#oralContrast")?.checked;
+      let txt = r ? (r.value === "with_iv" ? "With IV contrast" : "Without IV contrast") : "—";
+      if (oral) txt += " + oral";
+      $("#pv-contrast").textContent = txt;
+    } else {
+      $("#pv-contrast").textContent = "—";
     }
 
-    // Content
-    write('Study', `${payload.modality} ${payload.bodyPart || payload.region} ${payload.contrast}`.replace(/\s+/g,' ').trim());
-    if (payload.laterality && payload.laterality !== 'N/A') write('Laterality', payload.laterality);
-    if (payload.context) write('Context', payload.context);
-    if (payload.urgency) write('Urgency', payload.urgency);
-    if (payload.condition) write('Condition', payload.condition);
-    if (payload.icd10) write('ICD-10', payload.icd10);
-    if (payload.cpt) write('CPT (suggested)', payload.cpt);
-    if (payload.creatinineDate) write('Most recent creatinine', payload.creatinineDate);
-    if (payload.pregnant && payload.pregnant !== 'Unknown') write('Pregnancy', payload.pregnant);
-    if (payload.allergies) write('Allergies / Precautions', payload.allergies);
-    if (payload.special) write('Special instructions', payload.special);
-    write('Reason for exam', payload.indication || payload.review);
-    write('Order summary', payload.review);
-
-    // Footer disclaimer
-    if (y > 720) { doc.addPage(); y = 72; }
-    doc.setFont('helvetica', 'italic');
-    doc.setTextColor(110);
-    doc.setFontSize(9);
-    doc.text('Structured for ordering clarity. Educational use only; not medical advice.', marginX, 780);
-
-    const fnameParts = [
-      'order',
-      (payload.modality || '').replace(/\W+/g,'-').toLowerCase(),
-      Date.now()
-    ].filter(Boolean);
-    const filename = `${fnameParts.join('_')}.pdf`;
-    doc.save(filename);
+    $("#pv-indication").textContent = ($("#indication")?.value || "—").trim();
   }
-})();
-</script>
-/* ===== OH loader shim (non-destructive) ===== */
-(() => {
-  // Wait for DOM if this script isn’t loaded with `defer`
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init, { once: true });
+
+  function buildIndication() {
+    const mod = $("#modality").value;
+    const reg = $("#region").value;
+    const ctx = Array.from(document.querySelectorAll("#context option:checked")).map((o) => o.value);
+    const cond = $("#condition").value;
+
+    let s = "";
+    if (mod && reg) s += `${mod} ${reg}`;
+    else if (mod) s += mod;
+    if (cond) s += ` for ${cond}`;
+    if (ctx.length) s += ` (${ctx.join(", ")})`;
+    return s;
+  }
+
+  function onFormChange() {
+    const txt = buildIndication();
+    if (txt) $("#indication").value = txt;
+    syncPreview();
+  }
+
+  function wireEvents(rules) {
+    $("#modality")?.addEventListener("change", () => {
+      const mod = $("#modality").value || "CT";
+      toggleContrast(mod === "CT");
+      buildRegionOptions(rules, mod);
+      buildContextChips(rules, mod);
+      buildConditionList(rules, mod);
+      syncPreview();
+    });
+
+    $("#region")?.addEventListener("change", onFormChange);
+    $("#condition")?.addEventListener("input", onFormChange);
+    $("#indication")?.addEventListener("input", syncPreview);
+    document.querySelectorAll("#contrastGroup input").forEach((n) => n.addEventListener("change", syncPreview));
+
+    $("#orderForm")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      // Hook for suggestion logic if needed later
+      setStatus("Order suggestion updated.", "success");
+      syncPreview();
+    });
+
+    document.getElementById("copyIndication")?.addEventListener("click", async () => {
+      const text = $("#indication")?.value || "";
+      if (!text.trim()) return;
+      try {
+        await navigator.clipboard.writeText(text.trim());
+        setStatus("Clinical indication copied to clipboard.", "success");
+      } catch {
+        setStatus("Unable to copy. Please select and copy manually.", "warn");
+      }
+    });
+  }
+
+  async function init() {
+    const rules = await loadRules();
+    const mod = $("#modality")?.value || "CT";
+    toggleContrast(mod === "CT");
+    buildRegionOptions(rules, mod);
+    buildContextChips(rules, mod);
+    buildConditionList(rules, mod);
+    wireEvents(rules);
+    syncPreview();
+  }
+
+  // Run after parse
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
   } else {
     init();
   }
-
-  function init() {
-    // Namespace (won't clobber your existing code)
-    window.OH = window.OH || {};
-    const $ = (s) => document.querySelector(s);
-    const setText = (el, msg) => { if (el) el.textContent = msg; };
-
-    // Elements (adjust IDs only if yours differ)
-    const els = {
-      status:     $('#status'),
-      modality:   $('#modality'),
-      region:     $('#region'),
-      bodyPart:   $('#bodyPart'),
-      contrast:   $('#contrast'),
-      laterality: $('#laterality'),
-      context:    $('#context'),
-    };
-
-    // Use the exact meta path (you already include ?v=20250913)
-    const RULES_URL =
-      document.querySelector('meta[name="oh-rules-path"]')?.content ||
-      '/order-helper/data/rules.json';
-
-    const FALLBACK = Object.freeze({
-      schema_version: '1.1',
-      modalities: {
-        'PET/CT': {
-          regions:    ['Skull base to mid-thigh', 'Whole body'],
-          body_parts: ['Head/Neck', 'Chest', 'Abdomen/Pelvis'],
-          contrast:   ['None'],
-          laterality: ['N/A'],
-          contexts:   ['Staging','Restaging','Treatment response','Surveillance','Acute'],
-        },
-        'CT': {
-          regions:    ['Head/Brain','Chest','Abdomen/Pelvis'],
-          body_parts: ['Head','Chest','Abdomen','Pelvis'],
-          contrast:   ['None','IV','Oral','IV + Oral'],
-          laterality: ['N/A','Right','Left','Bilateral'],
-          contexts:   ['Acute','Follow-up','Staging'],
-        },
-        'MRI': {
-          regions:    ['Brain','Spine','MSK'],
-          body_parts: ['Brain','Cervical','Lumbar','Hip'],
-          contrast:   ['None','Gadolinium'],
-          laterality: ['N/A','Right','Left','Bilateral'],
-          contexts:   ['Acute','Follow-up','Staging'],
-        }
-      }
-    });
-
-    const validate = (cat) => !!(cat && typeof cat === 'object' && cat.modalities && typeof cat.modalities === 'object');
-
-    function setOptions(selectEl, items, placeholder) {
-      if (!selectEl) return;
-      const list = Array.isArray(items) ? items : [];
-      selectEl.innerHTML = '';
-      const ph = document.createElement('option');
-      ph.value = '';
-      ph.textContent = placeholder || 'Select…';
-      ph.disabled = true; ph.selected = true;
-      selectEl.appendChild(ph);
-      for (const v of list) {
-        const opt = document.createElement('option');
-        opt.value = v; opt.textContent = v;
-        selectEl.appendChild(opt);
-      }
-    }
-
-    function bindCascades(cat) {
-      if (!els.modality) return;
-      const modalities = Object.keys(cat.modalities || {});
-      setOptions(els.modality, modalities, 'Select modality…');
-
-      els.modality.addEventListener('change', () => {
-        const m = els.modality.value;
-        const spec = (cat.modalities || {})[m] || {};
-        setOptions(els.region,     spec.regions,     'Select region…');
-        setOptions(els.bodyPart,   spec.body_parts,  'Select body part…');
-        setOptions(els.contrast,   spec.contrast,    'Select contrast…');
-        setOptions(els.laterality, spec.laterality,  'Select laterality…');
-        setOptions(els.context,    spec.contexts,    'Select context…');
-      });
-    }
-
-    async function loadCatalog() {
-      setText(els.status, 'Loading rules…');
-      try {
-        const res = await fetch(RULES_URL, { cache: 'no-store' });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
-        if (!validate(json)) throw new Error('Invalid rules schema');
-        setText(els.status, 'Rules loaded.');
-        return json;
-      } catch (err) {
-        console.warn('[OH] rules load failed, using fallback:', err);
-        setText(els.status, 'Using built-in defaults (rules.json unavailable).');
-        return FALLBACK;
-      }
-    }
-
-    // Expose for the rest of your app (non-breaking)
-    window.OH.loadCatalog = loadCatalog;
-
-    // Boot: load then bind; announce readiness
-    loadCatalog().then(cat => {
-      window.OH.catalog = cat;
-      bindCascades(cat);
-      document.dispatchEvent(new CustomEvent('oh:catalog-ready', { detail: { catalog: cat } }));
-    });
-  }
 })();
-
