@@ -1,11 +1,20 @@
 /**
+<<<<<<< HEAD
  * OraDigit Order Helper – app.js (golden rev w/ built-in preview sync)
  * - Fallback PET/CT + CT modalities
+=======
+ * OraDigit Order Helper – app.js
+ * - PET/CT + CT + MRI supported
+>>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
  * - Hardened rules loader with schema checks
  * - Chips UI with keyboard support, mirrors to hidden <select multiple>
  * - CT contrast auto-suggestions
  * - Indication builder + basic study suggestions
+<<<<<<< HEAD
  * - NEW: syncPreviewPanel() updates the right-side preview (no inline script needed)
+=======
+ * - Live Order Preview sync (right pane)
+>>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
  */
 
 (function () {
@@ -36,6 +45,7 @@
     outPrep: document.getElementById("outPrep"),
     outDocs: document.getElementById("outDocs"),
     outFlags: document.getElementById("outFlags"),
+    outICD: document.getElementById("outICD"),
     results: document.getElementById("results"),
     copyReasonBtn: document.getElementById("copyReasonBtn"),
     copyAllBtn: document.getElementById("copyAllBtn"),
@@ -113,9 +123,18 @@
           { match:["trauma"], suggest:"with_iv" },
           { match:["low-dose lung ct","screening"], suggest:"without_iv" }
         ]
+      },
+      MRI: {
+        regions: ["Brain"],
+        contexts: ["Oncology","Neuro","Infection","Inflammation","Seizure"],
+        conditions: ["Glioma","GBM","Brain metastases","Seizure","Abscess","Encephalitis","MS"],
+        indication_templates: [
+          "MRI {region} – {context} for {condition}",
+          "MRI {region}{contrast_text} – {context} ({condition})"
+        ]
       }
     },
-    records: [] // keep empty; site-specific rules.json will populate
+    records: [] // site rules.json will populate these
   };
 
   let RULES = null;
@@ -227,9 +246,7 @@
   function looksLikeRules(obj) {
     // Minimal sanity check
     if (!obj || typeof obj !== "object") return false;
-    // accept either {modalities:{}} or at least records:[]
-    const hasModalities =
-      obj.modalities && typeof obj.modalities === "object";
+    const hasModalities = obj.modalities && typeof obj.modalities === "object";
     const hasRecords = Array.isArray(obj.records);
     return hasModalities || hasRecords;
   }
@@ -475,8 +492,38 @@
     fillUL(els.outPrep, topRec.prep ? [topRec.prep] : []);
     fillUL(els.outDocs, topRec.supporting_docs);
     fillUL(els.outFlags, topRec.flags);
+    fillUL(els.outICD, topRec.icd10 || []);
 
     els.results.hidden = false;
+  }
+
+  // ---- Preview sync (right pane) ----
+  function setPV(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = (text && String(text).trim()) || '—';
+  }
+  function syncPreviewNow() {
+    setPV('pv-modality', els.modality?.value);
+    setPV('pv-region',   els.region?.value);
+
+    const contexts = els.contextChips
+      ? getSelectedContextsFromChips()
+      : (els.context ? [...els.context.selectedOptions].map(o => o.value) : []);
+    setPV('pv-context', contexts.length ? contexts.join(', ') : '');
+
+    setPV('pv-condition', els.condition?.value);
+
+    let cTxt = '';
+    if (els.contrastGroup && !els.contrastGroup.classList.contains('hidden')) {
+      const r = els.contrastGroup.querySelector('input[type=radio]:checked');
+      const oral = els.oral?.checked;
+      if (r) cTxt = (r.value === 'with_iv') ? 'With IV contrast' : 'Without IV contrast';
+      if (oral) cTxt = (cTxt ? cTxt + ' + oral' : 'Oral contrast');
+    }
+    setPV('pv-contrast', cTxt);
+
+    const pre = document.getElementById('pv-indication');
+    if (pre) pre.textContent = (els.indication?.value || '').trim() || '—';
   }
 
   // -------- Event wiring --------
@@ -487,7 +534,11 @@
       populateForModality(modality);
       const node = getModalityNode(modality) || (FALLBACK_RULES.modalities[modality] || null);
       buildIndication(node, modality);
+<<<<<<< HEAD
       syncPreviewPanel();
+=======
+      syncPreviewNow();
+>>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
     });
 
     // Region / Condition input -> suggest contrast if CT and rebuild indication
@@ -498,7 +549,11 @@
           suggestContrastIfCT(node, els.condition?.value, els.region?.value);
         }
         buildIndication(getModalityNode(els.modality?.value) || (FALLBACK_RULES.modalities[els.modality?.value] || null), els.modality?.value);
+<<<<<<< HEAD
         syncPreviewPanel();
+=======
+        syncPreviewNow();
+>>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
       });
       els.condition?.addEventListener(evt, () => {
         if (els.modality?.value === "CT") {
@@ -506,17 +561,19 @@
           suggestContrastIfCT(node, els.condition?.value, els.region?.value);
         }
         buildIndication(getModalityNode(els.modality?.value) || (FALLBACK_RULES.modalities[els.modality?.value] || null), els.modality?.value);
+<<<<<<< HEAD
         syncPreviewPanel();
+=======
+        syncPreviewNow();
+>>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
       });
     });
 
     // Contrast change -> rebuild indication + preview
     els.contrastGroup?.addEventListener("change", () => {
       if (els.modality?.value === "CT") {
-        buildIndication(
-          getModalityNode("CT") || FALLBACK_RULES.modalities.CT,
-          "CT"
-        );
+        buildIndication(getModalityNode("CT") || FALLBACK_RULES.modalities.CT, "CT");
+        syncPreviewNow();
       }
       syncPreviewPanel();
     });
@@ -529,7 +586,11 @@
       chip.setAttribute("aria-pressed", cur ? "false" : "true");
       mirrorChipsToHiddenSelect();
       buildIndication(getModalityNode(els.modality?.value) || (FALLBACK_RULES.modalities[els.modality?.value] || null), els.modality?.value);
+<<<<<<< HEAD
       syncPreviewPanel();
+=======
+      syncPreviewNow();
+>>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
     });
     document.addEventListener("keydown", (e) => {
       const chip = e.target.closest("#contextChips .oh-chip");
@@ -561,6 +622,7 @@
 
       // Status message
       setStatus("Order suggested below. Review, copy, or print.", "success");
+      syncPreviewNow();
     });
 
     // Copy buttons
@@ -580,26 +642,14 @@
       if (els.outHeader) parts.push(els.outHeader.textContent);
       if (els.outReason?.value) parts.push("Reason: " + els.outReason.value);
       if (els.outPrep?.children?.length)
-        parts.push(
-          "Prep: " +
-            Array.from(els.outPrep.children)
-              .map((li) => li.textContent)
-              .join("; ")
-        );
+        parts.push("Prep: " + Array.from(els.outPrep.children).map((li) => li.textContent).join("; "));
       if (els.outDocs?.children?.length)
-        parts.push(
-          "Docs: " +
-            Array.from(els.outDocs.children)
-              .map((li) => li.textContent)
-              .join("; ")
-        );
+        parts.push("Docs: " + Array.from(els.outDocs.children).map((li) => li.textContent).join("; "));
       if (els.outFlags?.children?.length)
-        parts.push(
-          "Flags: " +
-            Array.from(els.outFlags.children)
-              .map((li) => li.textContent)
-              .join("; ")
-        );
+        parts.push("Flags: " + Array.from(els.outFlags.children).map((li) => li.textContent).join("; "));
+      if (els.outICD?.children?.length)
+        parts.push("ICD-10: " + Array.from(els.outICD.children).map((li) => li.textContent).join("; "));
+
       const text = parts.join("\n");
       if (!text.trim()) return;
       try {
@@ -628,13 +678,16 @@
       suggestContrastIfCT(node, els.condition?.value, els.region?.value);
       buildIndication(node, "CT");
     } else {
-      const node =
-        getModalityNode(current) || (FALLBACK_RULES.modalities[current] || null);
+      const node = getModalityNode(current) || (FALLBACK_RULES.modalities[current] || null);
       buildIndication(node, current);
     }
 
+<<<<<<< HEAD
     // Final: make sure preview shows current form state
     syncPreviewPanel();
+=======
+    syncPreviewNow();
+>>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
 
     if (els.dbg)
       els.dbg.textContent = `[OH] Ready (${new Date().toLocaleString()})`;

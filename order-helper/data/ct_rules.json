@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "schema_version": "1.0",
   "generated_at": "2025-09-03T00:00:00Z",
@@ -132,3 +133,30 @@
     }
   ]
 }
+=======
+[
+  {
+    "modality": "CT",
+    "region": "Chest",
+    "contexts": ["oncology", "pulmonary embolism", "infection"],
+    "keywords": ["nsclc", "lung cancer", "pulmonary nodule", "pe", "pneumonia"],
+    "header": "CT Chest with Contrast",
+    "reasons": [
+      "CT chest with IV contrast to evaluate {condition}; assess lung parenchyma, mediastinum, and nodal disease."
+    ],
+    "prep_notes": [
+      "Assess renal function if IV contrast is planned.",
+      "Screen for contrast allergy; premedicate per protocol if needed."
+    ],
+    "supporting_docs": [
+      "Referring note describing symptoms and clinical question.",
+      "Prior chest imaging/report for comparison."
+    ],
+    "flags": [
+      "Noncontrast CT may be preferred for some nodules or calcifications.",
+      "PE protocol differs—use dedicated CTA chest if PE suspected."
+    ],
+    "tags": ["ct-chest", "oncology-general"]
+  }
+]
+>>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
