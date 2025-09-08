@@ -1,251 +1,246 @@
-/* OraDigit Order Helper – robust init + live preview
-   - Reads rules URL from <meta name="oh-rules-path">
-   - Works if rules.json is missing or has a different shape
-   - Populates Region, Context chips, Condition suggestions
-   - Keeps the right-side Order Preview live
-*/
-
 (() => {
-  const $ = (s) => document.querySelector(s);
-
-  const FALLBACK = {
-    CONTEXTS: [
-      "Staging",
-      "Restaging",
-      "Treatment response",
-      "Surveillance",
-      "Suspected recurrence",
-      "Infection / inflammation",
-      "Viability",
-    ],
-    REGIONS: {
-      "PET/CT": ["Whole body", "Head & neck", "Thorax/Chest", "Abdomen/Pelvis", "Brain"],
-      CT: ["Head", "Neck", "Chest", "Abdomen", "Pelvis", "Abdomen/Pelvis", "Angio/PE", "Sinus", "Spine", "Extremity"],
-      MRI: ["Brain", "C-spine", "T-spine", "L-spine", "Shoulder", "Knee", "Hip", "Abdomen", "Pelvis", "Prostate", "Cardiac"],
-    },
-    CONDITIONS: {
-      CT: ["Renal colic", "Pulmonary embolism", "Appendicitis", "Diverticulitis", "Kidney stone"],
-      MRI: ["Multiple sclerosis", "Lumbar radiculopathy", "Rotator cuff tear", "Meniscal tear", "Hip labral tear"],
-      "PET/CT": ["NSCLC", "Lymphoma", "Breast cancer", "Colorectal cancer", "Melanoma"],
-    },
+  const qs = (s) => document.querySelector(s);
+  const setStatus = (msg, cls = 'status success') => {
+    const s = qs('#status'); if (s) { s.textContent = msg; s.className = cls; }
   };
 
-  function setStatus(msg, kind = "success") {
-    const s = $("#status");
-    if (!s) return;
-    s.textContent = msg;
-    s.className = `status ${kind}`;
-  }
+  // Catch sync + async errors in one place
+  window.addEventListener('error', e => setStatus('JavaScript error: ' + (e.message || 'Unknown'), 'status error'));
+  window.addEventListener('unhandledrejection', e => setStatus('App error: ' + (e.reason?.message || e.reason || 'Unknown'), 'status error'));
 
-  function rulesURL() {
-    const meta = document.querySelector('meta[name="oh-rules-path"]');
-    const url = meta?.content?.trim();
-    return url || "/order-helper/data/rules.json";
-  }
+  document.addEventListener('DOMContentLoaded', init);
 
-  async function loadRules() {
+  async function init() {
     try {
-      const r = await fetch(rulesURL(), { cache: "no-store" });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const json = await r.json();
-      setStatus("Rules loaded.", "success");
-      return json;
+      // 1) Load rules.json from the meta tag (case-safe)
+      const rulesPath = document.querySelector('meta[name="oh-rules-path"]')?.content;
+      let rules = null;
+      try {
+        const r = await fetch(rulesPath, { cache: 'no-store' });
+        if (r.ok) rules = await r.json();
+      } catch (_) { /* fall through to defaults */ }
+      if (!rules) { rules = defaultRules(); setStatus('Using built-in defaults (rules.json not found).', 'status warn'); }
+
+      // 2) Normalize rules into a simple catalog
+      const catalog = normalizeRules(rules);
+
+      // 3) Build the UI + wire events
+      buildUI(catalog);
+
+      setStatus('Rules loaded.');
     } catch (e) {
-      setStatus("Using built-in defaults (rules not available).", "warn");
-      return null;
+      setStatus('Init failed: ' + e.message, 'status error');
     }
   }
 
-  // Try multiple likely shapes, return array or null
-  function listFromRules(rules, modality, key) {
-    if (!rules) return null;
+  // ---------- Rules handling ----------
+  function defaultRules() {
+    return {
+      modalities: {
+        "PET/CT": {
+          regions: ["Skull base to mid-thigh","Whole body","Brain","Head/Neck","Chest","Abdomen/Pelvis"],
+          contexts: ["Staging","Restaging","Treatment response","Surveillance","Suspected recurrence","Infection / inflammation","Viability"],
+          conditions: ["NSCLC","Lymphoma","Colorectal cancer","Melanoma","Head & neck cancer"]
+        },
+        "CT": {
+          regions: ["Head","Neck","Chest","Abdomen","Pelvis","Abdomen/Pelvis","Angio chest (PE)"],
+          contexts: ["Acute","Chronic","Follow-up"],
+          conditions: ["Renal colic","PE","Appendicitis","Pancreatitis"]
+        },
+        "MRI": {
+          regions: ["Brain","Cervical spine","Thoracic spine","Lumbar spine","Abdomen","Pelvis"],
+          contexts: ["Acute","Follow-up","Problem solving"],
+          conditions: ["MS","Seizure","Stroke","Back pain","Prostate cancer"]
+        }
+      }
+    };
+  }
 
-    // Common shapes we support:
-    // 1) { modalities: { "CT": { regions:[...], contexts:[...], conditions:[...] } } }
-    if (rules.modalities?.[modality]?.[key]) return rules.modalities[modality][key];
+  function normalizeRules(r) {
+    // Accept either {modalities:{...}} or top-level { "PET/CT": {...}, ... }
+    const src = r.modalities ? r.modalities : { "PET/CT": r["PET/CT"], "CT": r["CT"], "MRI": r["MRI"] };
+    const out = { modalities: {} };
 
-    // 2) { "CT": { regions:[...], contexts:[...], conditions:[...] } }
-    if (rules[modality]?.[key]) return rules[modality][key];
-
-    // 3) { regions: { "CT":[...] }, contexts: { "CT":[...] }, conditions: { "CT":[...] } }
-    if (rules[key]?.[modality]) return rules[key][modality];
-
-    // 4) Global arrays: { regions:[...]} (rare)
-    if (Array.isArray(rules[key])) return rules[key];
-
-    // Handle singular miskeys
-    if (key === "contexts") {
-      if (rules.modalities?.[modality]?.context) return rules.modalities[modality].context;
-      if (rules[modality]?.context) return rules[modality].context;
+    for (const [mod, spec] of Object.entries(src || {})) {
+      if (!spec) continue;
+      const regions = Array.isArray(spec.regions) ? spec.regions
+                    : Array.isArray(spec?.regions?.list) ? spec.regions.list
+                    : Object.keys(spec.regions || {});
+      const contexts = spec.contexts || spec.context || ["Staging","Restaging","Treatment response","Surveillance","Suspected recurrence"];
+      const conditions = spec.conditions || spec.condition || [];
+      out.modalities[mod] = {
+        regions: [...new Set(regions)].filter(Boolean),
+        contexts: [...new Set(contexts)].filter(Boolean),
+        conditions: [...new Set(conditions)].filter(Boolean),
+      };
     }
-    return null;
+    return out;
   }
 
-  function buildRegionOptions(rules, modality) {
-    const sel = $("#region");
-    if (!sel) return;
-    sel.innerHTML = "";
+  // ---------- UI wiring ----------
+  function buildUI(cat) {
+    const modalitySel = qs('#modality');
+    const regionSel   = qs('#region');
+    const ctxChips    = qs('#contextChips');
+    const ctxSelect   = qs('#context');          // hidden <select multiple>
+    const conditionIn = qs('#condition');
+    const conditionDL = qs('#conditionList');
+    const contrastGrp = qs('#contrastGroup');
 
-    const regions = listFromRules(rules, modality, "regions") || FALLBACK.REGIONS[modality] || [];
-    const opt0 = document.createElement("option");
-    opt0.value = "";
-    opt0.textContent = "Select region…";
-    sel.appendChild(opt0);
+    const clear = (el) => { while (el && el.firstChild) el.removeChild(el.firstChild); };
+    const makeOpt = (v, t = v) => { const o = document.createElement('option'); o.value = v; o.textContent = t; return o; };
 
-    regions.forEach((r) => {
-      const o = document.createElement("option");
-      o.value = r;
-      o.textContent = r;
-      sel.appendChild(o);
-    });
-  }
+    function renderForMod(mod) {
+      const spec = cat.modalities[mod] || { regions: [], contexts: [], conditions: [] };
 
-  function buildContextChips(rules, modality) {
-    const wrap = $("#contextChips");
-    const hidden = $("#context");
-    if (!wrap || !hidden) return;
+      // Regions
+      clear(regionSel);
+      regionSel.append(makeOpt('', 'Select region…'));
+      (spec.regions || []).forEach(r => regionSel.append(makeOpt(r)));
 
-    wrap.innerHTML = "";
-    hidden.innerHTML = "";
+      // Context chips + hidden select
+      clear(ctxChips); clear(ctxSelect);
+      (spec.contexts || []).forEach(label => {
+        const opt = makeOpt(label); opt.selected = false; ctxSelect.append(opt);
 
-    const contexts = listFromRules(rules, modality, "contexts") || FALLBACK.CONTEXTS;
-    contexts.forEach((c) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "chip";
-      btn.textContent = c;
-      btn.dataset.value = c;
-      btn.addEventListener("click", () => {
-        btn.classList.toggle("active");
-        syncContextHidden();
-        syncPreview();
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip';
+        b.textContent = label;
+        b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', () => {
+          b.classList.toggle('active');
+          const on = b.classList.contains('active');
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+          opt.selected = on;
+          syncPreview();
+        });
+        ctxChips.append(b);
       });
-      wrap.appendChild(btn);
 
-      const opt = document.createElement("option");
-      opt.value = c;
-      hidden.appendChild(opt);
+      // Conditions datalist
+      clear(conditionDL);
+      (spec.conditions || []).forEach(c => {
+        const o = document.createElement('option'); o.value = c; conditionDL.append(o);
+      });
+
+      // Contrast visibility
+      if (mod === 'CT') { contrastGrp?.classList.remove('hidden'); }
+      else { contrastGrp?.classList.add('hidden'); }
+
+      // Reset values for new modality
+      regionSel.value = '';
+      conditionIn.value = '';
+      [...ctxSelect.options].forEach(o => o.selected = false);
+      [...ctxChips.querySelectorAll('.chip')].forEach(b => { b.classList.remove('active'); b.setAttribute('aria-pressed','false'); });
+
+      syncPreview();
+    }
+
+    // Event wiring
+    modalitySel.addEventListener('change', e => renderForMod(e.target.value));
+    regionSel.addEventListener('change', syncPreview);
+    conditionIn.addEventListener('input', syncPreview);
+    document.querySelectorAll('input[name="contrast"],#oralContrast').forEach(i => i.addEventListener('change', syncPreview));
+    qs('#indication')?.addEventListener('input', syncPreview);
+
+    // Suggest Order → computes a simple recommendation & fills results
+    qs('#orderForm')?.addEventListener('submit', e => {
+      e.preventDefault();
+      suggestStudy();
     });
-  }
 
-  function syncContextHidden() {
-    const hidden = $("#context");
-    if (!hidden) return;
-    const active = Array.from(document.querySelectorAll("#contextChips .chip.active")).map((b) => b.dataset.value);
-    Array.from(hidden.options).forEach((o) => (o.selected = active.includes(o.value)));
-  }
-
-  function buildConditionList(rules, modality) {
-    const dl = $("#conditionList");
-    if (!dl) return;
-    dl.innerHTML = "";
-    const list = listFromRules(rules, modality, "conditions") || FALLBACK.CONDITIONS[modality] || [];
-    list.forEach((v) => {
-      const o = document.createElement("option");
-      o.value = v;
-      dl.appendChild(o);
+    // Copy indication
+    qs('#copyIndication')?.addEventListener('click', async () => {
+      const txt = qs('#indication')?.value?.trim();
+      if (!txt) return;
+      try { await navigator.clipboard.writeText(txt); setStatus('Clinical indication copied.'); }
+      catch { setStatus('Unable to copy. Please copy manually.', 'status warn'); }
     });
+
+    // First render
+    renderForMod(modalitySel.value || 'PET/CT');
   }
 
-  function toggleContrast(show) {
-    const g = $("#contrastGroup");
-    if (!g) return;
-    g.classList.toggle("hidden", !show);
+  function selectedContexts() {
+    return Array.from(document.querySelectorAll('#context option:checked')).map(o => o.value);
   }
 
   function syncPreview() {
-    const mod = $("#modality")?.value || "—";
-    $("#pv-modality").textContent = mod;
-    $("#pv-region").textContent = $("#region")?.value || "—";
+    const $ = (s) => document.querySelector(s);
+    $('#pv-modality')  && ($('#pv-modality').textContent  = $('#modality')?.value || '—');
+    $('#pv-region')    && ($('#pv-region').textContent    = $('#region')?.value || '—');
+    const ctx = selectedContexts();
+    $('#pv-context')   && ($('#pv-context').textContent   = ctx.length ? ctx.join(', ') : '—');
+    $('#pv-condition') && ($('#pv-condition').textContent = $('#condition')?.value || '—');
 
-    const ctx = Array.from(document.querySelectorAll("#context option:checked")).map((o) => o.value);
-    $("#pv-context").textContent = ctx.length ? ctx.join(", ") : "—";
-
-    $("#pv-condition").textContent = $("#condition")?.value || "—";
-
-    const cg = $("#contrastGroup");
-    if (cg && !cg.classList.contains("hidden")) {
-      const r = cg.querySelector("input[type=radio]:checked");
-      const oral = $("#oralContrast")?.checked;
-      let txt = r ? (r.value === "with_iv" ? "With IV contrast" : "Without IV contrast") : "—";
-      if (oral) txt += " + oral";
-      $("#pv-contrast").textContent = txt;
+    const grp = document.getElementById('contrastGroup');
+    if (grp && !grp.classList.contains('hidden')) {
+      const r = grp.querySelector('input[type=radio]:checked');
+      const oral = document.getElementById('oralContrast')?.checked;
+      let txt = r ? (r.value === 'with_iv' ? 'With IV contrast' : 'Without IV contrast') : '—';
+      if (oral) txt += ' + oral';
+      $('#pv-contrast').textContent = txt;
     } else {
-      $("#pv-contrast").textContent = "—";
+      $('#pv-contrast').textContent = '—';
     }
 
-    $("#pv-indication").textContent = ($("#indication")?.value || "—").trim();
+    $('#pv-indication') && ($('#pv-indication').textContent = $('#indication')?.value?.trim() || '—');
   }
 
-  function buildIndication() {
-    const mod = $("#modality").value;
-    const reg = $("#region").value;
-    const ctx = Array.from(document.querySelectorAll("#context option:checked")).map((o) => o.value);
-    const cond = $("#condition").value;
-
-    let s = "";
-    if (mod && reg) s += `${mod} ${reg}`;
-    else if (mod) s += mod;
-    if (cond) s += ` for ${cond}`;
-    if (ctx.length) s += ` (${ctx.join(", ")})`;
-    return s;
+  function buildIndicationText() {
+    const modality  = qs('#modality')?.value || '';
+    const region    = qs('#region')?.value || '';
+    const ctx       = selectedContexts();
+    const condition = qs('#condition')?.value || '';
+    const base = (modality === 'PET/CT') ? 'FDG PET/CT' : modality;
+    const parts = [base, region].filter(Boolean).join(' ');
+    const forTxt = [ctx.join(', '), condition].filter(Boolean).join(' — ');
+    return [parts, forTxt ? `for ${forTxt}` : ''].filter(Boolean).join(' ');
   }
 
-  function onFormChange() {
-    const txt = buildIndication();
-    if (txt) $("#indication").value = txt;
+  function suggestStudy() {
+    const modality  = qs('#modality')?.value || '';
+    const region    = qs('#region')?.value || '';
+    const ctx       = selectedContexts();
+    const condition = qs('#condition')?.value || '';
+
+    const list   = qs('#suggestions');
+    const outHdr = qs('#outHeader');
+    const outReason = qs('#outReason');
+
+    // Clear list
+    while (list.firstChild) list.removeChild(list.firstChild);
+
+    const picks = [];
+    const includes = (h, arr=[]) => arr.some(n => h.toLowerCase().includes(n.toLowerCase()));
+    const hasCtx = (arr=[]) => arr.some(n => ctx.includes(n));
+
+    if (modality === 'CT') {
+      if (includes(condition, ['renal colic','stone'])) picks.push('CT Abdomen/Pelvis without IV contrast');
+      else if (includes(condition, ['pe','pulmonary embol']) || (/chest/i.test(region) && hasCtx(['Acute']))) picks.push('CT Angio Chest (PE) with IV contrast');
+      else if (/abdomen\/?pelvis/i.test(region)) picks.push('CT Abdomen/Pelvis with IV contrast');
+      else if (/chest/i.test(region)) picks.push('CT Chest with IV contrast');
+    }
+    if (modality === 'PET/CT') {
+      if (hasCtx(['Staging','Restaging','Surveillance','Suspected recurrence'])) picks.push('FDG PET/CT skull base to mid-thigh');
+    }
+    if (modality === 'MRI') {
+      if (/brain/i.test(region)) picks.push('MRI Brain with and without contrast');
+    }
+    if (!picks.length) picks.push(`${modality} ${region}`.trim());
+
+    picks.forEach(study => {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>${study}</strong>`;
+      list.append(li);
+    });
+
+    qs('#results')?.removeAttribute('hidden');
+    outHdr.textContent = picks[0] || 'Suggested study';
+    const indication = buildIndicationText();
+    outReason.value = indication;
+    qs('#indication').value = indication;
     syncPreview();
-  }
-
-  function wireEvents(rules) {
-    $("#modality")?.addEventListener("change", () => {
-      const mod = $("#modality").value || "CT";
-      toggleContrast(mod === "CT");
-      buildRegionOptions(rules, mod);
-      buildContextChips(rules, mod);
-      buildConditionList(rules, mod);
-      syncPreview();
-    });
-
-    $("#region")?.addEventListener("change", onFormChange);
-    $("#condition")?.addEventListener("input", onFormChange);
-    $("#indication")?.addEventListener("input", syncPreview);
-    document.querySelectorAll("#contrastGroup input").forEach((n) => n.addEventListener("change", syncPreview));
-
-    $("#orderForm")?.addEventListener("submit", (e) => {
-      e.preventDefault();
-      // Hook for suggestion logic if needed later
-      setStatus("Order suggestion updated.", "success");
-      syncPreview();
-    });
-
-    document.getElementById("copyIndication")?.addEventListener("click", async () => {
-      const text = $("#indication")?.value || "";
-      if (!text.trim()) return;
-      try {
-        await navigator.clipboard.writeText(text.trim());
-        setStatus("Clinical indication copied to clipboard.", "success");
-      } catch {
-        setStatus("Unable to copy. Please select and copy manually.", "warn");
-      }
-    });
-  }
-
-  async function init() {
-    const rules = await loadRules();
-    const mod = $("#modality")?.value || "CT";
-    toggleContrast(mod === "CT");
-    buildRegionOptions(rules, mod);
-    buildContextChips(rules, mod);
-    buildConditionList(rules, mod);
-    wireEvents(rules);
-    syncPreview();
-  }
-
-  // Run after parse
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
   }
 })();
