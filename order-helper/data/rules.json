@@ -1,3 +1,4 @@
+
 {
   "schema_version": "1.1",
   "generated_at": "2025-08-19",
@@ -575,7 +576,11 @@
     }
   ]
 }
+<<<<<<< HEAD
 
+=======
+=======
+>>>>>>> origin/main
 [
   {
     "modality": "PET/CT",
