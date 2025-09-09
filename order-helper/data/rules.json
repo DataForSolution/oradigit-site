@@ -1,8 +1,59 @@
-<<<<<<< HEAD
+
 {
   "schema_version": "1.1",
   "generated_at": "2025-08-19",
   "modalities": {
+     "X-Ray": {
+  "regions": [
+    "Chest",
+    "Abdomen (KUB)",
+    "Pelvis",
+    "Skull",
+    "Cervical spine",
+    "Thoracic spine",
+    "Lumbar spine",
+    "Scoliosis series",
+    "Upper extremity",
+    "Lower extremity",
+    "Shoulder",
+    "Elbow",
+    "Wrist/Hand",
+    "Hip",
+    "Knee",
+    "Ankle/Foot",
+    "Skeleton survey"
+  ],
+  "contexts": [
+    "Acute",
+    "Trauma",
+    "Follow-up",
+    "Infection",
+    "Metastatic survey",
+    "Pre-operative",
+    "Post-operative"
+  ],
+  "conditions": [
+    "Fracture",
+    "Dislocation",
+    "Osteoarthritis",
+    "Evaluation for pneumonia",
+    "Effusion",
+    "Foreign body",
+    "Osteomyelitis",
+    "Metastasis",
+    "Scoliosis"
+  ],
+  "indication_templates": [
+    "X-Ray {region} — {context} for {condition}",
+    "X-Ray {region} — rule out {condition}"
+  ],
+  "notes": [
+    "Use two views (minimum) for trauma if possible.",
+    "Skeleton survey used for myeloma or metastatic disease patterns (consider bone scan if broader sensitivity is needed).",
+    "No contrast used for plain radiography."
+  ]
+}
+
     "CT": {
       "regions": [
         "Head/Brain",
@@ -525,7 +576,11 @@
     }
   ]
 }
+<<<<<<< HEAD
+
 =======
+=======
+>>>>>>> origin/main
 [
   {
     "modality": "PET/CT",
@@ -645,4 +700,3 @@
     "tags": ["infection"]
   }
 ]
->>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
