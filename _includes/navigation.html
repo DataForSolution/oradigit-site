@@ -1,31 +1,118 @@
-﻿<header class="main-header">
+<header class="main-header" role="banner">
   <div class="header-container">
+    <!-- Logo (icon only) -->
     <div class="logo-container">
       <a href="{{ '/' | relative_url }}" aria-label="OraDigit Home" class="logo-link">
         <img src="{{ '/assets/logo.png' | relative_url }}" alt="OraDigit Logo" class="logo-icon">
-        <span class="logo-text">OraDigit</span>
       </a>
     </div>
 
-    <nav class="main-nav">
-      <ul class="nav-links">
-        <li><a href="#overview">Overview</a></li>
-        <li><a href="#approach">Our Approach</a></li>
-        <li><a href="#labs">Labs</a></li>
-        <li><a href="#case-studies">Case Studies</a></li>
-        <li><a href="#insights">Our Insights</a></li>
-        <li><a href="#people">Our People</a></li>
-        <li><a href="#contact">Contact Us</a></li>
+    <!-- Mobile hamburger -->
+    <button
+      id="mobileMenuToggle"
+      class="mobile-menu-toggle"
+      aria-label="Toggle menu"
+      aria-expanded="false"
+      aria-controls="navLinks">☰</button>
+
+    <!-- Primary Nav (single instance) -->
+    <nav class="main-nav" role="navigation" aria-label="Primary">
+      <ul class="nav-links" id="navLinks">
+        <!-- About -->
+        <li class="has-dropdown">
+          <button class="dropdown-toggle" aria-expanded="false">About</button>
+          <ul class="dropdown-menu">
+            <li><a href="/overview/">Overview</a></li>
+            <li><a href="/approach/">Our Approach</a></li>
+            <li><a href="/people/">Our People</a></li>
+          </ul>
+        </li>
+
+        <!-- Solutions -->
+        <li class="has-dropdown">
+          <button class="dropdown-toggle" aria-expanded="false">Solutions</button>
+          <ul class="dropdown-menu">
+            <li><a href="/labs/">Labs</a></li>
+
+
+            <li><a href="/case-studies/">Case Studies</a></li>
+            <li><a href="/solutions/business-growth-roadmap/">Business Growth Roadmap</a></li>
+            <li><a href="{{ '/order-helper/' | relative_url }}">Order Helper (PET/CT)</a></li>
+            <li><a href="{{ '/solutions/pet-ct-denial-reduction/' | relative_url }}">PET/CT Insurance Denial Reduction</a></li>
+
+           <li><a href="/skill/">skills</a></li>
+
+            
+          </ul>
+        </li>
+
+        <!-- Insights -->
+        <li class="has-dropdown">
+          <button class="dropdown-toggle" aria-expanded="false">Insights</button>
+          <ul class="dropdown-menu">
+            <li><a href="/insights/">Our Insights</a></li>
+          </ul>
+        </li>
+
+        <li><a href="/careers/">Careers</a></li>
+        <li><a href="/contact/">Contact Us</a></li>
+        <li><a href="#" data-ora-panel-trigger class="nav-ai-summary">AI Summary</a></li>
+
       </ul>
+         
     </nav>
 
+    <!-- Right header actions -->
     <div class="header-right">
-      <a href="/login" class="auth-link">Sign In</a>
+      <a href="https://auth.oradigit.com" class="auth-link" target="_blank" rel="noopener">Sign In</a>
       <span class="divider">|</span>
-      <a href="/subscribe" class="auth-link">Subscribe</a>
-      <button class="search-btn" aria-label="Search">
-        <img src="{{ '/assets/icons/search.svg' | relative_url }}" alt="Search Icon">
-      </button>
+      <a href="/subscribe/" class="auth-link">Subscribe</a>
+      <a href="/contact/" class="btn-cta">Book Consultation</a>
     </div>
   </div>
+
+  <!-- Single, robust script (remove the other two) -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggleBtn = document.getElementById('mobileMenuToggle');
+      const mainNav   = document.querySelector('.main-nav');
+      const navLinks  = document.getElementById('navLinks');
+
+      if (toggleBtn && mainNav && navLinks) {
+        toggleBtn.addEventListener('click', () => {
+          const opened = mainNav.classList.toggle('open');
+          navLinks.classList.toggle('open', opened);
+          toggleBtn.setAttribute('aria-expanded', String(opened));
+          document.body.classList.toggle('nav-open', opened);
+        });
+      }
+
+      // Dropdown tap support + Escape to collapse (desktop hover handled by CSS)
+      document.querySelectorAll('.has-dropdown').forEach(group => {
+        const btn = group.querySelector('.dropdown-toggle');
+        if (!btn) return;
+        btn.addEventListener('click', (e) => {
+          // On mobile this gives tap-to-open feel; on desktop CSS handles hover
+          e.preventDefault();
+          const expanded = btn.getAttribute('aria-expanded') === 'true';
+          btn.setAttribute('aria-expanded', String(!expanded));
+        });
+        group.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') btn.setAttribute('aria-expanded', 'false');
+        });
+      });
+
+      // Mark current page link as active
+      const curPath = location.pathname.replace(/\/$/, '') || '/';
+      document.querySelectorAll('.nav-links a[href]').forEach(a => {
+        const href = a.getAttribute('href');
+        if (!href) return;
+        const normalized = href.replace(/\/$/, '');
+        if (normalized === curPath) {
+          a.classList.add('active');
+          a.setAttribute('aria-current', 'page');
+        }
+      });
+    });
+  </script>
 </header>
