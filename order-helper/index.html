@@ -5,44 +5,13 @@ permalink: /order-helper/
 description: Evidence-based PET/CT, CT, and MRI order helper with validation and export. No PHI. Educational use only.
 ---
 
-<!-- Page-scoped assets & config -->
-<link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250904">
+<!-- Page-scoped stylesheet -->
+<link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250903">
+
+<!-- Tell app.js where to load the rules -->
 <meta name="oh-rules-path" content="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250904">
-<meta name="oh-version" content="20250904">
 
-<!-- Error beacon: surface JS errors in the status bar -->
-<script>
-  window.addEventListener('error', e => {
-    const s = document.getElementById('status');
-<<<<<<< HEAD
-    if (s) {
-      s.textContent = 'JavaScript error: ' + (e.message || 'Unknown');
-      s.className = 'status error';
-    }
-=======
-    if (s) { s.textContent = 'JavaScript error: ' + (e.message || 'Unknown'); s.className = 'status error'; }
->>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
-  });
-</script>
-
-<!-- Boot probe: confirm rules.json path/case before app.js runs -->
-<script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    const s = document.getElementById('status');
-    if (!s) return;
-    try {
-      const url = document.querySelector('meta[name="oh-rules-path"]')?.content;
-      if (!url) { s.textContent = 'Missing oh-rules-path meta.'; s.className = 'status error'; return; }
-      s.textContent = 'Boot check… fetching rules…';
-      const r = await fetch(url, { cache: 'no-store' });
-      if (r.ok) { s.textContent = 'Boot check OK. Loading app…'; s.className = 'status success'; }
-      else { s.textContent = `Rules fetch failed (${r.status}). Check path/case: ` + url; s.className = 'status error'; }
-    } catch (e) {
-      s.textContent = 'Rules fetch error: ' + e.message;
-      s.className = 'status error';
-    }
-  });
-</script>
+<meta name="oh-version" content="20250819">
 
 <section class="order-helper container" aria-labelledby="oh-title">
   <header class="oh-header">
@@ -69,25 +38,32 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
         </select>
         <small class="hint">Regions, contexts, and conditions adapt to your selection.</small>
       </div>
+      <div>
+  <h3>ICD-10 Suggestions</h3>
+  <ul id="outICD"></ul>
+</div>
+
 
       <!-- Region -->
       <div class="field">
         <label for="region">Region <span aria-hidden="true">*</span></label>
         <select id="region" name="region" required></select>
       </div>
+    <!-- Context (chips UI expected by app.js) -->
+<div class="field">
+  <label>Context <span aria-hidden="true">*</span></label>
 
-      <!-- Context (chips UI expected by app.js) -->
-      <div class="field">
-        <label>Context <span aria-hidden="true">*</span></label>
+  <!-- Chips rendered dynamically by app.js -->
+  <div id="contextChips" class="oh-chips" role="group" aria-label="Context"></div>
 
-        <!-- Chips rendered dynamically by app.js -->
-        <div id="contextChips" class="oh-chips" role="group" aria-label="Context"></div>
+  <!-- Hidden mirror for compatibility (optional but helpful) -->
+  <select id="context" name="context" multiple hidden></select>
 
-        <!-- Hidden mirror for compatibility (app.js keeps in sync) -->
-        <select id="context" name="context" multiple hidden></select>
+  <small class="hint">Click one or more (e.g., staging, restaging, surveillance, acute, follow-up).</small>
+</div>
 
-        <small class="hint">Click one or more (e.g., staging, restaging, surveillance, acute, follow-up).</small>
-      </div>
+
+    
 
       <!-- Condition (with datalist suggestions) -->
       <div class="field">
@@ -109,7 +85,8 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       <!-- Indication (auto-built but editable) -->
       <div class="field">
         <label for="indication">Clinical Indication</label>
-        <textarea id="indication" name="indication" rows="3" placeholder="Auto-generated (you can edit)…"></textarea>
+        <textarea id="indication" name="indication" rows="3"
+          placeholder="Auto-generated (you can edit)…"></textarea>
       </div>
 
       <div class="actions">
@@ -165,10 +142,6 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
         <h3>Clinical Flags</h3>
         <ul id="outFlags"></ul>
       </div>
-      <div>
-        <h3>ICD-10 Suggestions</h3>
-        <ul id="outICD"></ul>
-      </div>
     </div>
 
     <div class="actions">
@@ -177,9 +150,28 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       <button id="printBtn" type="button" class="btn btn-tertiary">Print</button>
     </div>
   </section>
+  <section id="results" hidden style="margin-top:16px">
+  <h2 id="outHeader"></h2>
+  ...
+  <div class="oh-grid" style="margin-top:12px">
+    <div>
+      <h3>Prep / Contraindications</h3>
+      <ul id="outPrep"></ul>
+    </div>
+    <div>
+      <h3>Supporting Docs</h3>
+      <ul id="outDocs"></ul>
+    </div>
+    <div>
+      <h3>Clinical Flags</h3>
+      <ul id="outFlags"></ul>
+    </div>
+  </div>
+  ...
+</section>
 
-  <!-- Hidden by default; enable via /order-helper/?debug=1 -->
-  <details id="rulesInfo" style="margin-top:1rem" hidden>
+
+  <details style="margin-top:1rem">
     <summary>What rules are applied?</summary>
     <p>
       Rules load from <code>/order-helper/data/rules.json</code>. You can update that file anytime
@@ -187,28 +179,24 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       back to generic oncology tags.
     </p>
   </details>
-  <script>
-    if (new URLSearchParams(location.search).get('debug') === '1') {
-      const d = document.getElementById('rulesInfo'); if (d) d.hidden = false;
-    }
-  </script>
 
   <noscript>
     <p class="status error">JavaScript is required for the Order Helper to function.</p>
   </noscript>
 </section>
 
-<!-- Firebase (Compat CDN) - optional -->
+<!-- Firebase (Compat CDN) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" defer></script>
 
-<!-- Lightweight auto-init (only runs if you define window.ORADIGIT_FIREBASE_CONFIG site-wide) -->
+<!-- Lightweight auto-init (only runs if you define window.ORADIGIT_FIREBASE_CONFIG somewhere site-wide) -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     try {
       if (window.ORADIGIT_FIREBASE_CONFIG && !window.firebase?.apps?.length) {
         firebase.initializeApp(window.ORADIGIT_FIREBASE_CONFIG);
+        // Optional: export for app.js if it checks for window.OH_FIREBASE
         window.OH_FIREBASE = {
           app: firebase.app(),
           auth: firebase.auth(),
@@ -225,24 +213,41 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
   });
 </script>
 
-<<<<<<< HEAD
-<!-- Tiny UX helpers (keeps the preview in sync; app.js handles business logic) -->
+<!-- App logic -->
+<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250819"></script>
+
+<!-- Tiny UX helpers (non-invasive; does not touch business logic) -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const $ = (s) => document.querySelector(s);
     const form = $('#orderForm');
 
-    // Keep preview in sync with the form & chips
+    // Keep preview in sync with the form
     const syncPreview = () => {
-      const $s = (sel) => document.querySelector(sel);
-      $s('#pv-modality').textContent  = $s('#modality')?.value || '—';
-      $s('#pv-region').textContent    = $s('#region')?.value || '—';
+  $('#pv-modality').textContent  = $('#modality')?.value || '—';
+  $('#pv-region').textContent    = $('#region')?.value || '—';
 
-      // Read from the hidden <select multiple> that mirrors the chips
-      const ctxOpt = Array.from(document.querySelectorAll('#context option:checked')).map(o => o.value);
-      $s('#pv-context').textContent   = ctxOpt.length ? ctxOpt.join(', ') : '—';
+  // NEW: show all selected contexts
+  { const sel = document.getElementById('context');
+    const ctx = sel ? [...sel.selectedOptions].map(o => o.textContent.trim()).filter(Boolean) : [];
+    document.getElementById('pv-context').textContent = ctx.length ? ctx.join(', ') : '—';
+  }
 
-      $s('#pv-condition').textContent = $s('#condition')?.value || '—';
+  $('#pv-condition').textContent = $('#condition')?.value || '—';
+
+  const grp = document.getElementById('contrastGroup');
+  if (grp && !grp.classList.contains('hidden')) {
+    const r = grp.querySelector('input[type=radio]:checked');
+    const oral = document.getElementById('oralContrast')?.checked;
+    let txt = r ? (r.value === 'with_iv' ? 'With IV contrast' : 'Without IV contrast') : '—';
+    if (oral) txt += ' + oral';
+    document.getElementById('pv-contrast').textContent = txt;
+  } else {
+    document.getElementById('pv-contrast').textContent = '—';
+  }
+
+  document.getElementById('pv-indication').textContent = document.getElementById('indication')?.value?.trim() || '—';
+};
 
       const grp = document.getElementById('contrastGroup');
       if (grp && !grp.classList.contains('hidden')) {
@@ -250,12 +255,12 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
         const oral = document.getElementById('oralContrast')?.checked;
         let txt = r ? (r.value === 'with_iv' ? 'With IV contrast' : 'Without IV contrast') : '—';
         if (oral) txt += ' + oral';
-        $s('#pv-contrast').textContent = txt;
+        $('#pv-contrast').textContent = txt;
       } else {
-        $s('#pv-contrast').textContent = '—';
+        $('#pv-contrast').textContent = '—';
       }
 
-      $s('#pv-indication').textContent = $s('#indication')?.value?.trim() || '—';
+      $('#pv-indication').textContent = $('#indication')?.value?.trim() || '—';
     };
 
     ['change','input','click'].forEach(evt => {
@@ -280,11 +285,4 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
     syncPreview();
   });
 </script>
-
-<!-- App logic (must be last so helpers & probes are ready) -->
-<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250905"></script>
-
-=======
-<!-- App logic (keep last) -->
-<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250904"></script>
-
+<!-- touch 2025-09-10T13:30:25 -->
