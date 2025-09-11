@@ -5,6 +5,7 @@
    - Live Order Review builder
    - Suggest Reason, Copy, Share, Reset
    - Optional Firebase write on submit (orders collection)
+<<<<<<< HEAD
    - Defensive error handling with status beacons + debug panel
 ========================================================= */
 
@@ -13,6 +14,12 @@
   const APP_VERSION = document.querySelector('meta[name="oh-version"]')?.content || String(Date.now());
 
   // ---------- Shorthands & elements ----------
+=======
+   - Defensive error handling with status beacons
+========================================================= */
+
+(() => {
+>>>>>>> origin/main
   const $ = (s) => document.querySelector(s);
   const els = {
     form: $('#orderForm'),
@@ -41,6 +48,7 @@
     special: $('#special'),
   };
 
+<<<<<<< HEAD
   // ---------- Status beacons ----------
   function setStatus(msg, cls = 'oh-status success', persist = true) {
     if (!els.status) return;
@@ -57,6 +65,13 @@
     const tag = cls.includes('error') ? 'error' : cls.includes('warn') ? 'warn' : 'log';
     console[tag](`[OH] ${msg}`);
   }
+=======
+  const setStatus = (msg, cls = 'oh-status success') => {
+    if (!els.status) return;
+    els.status.textContent = msg;
+    els.status.className = cls;
+  };
+>>>>>>> origin/main
 
   // Catch sync + async errors globally
   window.addEventListener('error', e =>
@@ -67,31 +82,47 @@
   );
 
   // ---------- State ----------
+<<<<<<< HEAD
   const state = { rules: null, rulesSource: '' };
+=======
+  const state = { rules: null };
+>>>>>>> origin/main
 
   // ---------- Init ----------
   document.addEventListener('DOMContentLoaded', init);
 
   async function init () {
     try {
+<<<<<<< HEAD
       await loadRules();        // populates state.rules & state.rulesSource
       populateModalities();     // ensures a default selection
       wireEvents();
       buildReview();
       attachDebugPanel();
+=======
+      await loadRules();
+      populateModalities();
+      wireEvents();
+      buildReview();
+>>>>>>> origin/main
 
       // If URL has hash payload (from share fallback), hydrate review
       if (location.hash && els.review) {
         const txt = decodeURIComponent(location.hash.slice(1));
         els.review.textContent = txt;
       }
+<<<<<<< HEAD
       setStatus(`Rules ready from ${state.rulesSource}`, 'oh-status success');
+=======
+      setStatus('Rules loaded.');
+>>>>>>> origin/main
     } catch (e) {
       console.error(e);
       setStatus('Failed to initialize Order Helper.', 'oh-status error');
     }
   }
 
+<<<<<<< HEAD
   // ---------- Cache-busting + safe JSON fetch ----------
   function cacheUrl(url) {
     try {
@@ -241,14 +272,45 @@
   // Optional: overlay from Firestore (if configured globally)
   async function overlayRemoteRules (local) {
     if (!(window.ORADIGIT_FIREBASE_CONFIG && window.firebase)) return local;
+=======
+  // ---------- Rules loading ----------
+  async function loadRules () {
+    setStatus('Loading rules…', 'oh-status');
+    // Prefer meta tag path if present
+    const metaPath = document.querySelector('meta[name="oh-rules-path"]')?.content;
+    const RULES_URL = metaPath || new URL('./data/rules.json', window.location).toString();
+
+    // Load local rules.json
+    const res = await fetch(RULES_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Failed to load rules.json (' + res.status + ')');
+    const local = await res.json();
+
+    // Optional: overlay remote rules (Firestore) if configured
+    const merged = await overlayRemoteRules(local).catch(err => {
+      console.warn('Remote overlay failed, using local rules only:', err);
+      return local;
+    });
+
+    state.rules = normalizeRules(merged);
+  }
+
+  async function overlayRemoteRules (local) {
+    if (!(window.ORADIGIT_FIREBASE_CONFIG && window.firebase)) return local;
+
+>>>>>>> origin/main
     const app = firebase.apps?.length ? firebase.app() : firebase.initializeApp(window.ORADIGIT_FIREBASE_CONFIG);
     const db = firebase.firestore();
     const snap = await db.collection('order_helper_rules').doc('current').get();
     if (!snap.exists) return local;
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
     const remote = snap.data() || {};
     return mergeRules(local, remote);
   }
 
+<<<<<<< HEAD
   // Conservative deep merge for fields we use
   function mergeRules (base, overlay) {
     const out = JSON.parse(JSON.stringify(base || {}));
@@ -259,14 +321,31 @@
     if (Array.isArray(overlay.icd10_catalog)) {
       const set = new Set([...(out.icd10_catalog || []), ...overlay.icd10_catalog]);
       out.icd10_catalog = [...set];
+=======
+  function mergeRules (base, overlay) {
+    // Conservative deep merge for fields we use
+    const out = JSON.parse(JSON.stringify(base));
+    if (!overlay) return out;
+    for (const k of ['modalities', 'icd10_catalog']) {
+      if (overlay[k]) {
+        out[k] = { ...(out[k] || {}), ...overlay[k] };
+      }
+>>>>>>> origin/main
     }
     return out;
   }
 
+<<<<<<< HEAD
   // Normalize to a stable shape the UI expects
   function normalizeRules (r) {
     const src = r?.modalities ? r.modalities : r || {};
     const out = { modalities: {} , icd10_catalog: Array.isArray(r?.icd10_catalog) ? r.icd10_catalog : [] };
+=======
+  function normalizeRules (r) {
+    // Accept either {modalities:{...}} or older flat style
+    const src = r.modalities ? r.modalities : r;
+    const out = { modalities: {} , icd10_catalog: Array.isArray(r.icd10_catalog) ? r.icd10_catalog : [] };
+>>>>>>> origin/main
 
     for (const [mod, specRaw] of Object.entries(src || {})) {
       if (!specRaw) continue;
@@ -300,6 +379,7 @@
 
   // ---------- UI population ----------
   function populateModalities () {
+<<<<<<< HEAD
     const mods = Object.keys(state.rules.modalities || []);
     els.modality.innerHTML = optionize(mods, 'Select modality');
 
@@ -308,25 +388,42 @@
       els.modality.value = mods[0];
       populateForModality(els.modality.value);
     }
+=======
+    const mods = Object.keys(state.rules.modalities || {});
+    els.modality.innerHTML = optionize(mods, 'Select modality');
+>>>>>>> origin/main
   }
 
   function populateForModality (mod) {
     const m = state.rules.modalities[mod] || {};
+<<<<<<< HEAD
     els.region.innerHTML     = optionize(m.regions, 'Select region');
     els.bodyPart.innerHTML   = optionize(m.body_parts, 'Select body part');
     els.contrast.innerHTML   = optionize(m.contrast_options || ['None'], 'Select contrast');
     els.laterality.innerHTML = optionize(m.laterality || ['N/A','Left','Right','Bilateral'], 'Select laterality');
     els.context.innerHTML    = optionize(m.contexts || ['Staging','Restaging','Treatment response','Surveillance'], 'Select context');
+=======
+    els.region.innerHTML    = optionize(m.regions, 'Select region');
+    els.bodyPart.innerHTML  = optionize(m.body_parts, 'Select body part');
+    els.contrast.innerHTML  = optionize(m.contrast_options || ['None'], 'Select contrast');
+    els.laterality.innerHTML= optionize(m.laterality || ['N/A','Left','Right','Bilateral'], 'Select laterality');
+    els.context.innerHTML   = optionize(m.contexts || ['Staging','Restaging','Treatment response','Surveillance'], 'Select context');
+>>>>>>> origin/main
 
     // Datalists
     renderDatalist(els.conditionList, m.conditions || []);
     const icd = new Set([...(state.rules.icd10_catalog || []), ...(m.icd10 || [])]);
     renderDatalist(els.icdList, [...icd]);
 
+<<<<<<< HEAD
     // Seed CPT with common until we can compute from selections
     els.cpt.innerHTML = optionize(m.common_cpt || [], 'Suggested CPT');
 
     buildReview();
+=======
+    // CPT (seed with common until we have enough selectors to compute)
+    els.cpt.innerHTML = optionize(m.common_cpt || [], 'Suggested CPT');
+>>>>>>> origin/main
   }
 
   function optionize (arr, placeholder) {
@@ -340,7 +437,11 @@
   }
 
   function escapeHtml (s = '') {
+<<<<<<< HEAD
     return s.replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+=======
+    return s.replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]);
+>>>>>>> origin/main
   }
 
   // ---------- CPT suggestion ----------
@@ -403,15 +504,25 @@
     // Change of modality populates dependent fields
     els.modality.addEventListener('change', () => {
       populateForModality(els.modality.value);
+<<<<<<< HEAD
     });
 
     // Rebuild review on inputs + refresh CPT when key selectors change
+=======
+      buildReview();
+    });
+
+    // Rebuild review on inputs
+>>>>>>> origin/main
     [
       els.region, els.bodyPart, els.contrast, els.laterality, els.context,
       els.condition, els.icd10, els.cpt, els.urgency,
       els.pregnant, els.creatinineDate, els.allergies, els.special, els.indication
     ].forEach(el => el && el.addEventListener('input', () => {
       if ([els.region, els.bodyPart, els.contrast].includes(el)) {
+
+        // Refresh CPT suggestions when key selectors change
+>>>>>>> origin/main
         const options = suggestCPT();
         els.cpt.innerHTML = optionize(options, 'Suggested CPT');
       }
@@ -467,7 +578,10 @@
     els.form?.addEventListener('submit', onSubmit);
   }
 
+
   // ---------- Submit (optional Firestore write) ----------
+=======
+>>>>>>> origin/main
   async function onSubmit (evt) {
     evt.preventDefault();
     const payload = {
@@ -498,7 +612,10 @@
         await db.collection('orders').add(payload);
         setStatus('Submitted to Firestore.');
         els.form.reset();
+<<<<<<< HEAD
         populateModalities();
+=======
+>>>>>>> origin/main
         buildReview();
         return;
       } catch (e) {
@@ -507,19 +624,16 @@
       }
     }
 
-    // Fallback: download as .txt
-    try {
-      const blob = new Blob([payload.review || JSON.stringify(payload, null, 2)], { type: 'text/plain' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `order-${Date.now()}.txt`;
-      a.click();
-      setStatus('Downloaded order text.');
-    } catch (e) {
-      console.warn('Download fallback failed:', e);
-      setStatus('Could not save order. Copy from the review panel.', 'oh-status warn');
-    }
-  }
+    
+    // Generate a PDF of the order
+try {
+  await generatePDF(payload);
+  setStatus('PDF generated.');
+} catch (e) {
+  console.warn('PDF generation failed:', e);
+  setStatus('PDF generation failed. Use Copy as fallback.', 'oh-status warn');
+}
+
 
   // ---------- Debug panel (query ?debug=1) ----------
   function attachDebugPanel() {
@@ -543,4 +657,86 @@
     document.addEventListener('input', update, true);
     document.addEventListener('change', update, true);
   }
-})();
+  async function generatePDF(payload) {
+  // Ensure library is ready
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) {
+    console.warn('jsPDF not available');
+    alert('PDF generator unavailable. Please try again or use Copy.');
+    return;
+  }
+
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' }); // 612x792pt
+  const marginX = 54; // 0.75"
+  const lineH = 18;
+  let y = 72; // 1" top
+
+  // Header
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text('Radiology Order', marginX, y);
+  y += 8;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, marginX, y + lineH);
+  y += (lineH * 2);
+
+  // Utility: wrapped text block
+  function write(label, value) {
+    if (!value) return;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30);
+    doc.setFontSize(11);
+    doc.text(label, marginX, y);
+    y += 14;
+
+    doc.setFont('courier', 'normal'); // mono for aligned look
+    doc.setTextColor(30);
+    doc.setFontSize(11);
+
+    const maxWidth = 612 - marginX * 2;
+    const rows = doc.splitTextToSize(String(value), maxWidth);
+    rows.forEach(row => {
+      doc.text(row, marginX, y);
+      y += lineH;
+      if (y > 760) { // page break safety
+        doc.addPage();
+        y = 72;
+      }
+    });
+    y += 6;
+  }
+
+  // Content
+  write('Study', `${payload.modality} ${payload.bodyPart || payload.region} ${payload.contrast}`.replace(/\s+/g,' ').trim());
+  if (payload.laterality && payload.laterality !== 'N/A') write('Laterality', payload.laterality);
+  if (payload.context) write('Context', payload.context);
+  if (payload.urgency) write('Urgency', payload.urgency);
+  if (payload.condition) write('Condition', payload.condition);
+  if (payload.icd10) write('ICD-10', payload.icd10);
+  if (payload.cpt) write('CPT (suggested)', payload.cpt);
+  if (payload.creatinineDate) write('Most recent creatinine', payload.creatinineDate);
+  if (payload.pregnant && payload.pregnant !== 'Unknown') write('Pregnancy', payload.pregnant);
+  if (payload.allergies) write('Allergies / Precautions', payload.allergies);
+  if (payload.special) write('Special instructions', payload.special);
+  write('Reason for exam', payload.indication || payload.review);
+  write('Order summary', payload.review);
+
+  // Footer disclaimer (optional)
+  if (y > 720) { doc.addPage(); y = 72; }
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(110);
+  doc.setFontSize(9);
+  doc.text('Structured for ordering clarity. Educational use only; not medical advice.', marginX, 780);
+
+  // Save
+  const fnameParts = [
+    'order',
+    (payload.modality || '').replace(/\W+/g,'-').toLowerCase(),
+    Date.now()
+  ].filter(Boolean);
+  const filename = `${fnameParts.join('_')}.pdf`;
+  doc.save(filename);
+}
