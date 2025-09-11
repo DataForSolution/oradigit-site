@@ -306,3 +306,27 @@ select {
   background-repeat: no-repeat;
   padding-right: 2.25rem;
 }
+/* Order Helper Buttons - ensure visibility */
+#btnSuggest,
+#btnReset {
+  background-color: #1a53ff;   /* Bright blue */
+  color: #ffffff;              /* White text */
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.25s ease, transform 0.1s ease;
+}
+
+#btnSuggest:hover,
+#btnReset:hover {
+  background-color: #003bbd;   /* Darker blue on hover */
+  transform: translateY(-1px);
+}
+
+#btnSuggest:active,
+#btnReset:active {
+  transform: translateY(0);
+}
