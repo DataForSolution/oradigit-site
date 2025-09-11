@@ -5,10 +5,14 @@
    - Live Order Review builder
    - Suggest Reason, Copy, Share, Reset
    - Optional Firebase write on submit (orders collection)
-   - Defensive error handling with status beacons
+   - Defensive error handling with status beacons + debug panel
 ========================================================= */
 
 (() => {
+  // ---------- App version (used for cache-busting) ----------
+  const APP_VERSION = document.querySelector('meta[name="oh-version"]')?.content || String(Date.now());
+
+  // ---------- Shorthands & elements ----------
   const $ = (s) => document.querySelector(s);
   const els = {
     form: $('#orderForm'),
@@ -37,11 +41,22 @@
     special: $('#special'),
   };
 
-  const setStatus = (msg, cls = 'oh-status success') => {
+  // ---------- Status beacons ----------
+  function setStatus(msg, cls = 'oh-status success', persist = true) {
     if (!els.status) return;
     els.status.textContent = msg;
     els.status.className = cls;
-  };
+    if (!persist) {
+      setTimeout(() => {
+        if (els.status.textContent === msg) {
+          els.status.textContent = 'Ready.';
+          els.status.className = 'oh-status';
+        }
+      }, 4000);
+    }
+    const tag = cls.includes('error') ? 'error' : cls.includes('warn') ? 'warn' : 'log';
+    console[tag](`[OH] ${msg}`);
+  }
 
   // Catch sync + async errors globally
   window.addEventListener('error', e =>
@@ -52,79 +67,206 @@
   );
 
   // ---------- State ----------
-  const state = { rules: null };
+  const state = { rules: null, rulesSource: '' };
 
   // ---------- Init ----------
   document.addEventListener('DOMContentLoaded', init);
 
   async function init () {
     try {
-      await loadRules();
-      populateModalities();
+      await loadRules();        // populates state.rules & state.rulesSource
+      populateModalities();     // ensures a default selection
       wireEvents();
       buildReview();
+      attachDebugPanel();
 
       // If URL has hash payload (from share fallback), hydrate review
       if (location.hash && els.review) {
         const txt = decodeURIComponent(location.hash.slice(1));
         els.review.textContent = txt;
       }
-      setStatus('Rules loaded.');
+      setStatus(`Rules ready from ${state.rulesSource}`, 'oh-status success');
     } catch (e) {
       console.error(e);
       setStatus('Failed to initialize Order Helper.', 'oh-status error');
     }
   }
 
+  // ---------- Cache-busting + safe JSON fetch ----------
+  function cacheUrl(url) {
+    try {
+      const u = new URL(url, window.location.origin);
+      if (!u.searchParams.has('v')) u.searchParams.set('v', APP_VERSION);
+      return u.toString();
+    } catch {
+      return url + (url.includes('?') ? '&' : '?') + 'v=' + encodeURIComponent(APP_VERSION);
+    }
+  }
+
+  async function fetchJSON(url) {
+    try {
+      const r = await fetch(cacheUrl(url), { cache: 'no-store' });
+      if (!r.ok) return null;
+      return await r.json();
+    } catch {
+      return null;
+    }
+  }
+
   // ---------- Rules loading ----------
   async function loadRules () {
     setStatus('Loading rules…', 'oh-status');
-    // Prefer meta tag path if present
+
+    let source = null;
     const metaPath = document.querySelector('meta[name="oh-rules-path"]')?.content;
-    const RULES_URL = metaPath || new URL('./data/rules.json', window.location).toString();
+    const tryPaths = [
+      metaPath,
+      '/order-helper/data/rules.json',
+      './data/rules.json',
+      'data/rules.json'
+    ].filter(Boolean);
 
-    // Load local rules.json
-    const res = await fetch(RULES_URL, { cache: 'no-store' });
-    if (!res.ok) throw new Error('Failed to load rules.json (' + res.status + ')');
-    const local = await res.json();
+    // 1) Primary rules.json attempts
+    let base = null;
+    for (const p of tryPaths) {
+      const data = await fetchJSON(p);
+      if (data && (data.modalities || data.CT || data.MRI)) {
+        base = data; source = p; break;
+      }
+    }
 
-    // Optional: overlay remote rules (Firestore) if configured
-    const merged = await overlayRemoteRules(local).catch(err => {
-      console.warn('Remote overlay failed, using local rules only:', err);
-      return local;
+    // 2) Legacy split files (ct_rules.json / mri_rules.json)
+    if (!base) {
+      const ct  = await fetchJSON('/order-helper/data/ct_rules.json')
+              || await fetchJSON('./data/ct_rules.json')
+              || await fetchJSON('data/ct_rules.json');
+      const mri = await fetchJSON('/order-helper/data/mri_rules.json')
+              || await fetchJSON('./data/mri_rules.json')
+              || await fetchJSON('data/mri_rules.json');
+      if (ct || mri) {
+        base = { modalities: {} };
+        if (ct)  base.modalities['CT']  = ct.modalities?.CT  || ct.CT  || ct;
+        if (mri) base.modalities['MRI'] = mri.modalities?.MRI || mri.MRI || mri;
+        source = 'legacy ct_rules.json + mri_rules.json';
+      }
+    }
+
+    // 3) Embedded emergency defaults (UI never empty)
+    if (!base) {
+      console.warn('[OH] No rules file found; using embedded defaults.');
+      base = {
+        modalities: {
+          'CT': {
+            regions: ['Head/Brain', 'Chest', 'Abdomen/Pelvis'],
+            body_parts: ['Brain', 'Thorax', 'Abdomen and pelvis'],
+            contrast_options: ['None','With contrast','Without contrast','With and without'],
+            contexts: ['Acute','Oncology staging','Follow-up'],
+            conditions: ['Stroke/TIA','Lung nodule','RLQ pain/appendicitis'],
+            common_cpt: ['70450','71260','74177'],
+            cpt_map: {
+              'Head/Brain | Brain | Without contrast': ['70450'],
+              'Chest | Thorax | With contrast': ['71260'],
+              'Abdomen/Pelvis | Abdomen and pelvis | With contrast': ['74177']
+            }
+          },
+          'MRI': {
+            regions: ['Brain','Lumbar spine','Prostate (PI-RADS)'],
+            body_parts: ['Brain','Lumbar spine','Prostate'],
+            contrast_options: ['None','With and without'],
+            contexts: ['Problem solving','Staging','Follow-up'],
+            conditions: ['Tumor','Radiculopathy','Prostate cancer'],
+            common_cpt: ['70553','72148','72197'],
+            cpt_map: {
+              'Brain | Brain | With and without': ['70553'],
+              'Lumbar spine | Lumbar spine | Without contrast': ['72148'],
+              'Prostate (PI-RADS) | Prostate | With and without': ['72197']
+            }
+          }
+        },
+        icd10_catalog: ['I63.9','R91.1','R10.31','C61','G35']
+      };
+      source = 'embedded defaults';
+    }
+
+    // 4) Facility overlay (optional)
+    const facility =
+        await fetchJSON('/order-helper/data/rules.facility.json')
+     || await fetchJSON('./data/rules.facility.json')
+     || await fetchJSON('data/rules.facility.json');
+    if (facility) {
+      base = mergeRules(base, facility);
+      source += ' + facility overlay';
+    }
+
+    // 5) Optional Firestore overlay
+    const overlaid = await overlayRemoteRules(base).catch(err => {
+      console.warn('[OH] Remote overlay failed:', err);
+      return base;
     });
+    if (overlaid !== base) source += ' + remote overlay';
 
-    state.rules = normalizeRules(merged);
+    // 6) Normalize to app schema
+    state.rules = normalizeRules(overlaid);
+    state.rulesSource = source || 'unknown';
+
+    // 7) Sanity guard
+    if (!state.rules || !state.rules.modalities || !Object.keys(state.rules.modalities).length) {
+      await loadRulesFallback();
+      state.rulesSource = 'emergency defaults';
+    }
+
+    const mods = Object.keys(state.rules.modalities || {});
+    setStatus(`Rules ready from ${state.rulesSource} — ${mods.length} modalities.`, 'oh-status success');
   }
 
+  // Last-resort fallback
+  async function loadRulesFallback() {
+    state.rules = {
+      modalities: {
+        'CT': {
+          regions: ['Head/Brain'],
+          body_parts: ['Brain'],
+          contrast_options: ['Without contrast'],
+          contexts: ['Acute'],
+          conditions: ['Stroke/TIA'],
+          common_cpt: ['70450'],
+          cpt_map: { 'Head/Brain | Brain | Without contrast': ['70450'] }
+        }
+      },
+      icd10_catalog: ['I63.9']
+    };
+    setStatus('Using emergency defaults. Please fix rules.json path/schema.', 'oh-status warn');
+  }
+
+  // Optional: overlay from Firestore (if configured globally)
   async function overlayRemoteRules (local) {
     if (!(window.ORADIGIT_FIREBASE_CONFIG && window.firebase)) return local;
-
     const app = firebase.apps?.length ? firebase.app() : firebase.initializeApp(window.ORADIGIT_FIREBASE_CONFIG);
     const db = firebase.firestore();
     const snap = await db.collection('order_helper_rules').doc('current').get();
     if (!snap.exists) return local;
-
     const remote = snap.data() || {};
     return mergeRules(local, remote);
   }
 
+  // Conservative deep merge for fields we use
   function mergeRules (base, overlay) {
-    // Conservative deep merge for fields we use
-    const out = JSON.parse(JSON.stringify(base));
+    const out = JSON.parse(JSON.stringify(base || {}));
     if (!overlay) return out;
-    for (const k of ['modalities', 'icd10_catalog']) {
-      if (overlay[k]) {
-        out[k] = { ...(out[k] || {}), ...overlay[k] };
-      }
+    if (overlay.modalities) {
+      out.modalities = { ...(out.modalities || {}), ...overlay.modalities };
+    }
+    if (Array.isArray(overlay.icd10_catalog)) {
+      const set = new Set([...(out.icd10_catalog || []), ...overlay.icd10_catalog]);
+      out.icd10_catalog = [...set];
     }
     return out;
   }
 
+  // Normalize to a stable shape the UI expects
   function normalizeRules (r) {
-    // Accept either {modalities:{...}} or older flat style
-    const src = r.modalities ? r.modalities : r;
-    const out = { modalities: {} , icd10_catalog: Array.isArray(r.icd10_catalog) ? r.icd10_catalog : [] };
+    const src = r?.modalities ? r.modalities : r || {};
+    const out = { modalities: {} , icd10_catalog: Array.isArray(r?.icd10_catalog) ? r.icd10_catalog : [] };
 
     for (const [mod, specRaw] of Object.entries(src || {})) {
       if (!specRaw) continue;
@@ -158,25 +300,33 @@
 
   // ---------- UI population ----------
   function populateModalities () {
-    const mods = Object.keys(state.rules.modalities || {});
+    const mods = Object.keys(state.rules.modalities || []);
     els.modality.innerHTML = optionize(mods, 'Select modality');
+
+    // Auto-select first modality to ensure dependent selects populate
+    if (mods.length && !els.modality.value) {
+      els.modality.value = mods[0];
+      populateForModality(els.modality.value);
+    }
   }
 
   function populateForModality (mod) {
     const m = state.rules.modalities[mod] || {};
-    els.region.innerHTML    = optionize(m.regions, 'Select region');
-    els.bodyPart.innerHTML  = optionize(m.body_parts, 'Select body part');
-    els.contrast.innerHTML  = optionize(m.contrast_options || ['None'], 'Select contrast');
-    els.laterality.innerHTML= optionize(m.laterality || ['N/A','Left','Right','Bilateral'], 'Select laterality');
-    els.context.innerHTML   = optionize(m.contexts || ['Staging','Restaging','Treatment response','Surveillance'], 'Select context');
+    els.region.innerHTML     = optionize(m.regions, 'Select region');
+    els.bodyPart.innerHTML   = optionize(m.body_parts, 'Select body part');
+    els.contrast.innerHTML   = optionize(m.contrast_options || ['None'], 'Select contrast');
+    els.laterality.innerHTML = optionize(m.laterality || ['N/A','Left','Right','Bilateral'], 'Select laterality');
+    els.context.innerHTML    = optionize(m.contexts || ['Staging','Restaging','Treatment response','Surveillance'], 'Select context');
 
     // Datalists
     renderDatalist(els.conditionList, m.conditions || []);
     const icd = new Set([...(state.rules.icd10_catalog || []), ...(m.icd10 || [])]);
     renderDatalist(els.icdList, [...icd]);
 
-    // CPT (seed with common until we have enough selectors to compute)
+    // Seed CPT with common until we can compute from selections
     els.cpt.innerHTML = optionize(m.common_cpt || [], 'Suggested CPT');
+
+    buildReview();
   }
 
   function optionize (arr, placeholder) {
@@ -190,7 +340,7 @@
   }
 
   function escapeHtml (s = '') {
-    return s.replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]);
+    return s.replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
 
   // ---------- CPT suggestion ----------
@@ -253,17 +403,15 @@
     // Change of modality populates dependent fields
     els.modality.addEventListener('change', () => {
       populateForModality(els.modality.value);
-      buildReview();
     });
 
-    // Rebuild review on inputs
+    // Rebuild review on inputs + refresh CPT when key selectors change
     [
       els.region, els.bodyPart, els.contrast, els.laterality, els.context,
       els.condition, els.icd10, els.cpt, els.urgency,
       els.pregnant, els.creatinineDate, els.allergies, els.special, els.indication
     ].forEach(el => el && el.addEventListener('input', () => {
       if ([els.region, els.bodyPart, els.contrast].includes(el)) {
-        // Refresh CPT suggestions when key selectors change
         const options = suggestCPT();
         els.cpt.innerHTML = optionize(options, 'Suggested CPT');
       }
@@ -319,6 +467,7 @@
     els.form?.addEventListener('submit', onSubmit);
   }
 
+  // ---------- Submit (optional Firestore write) ----------
   async function onSubmit (evt) {
     evt.preventDefault();
     const payload = {
@@ -349,6 +498,7 @@
         await db.collection('orders').add(payload);
         setStatus('Submitted to Firestore.');
         els.form.reset();
+        populateModalities();
         buildReview();
         return;
       } catch (e) {
@@ -369,5 +519,28 @@
       console.warn('Download fallback failed:', e);
       setStatus('Could not save order. Copy from the review panel.', 'oh-status warn');
     }
+  }
+
+  // ---------- Debug panel (query ?debug=1) ----------
+  function attachDebugPanel() {
+    if (new URLSearchParams(location.search).get('debug') !== '1') return;
+    const host = document.querySelector('.oh-hero .container') || document.body;
+    const el = document.createElement('div');
+    el.style.cssText = 'margin-top:.75rem;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;color:#64748b';
+    el.id = 'oh-debug';
+    host.appendChild(el);
+
+    const update = () => {
+      try {
+        const mods = Object.keys(state?.rules?.modalities || {});
+        const mod = document.querySelector('#modality')?.value || '(none)';
+        el.textContent = `[OH DEBUG] v=${APP_VERSION} | source=${state.rulesSource} | modalities=${mods.length} [${mods.join(', ')}] | selected=${mod}`;
+      } catch {
+        el.textContent = `[OH DEBUG] v=${APP_VERSION} | (no rules yet)`;
+      }
+    };
+    update();
+    document.addEventListener('input', update, true);
+    document.addEventListener('change', update, true);
   }
 })();
