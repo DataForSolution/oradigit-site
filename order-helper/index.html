@@ -2,287 +2,210 @@
 layout: default
 title: OraDigit Order Helper
 permalink: /order-helper/
-description: Evidence-based PET/CT, CT, and MRI order helper with validation and export. No PHI. Educational use only.
+description: Evidence-based PET/CT, CT, MRI, and more — structured order helper with validation and export. No PHI. Educational use only.
 ---
 
-<!-- Page-scoped stylesheet -->
-<link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250903">
+<!-- Page-scoped assets & config -->
+<link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250911">
+<meta name="oh-rules-path" content="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250911">
+<meta name="oh-version" content="20250911">
 
-<!-- Tell app.js where to load the rules -->
-<meta name="oh-rules-path" content="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250904">
+<!-- Error beacon: surface JS errors in the status bar -->
+<script>
+  window.addEventListener('error', e => {
+    const s = document.getElementById('status');
+    if (s) { s.textContent = 'JavaScript error: ' + (e.message || 'Unknown'); s.className = 'oh-status error'; }
+  });
+</script>
 
-<meta name="oh-version" content="20250819">
+<!-- Boot probe: confirm rules.json path/case before app.js runs -->
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const s = document.getElementById('status');
+    if (!s) return;
+    try {
+      const url = document.querySelector('meta[name="oh-rules-path"]')?.content;
+      if (!url) { s.textContent = 'Missing oh-rules-path meta.'; s.className = 'oh-status error'; return; }
+      s.textContent = 'Boot check… fetching rules…';
+      const r = await fetch(url, { cache: 'no-store' });
+      if (r.ok) { s.textContent = 'Boot check OK. Loading app…'; s.className = 'oh-status success'; }
+      else { s.textContent = `Rules fetch failed (${r.status}). Check path/case: ` + url; s.className = 'oh-status error'; }
+    } catch (e) {
+      s.textContent = 'Rules fetch error: ' + e.message;
+      s.className = 'oh-status error';
+    }
+  });
+</script>
 
-<section class="order-helper container" aria-labelledby="oh-title">
-  <header class="oh-header">
+<section class="oh-hero">
+  <div class="container">
     <h1 id="oh-title">OraDigit Order Helper</h1>
-    <p class="lead">
-      Structure clear, payer-ready imaging orders. Select modality and context; we’ll generate
-      a professional clinical indication and surface prep/flags. All client-side. No PHI.
+    <p class="sub">
+      Structure clear, payer-ready imaging orders. Select modality and context; we’ll generate a professional
+      clinical indication and surface prep/flags. All client-side. No PHI.
     </p>
-    <div id="status" class="status" role="status" aria-live="polite"></div>
-    <div id="rulesErrors" class="status error" style="display:none"></div>
-  </header>
+    <div id="status" class="oh-status" role="status" aria-live="polite">Ready.</div>
+    <div id="rulesErrors" class="oh-status error" style="display:none"></div>
+  </div>
+</section>
 
+<section class="oh-app container" aria-labelledby="oh-title" aria-label="Order Helper form">
   <div class="oh-grid">
     <!-- ================= LEFT: FORM ================= -->
-    <form id="orderForm" class="oh-form" novalidate>
+    <form id="orderForm" class="oh-card" autocomplete="off" novalidate>
       <!-- Modality -->
-      <div class="field">
+      <div class="oh-row">
         <label for="modality">Modality <span aria-hidden="true">*</span></label>
         <select id="modality" name="modality" required>
-          <option value="">Select…</option>
-          <option value="PET/CT" selected>PET/CT</option>
-          <option value="CT">CT</option>
-          <option value="MRI">MRI</option>
+          <!-- options populated by app.js from rules.json -->
         </select>
-        <small class="hint">Regions, contexts, and conditions adapt to your selection.</small>
-      </div>
-      <div>
-  <h3>ICD-10 Suggestions</h3>
-  <ul id="outICD"></ul>
-</div>
-
-
-      <!-- Region -->
-      <div class="field">
-        <label for="region">Region <span aria-hidden="true">*</span></label>
-        <select id="region" name="region" required></select>
-      </div>
-    <!-- Context (chips UI expected by app.js) -->
-<div class="field">
-  <label>Context <span aria-hidden="true">*</span></label>
-
-  <!-- Chips rendered dynamically by app.js -->
-  <div id="contextChips" class="oh-chips" role="group" aria-label="Context"></div>
-
-  <!-- Hidden mirror for compatibility (optional but helpful) -->
-  <select id="context" name="context" multiple hidden></select>
-
-  <small class="hint">Click one or more (e.g., staging, restaging, surveillance, acute, follow-up).</small>
-</div>
-
-
-    
-
-      <!-- Condition (with datalist suggestions) -->
-      <div class="field">
-        <label for="condition">Condition</label>
-        <input id="condition" name="condition" list="conditionList" placeholder="e.g., NSCLC, renal colic, PE, appendicitis"/>
-        <datalist id="conditionList"></datalist>
-        <small class="hint">Start typing to see common conditions for the chosen modality.</small>
+        <small class="hint">Regions, body parts, contrast, and contexts adapt to your selection.</small>
       </div>
 
-      <!-- Contrast (CT only; shown/hidden by JS) -->
-      <fieldset id="contrastGroup" class="oh-contrast hidden">
-        <legend>CT Contrast</legend>
-        <label class="inline"><input type="radio" name="contrast" value="with_iv"> With IV contrast</label>
-        <label class="inline"><input type="radio" name="contrast" value="without_iv"> Without IV contrast</label>
-        <label class="inline"><input type="checkbox" id="oralContrast" value="oral"> Add oral contrast (abd/pelvis)</label>
-        <small class="hint">We’ll auto-suggest based on condition (e.g., “renal colic” → without IV; “PE/CTA” → with IV).</small>
-      </fieldset>
-
-      <!-- Indication (auto-built but editable) -->
-      <div class="field">
-        <label for="indication">Clinical Indication</label>
-        <textarea id="indication" name="indication" rows="3"
-          placeholder="Auto-generated (you can edit)…"></textarea>
-      </div>
-
-      <div class="actions">
-        <button type="submit" class="btn-primary">Suggest Order</button>
-        <button type="button" id="copyIndication" class="btn-ghost" aria-label="Copy clinical indication">Copy Indication</button>
-        <span id="errMsg" role="alert" class="muted"></span>
-        <div id="dbg" aria-live="polite" class="muted" style="font-size:12px"></div>
-      </div>
-    </form>
-
-    <!-- ================= RIGHT: PREVIEW / SUGGESTIONS ================= -->
-    <aside class="oh-aside" aria-label="Order preview and suggestions">
-      <div class="card">
-        <h2>Order Preview</h2>
-        <div class="preview">
-          <div><strong>Modality:</strong> <span id="pv-modality">—</span></div>
-          <div><strong>Region:</strong> <span id="pv-region">—</span></div>
-          <div><strong>Context:</strong> <span id="pv-context">—</span></div>
-          <div><strong>Condition:</strong> <span id="pv-condition">—</span></div>
-          <div><strong>Contrast:</strong> <span id="pv-contrast">—</span></div>
-          <hr>
-          <div><strong>Clinical Indication</strong></div>
-          <pre id="pv-indication" class="indication-box">—</pre>
+      <!-- Region + Body Part -->
+      <div class="oh-row two">
+        <div>
+          <label for="region">Region <span aria-hidden="true">*</span></label>
+          <select id="region" name="region" required></select>
+        </div>
+        <div>
+          <label for="bodyPart">Body Part <span aria-hidden="true">*</span></label>
+          <select id="bodyPart" name="bodyPart" required></select>
         </div>
       </div>
 
-      <div class="card">
-        <h2>Suggested Studies</h2>
-        <ul id="suggestions" class="suggest-list" aria-live="polite">
-          <li class="muted">Suggestions will appear when available.</li>
-        </ul>
+      <!-- Contrast + Laterality -->
+      <div class="oh-row two">
+        <div>
+          <label for="contrast">Contrast</label>
+          <select id="contrast" name="contrast"></select>
+        </div>
+        <div>
+          <label for="laterality">Laterality</label>
+          <select id="laterality" name="laterality"></select>
+        </div>
       </div>
+
+      <!-- Context + Urgency -->
+      <div class="oh-row two">
+        <div>
+          <label for="context">Clinical Context</label>
+          <select id="context" name="context"></select>
+          <small class="hint">e.g., Staging, Restaging, Treatment response, Surveillance, Acute</small>
+        </div>
+        <div>
+          <label for="urgency">Urgency</label>
+          <select id="urgency" name="urgency">
+            <option value="Routine">Routine</option>
+            <option value="Urgent">Urgent</option>
+            <option value="STAT">STAT</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Condition + ICD-10 + CPT -->
+      <div class="oh-row two">
+        <div>
+          <label for="condition">Condition (structured)</label>
+          <input id="condition" name="condition" list="conditionList" placeholder="e.g., NSCLC, stroke, appendicitis" />
+          <datalist id="conditionList"></datalist>
+        </div>
+        <div>
+          <label for="icd10">ICD-10</label>
+          <input id="icd10" name="icd10" list="icdList" placeholder="e.g., C34.90" />
+          <datalist id="icdList"></datalist>
+        </div>
+      </div>
+
+      <div class="oh-row">
+        <label for="cpt">CPT (suggested)</label>
+        <select id="cpt" name="cpt"></select>
+      </div>
+
+      <!-- Indication -->
+      <div class="oh-row">
+        <label for="indication">Clinical Indication (free text)</label>
+        <textarea id="indication" name="indication" rows="3" placeholder="Auto-generated (you can edit)…"></textarea>
+      </div>
+
+      <!-- Safety / Special -->
+      <div class="oh-row two">
+        <div>
+          <label for="pregnant">Pregnancy status</label>
+          <select id="pregnant" name="pregnant">
+            <option value="Unknown">Unknown</option>
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+            <option value="N/A">N/A</option>
+          </select>
+        </div>
+        <div>
+          <label for="creatinineDate">Most recent creatinine (date)</label>
+          <input id="creatinineDate" name="creatinineDate" type="date" />
+        </div>
+      </div>
+
+      <div class="oh-row">
+        <label for="allergies">Allergies / Precautions</label>
+        <input id="allergies" name="allergies" placeholder="e.g., contrast allergy; premed needed" />
+      </div>
+
+      <div class="oh-row">
+        <label for="special">Special Instructions</label>
+        <input id="special" name="special" placeholder="e.g., sedation, interpreter, infection precautions" />
+      </div>
+
+      <!-- Actions -->
+      <div class="oh-actions">
+        <button type="button" id="btnSuggest" class="btn">Suggest Reason</button>
+        <button type="submit" id="btnSubmit" class="btn btn-primary">Submit</button>
+        <button type="button" id="btnReset" class="btn btn-ghost">Reset</button>
+      </div>
+    </form>
+
+    <!-- ================= RIGHT: ORDER REVIEW ================= -->
+    <aside class="oh-card review" aria-label="Order review">
+      <div class="oh-review-header">
+        <h2>Order Review</h2>
+        <div class="oh-review-actions">
+          <button id="btnCopy" class="icon-btn" title="Copy to clipboard">📋</button>
+          <button id="btnShare" class="icon-btn" title="Share">🔗</button>
+        </div>
+      </div>
+      <pre id="review" class="oh-review">Select options to build the order…</pre>
     </aside>
   </div>
 
-  <!-- ================= RESULTS (filled by app.js) ================= -->
-  <section id="results" hidden style="margin-top:16px">
-    <h2 id="outHeader"></h2>
-
-    <label class="oh-label" for="outReason">Reason for exam</label>
-    <textarea id="outReason" class="oh-input" rows="3"></textarea>
-
-    <div class="oh-grid" style="margin-top:12px">
-      <div>
-        <h3>Prep / Contraindications</h3>
-        <ul id="outPrep"></ul>
-      </div>
-      <div>
-        <h3>Supporting Docs</h3>
-        <ul id="outDocs"></ul>
-      </div>
-      <div>
-        <h3>Clinical Flags</h3>
-        <ul id="outFlags"></ul>
-      </div>
-    </div>
-
-    <div class="actions">
-      <button id="copyReasonBtn" type="button" class="btn btn-light">Copy Reason</button>
-      <button id="copyAllBtn" type="button" class="btn btn-secondary">Copy All</button>
-      <button id="printBtn" type="button" class="btn btn-tertiary">Print</button>
-    </div>
-  </section>
-  <section id="results" hidden style="margin-top:16px">
-  <h2 id="outHeader"></h2>
-  ...
-  <div class="oh-grid" style="margin-top:12px">
-    <div>
-      <h3>Prep / Contraindications</h3>
-      <ul id="outPrep"></ul>
-    </div>
-    <div>
-      <h3>Supporting Docs</h3>
-      <ul id="outDocs"></ul>
-    </div>
-    <div>
-      <h3>Clinical Flags</h3>
-      <ul id="outFlags"></ul>
-    </div>
-  </div>
-  ...
+  <p class="oh-disclaimer">Do not enter PHI beyond what is clinically required. This tool supports ordering but does not replace clinical judgment.</p>
 </section>
 
-
-  <details style="margin-top:1rem">
-    <summary>What rules are applied?</summary>
-    <p>
-      Rules load from <code>/order-helper/data/rules.json</code>. You can update that file anytime
-      (no code changes). The selector scores by keywords, context, and region; if weak, it falls
-      back to generic oncology tags.
-    </p>
-  </details>
-
-  <noscript>
-    <p class="status error">JavaScript is required for the Order Helper to function.</p>
-  </noscript>
-</section>
-
-<!-- Firebase (Compat CDN) -->
+<!-- Optional: Firebase CDN (Compat) — only used if you provide window.ORADIGIT_FIREBASE_CONFIG -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" defer></script>
 
-<!-- Lightweight auto-init (only runs if you define window.ORADIGIT_FIREBASE_CONFIG somewhere site-wide) -->
+<!-- Lightweight auto-init (only runs if you define window.ORADIGIT_FIREBASE_CONFIG site-wide) -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     try {
       if (window.ORADIGIT_FIREBASE_CONFIG && !window.firebase?.apps?.length) {
         firebase.initializeApp(window.ORADIGIT_FIREBASE_CONFIG);
-        // Optional: export for app.js if it checks for window.OH_FIREBASE
         window.OH_FIREBASE = {
           app: firebase.app(),
           auth: firebase.auth(),
           db: firebase.firestore()
         };
         const s = document.getElementById('status');
-        if (s) { s.textContent = 'Firebase ready.'; s.className = 'status success'; }
+        if (s) { s.textContent = 'Firebase ready.'; s.className = 'oh-status success'; }
       }
     } catch (e) {
       const s = document.getElementById('status');
-      if (s) { s.textContent = 'Firebase failed to initialize. Check your config.'; s.className = 'status warn'; }
+      if (s) { s.textContent = 'Firebase failed to initialize. Check your config.'; s.className = 'oh-status warn'; }
       console.warn('Firebase init error:', e);
     }
   });
 </script>
 
-<!-- App logic -->
-<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250819"></script>
-
-<!-- Tiny UX helpers (non-invasive; does not touch business logic) -->
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const $ = (s) => document.querySelector(s);
-    const form = $('#orderForm');
-
-    // Keep preview in sync with the form
-    const syncPreview = () => {
-  $('#pv-modality').textContent  = $('#modality')?.value || '—';
-  $('#pv-region').textContent    = $('#region')?.value || '—';
-
-  // NEW: show all selected contexts
-  { const sel = document.getElementById('context');
-    const ctx = sel ? [...sel.selectedOptions].map(o => o.textContent.trim()).filter(Boolean) : [];
-    document.getElementById('pv-context').textContent = ctx.length ? ctx.join(', ') : '—';
-  }
-
-  $('#pv-condition').textContent = $('#condition')?.value || '—';
-
-  const grp = document.getElementById('contrastGroup');
-  if (grp && !grp.classList.contains('hidden')) {
-    const r = grp.querySelector('input[type=radio]:checked');
-    const oral = document.getElementById('oralContrast')?.checked;
-    let txt = r ? (r.value === 'with_iv' ? 'With IV contrast' : 'Without IV contrast') : '—';
-    if (oral) txt += ' + oral';
-    document.getElementById('pv-contrast').textContent = txt;
-  } else {
-    document.getElementById('pv-contrast').textContent = '—';
-  }
-
-  document.getElementById('pv-indication').textContent = document.getElementById('indication')?.value?.trim() || '—';
-};
-
-      const grp = document.getElementById('contrastGroup');
-      if (grp && !grp.classList.contains('hidden')) {
-        const r = grp.querySelector('input[type=radio]:checked');
-        const oral = document.getElementById('oralContrast')?.checked;
-        let txt = r ? (r.value === 'with_iv' ? 'With IV contrast' : 'Without IV contrast') : '—';
-        if (oral) txt += ' + oral';
-        $('#pv-contrast').textContent = txt;
-      } else {
-        $('#pv-contrast').textContent = '—';
-      }
-
-      $('#pv-indication').textContent = $('#indication')?.value?.trim() || '—';
-    };
-
-    ['change','input','click'].forEach(evt => {
-      form.addEventListener(evt, syncPreview, true);
-    });
-
-    // Copy indication button
-    $('#copyIndication')?.addEventListener('click', async () => {
-      const text = $('#indication')?.value || '';
-      if (!text.trim()) return;
-      try {
-        await navigator.clipboard.writeText(text.trim());
-        const s = document.getElementById('status');
-        if (s) { s.textContent = 'Clinical indication copied to clipboard.'; s.className='status success'; }
-      } catch {
-        const s = document.getElementById('status');
-        if (s) { s.textContent = 'Unable to copy. Please select and copy manually.'; s.className='status warn'; }
-      }
-    });
-
-    // Initial render
-    syncPreview();
-  });
-</script>
-<!-- touch 2025-09-10T13:30:25 -->
+<!-- App logic (keep last) -->
+<script defer src="{{ '/order-helper/firebase-config.js' | relative_url }}?v=20250911"></script>
+<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250911"></script>

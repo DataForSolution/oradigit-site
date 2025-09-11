@@ -1,4 +1,138 @@
-﻿[
+﻿{
+  "schema_version": "1.0",
+  "generated_at": "2025-09-03T00:00:00Z",
+  "modalities": {
+    "CT": {
+      "regions": [
+        "Head/Brain",
+        "Neck",
+        "Chest",
+        "Low-Dose Lung CT (Screening)",
+        "Abdomen",
+        "Pelvis",
+        "Abdomen/Pelvis",
+        "CT Urogram",
+        "Spine â€“ Cervical",
+        "Spine â€“ Thoracic",
+        "Spine â€“ Lumbar"
+      ],
+      "contexts": [
+        "Staging",
+        "Restaging",
+        "Treatment response",
+        "Surveillance",
+        "Initial evaluation",
+        "Acute symptoms",
+        "Follow-up",
+        "Pre-operative planning",
+        "Post-operative complication",
+        "Trauma",
+        "Screening",
+        "Infection / inflammation"
+      ],
+      "conditions": [
+        "Pulmonary embolism",
+        "Lung nodule",
+        "Pneumonia complication",
+        "NSCLC",
+        "Appendicitis",
+        "Renal colic",
+        "Abdominal pain RLQ",
+        "Stroke/TIA",
+        "Head trauma"
+      ],
+      "indication_templates": [
+        "CT {region}{contrast_text} â€“ {context} for {condition}",
+        "CT {region} â€“ rule out {condition}",
+        "CT {region}{contrast_text} â€“ evaluate {condition}"
+      ],
+      "contrast_recommendations": [
+        { "match": ["kidney stone","renal colic"], "suggest": "without_iv" },
+        { "match": ["appendicitis","rlq"], "suggest": "with_iv" },
+        { "match": ["pe","pulmonary embolism"], "suggest": "with_iv" },
+        { "match": ["aortic","dissection","aneurysm"], "suggest": "with_iv" },
+        { "match": ["liver lesion","pancreatitis"], "suggest": "with_iv" },
+        { "match": ["bowel obstruction"], "suggest": "without_iv" },
+        { "match": ["low-dose lung ct","screening","ldct"], "suggest": "without_iv" }
+      ]
+    }
+  },
+  "records": [
+    {
+      "modality": "CT",
+      "study_name": "CT Chest with IV contrast",
+      "header_coverage": "Chest",
+      "contexts": ["Initial evaluation","Follow-up","Staging","Restaging","Infection / inflammation"],
+      "keywords": ["nsclc","lung cancer","pulmonary nodule","pneumonia","mediastinum","adenocarcinoma","squamous"],
+      "cpt": ["71260"],
+      "reasons": ["CT chest with IV contrast to evaluate {condition}; assess lung parenchyma, mediastinum, and nodal disease."],
+      "prep": "Assess renal function if IV contrast planned; screen for contrast allergy and premedicate per protocol if needed.",
+      "supporting_docs": ["Referring note with clinical question","Prior chest imaging/report for comparison"],
+      "flags": ["Noncontrast CT may be preferred for some nodules or calcifications"]
+    },
+    {
+      "modality": "CT",
+      "study_name": "CTA Chest (PE protocol)",
+      "header_coverage": "Angiography â€“ Chest CTA (PE)",
+      "contexts": ["Acute symptoms","Initial evaluation"],
+      "keywords": ["pe","pulmonary embolism","shortness of breath","pleuritic pain","d-dimer positive"],
+      "cpt": ["71275"],
+      "reasons": ["CTA chest to evaluate for pulmonary embolism in the setting of {condition}."],
+      "prep": "Assess renal function; screen for contrast allergy; ensure adequate timing/bolus per PE protocol.",
+      "supporting_docs": ["D-dimer or risk score if available","ED/clinic note describing symptoms"],
+      "flags": ["PE protocol requires IV contrast; ensure appropriate heart rate control if needed"]
+    },
+    {
+      "modality": "CT",
+      "study_name": "Low-Dose Lung CT (Screening)",
+      "header_coverage": "Low-Dose Lung CT (Screening)",
+      "contexts": ["Screening"],
+      "keywords": ["screen","screening","ldct","smoker","pack-year"],
+      "cpt": ["71271"],
+      "reasons": ["Low-dose CT for lung cancer screening in eligible patient; {condition}."],
+      "prep": "No IV contrast; follow CMS/USPSTF eligibility criteria documentation.",
+      "supporting_docs": ["Smoking history and pack-year calculation","Shared decision-making note"],
+      "flags": ["Noncontrast low-dose technique; not diagnostic CTA/contrast study"]
+    },
+    {
+      "modality": "CT",
+      "study_name": "CT Abdomen/Pelvis with IV contrast",
+      "header_coverage": "Abdomen/Pelvis",
+      "contexts": ["Acute symptoms","Initial evaluation","Infection / inflammation"],
+      "keywords": ["appendicitis","rlq","diverticulitis","abscess","fever","abdominal pain"],
+      "cpt": ["74177"],
+      "reasons": ["CT abdomen/pelvis with IV contrast to evaluate {condition}; assess for appendicitis or other acute intra-abdominal pathology."],
+      "prep": "Assess renal function; consider oral contrast per site policy when evaluating bowel.",
+      "supporting_docs": ["ED/clinic note with exam findings","Prior ultrasound or labs if available"],
+      "flags": ["Consider oral contrast for bowel evaluation per local protocol"]
+    },
+    {
+      "modality": "CT",
+      "study_name": "CT Abdomen/Pelvis without contrast (renal colic)",
+      "header_coverage": "Abdomen/Pelvis",
+      "contexts": ["Acute symptoms"],
+      "keywords": ["renal colic","kidney stone","flank pain","hematuria"],
+      "cpt": ["74176"],
+      "reasons": ["Noncontrast CT abdomen/pelvis to evaluate {condition}."],
+      "prep": "No IV contrast; usual hydration per comfort.",
+      "supporting_docs": ["Urinalysis if available","ED/clinic note describing pain pattern"],
+      "flags": ["Noncontrast preferred for stone detection"]
+    },
+    {
+      "modality": "CT",
+      "study_name": "CT Head/Brain without contrast",
+      "header_coverage": "Head/Brain",
+      "contexts": ["Acute symptoms","Trauma"],
+      "keywords": ["stroke","tia","intracranial hemorrhage","head trauma","fall"],
+      "cpt": ["70450"],
+      "reasons": ["Noncontrast head CT to evaluate {condition} (acute neurologic symptoms/trauma)."],
+      "prep": "No IV contrast.",
+      "supporting_docs": ["Neuro/ED note describing onset/time-last-known-well or mechanism of injury"],
+      "flags": ["Noncontrast preferred for initial stroke/hemorrhage evaluation"]
+    }
+  ]
+}
+[
   {
     "modality": "CT",
     "region": "Chest",
@@ -23,4 +157,3 @@
     "tags": ["ct-chest", "oncology-general"]
   }
 ]
-
