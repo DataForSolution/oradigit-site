@@ -293,6 +293,68 @@
 
     state.rules = normalizeRules(merged);
   }
+  // Ensure we always have at least baseline modality specs
+function ensureMinimumModalities() {
+  const base = state.rules?.modalities || {};
+  const inject = (name, spec) => {
+    if (!base[name] || !Object.keys(base[name]).length) base[name] = spec;
+  };
+  const CT = {
+    regions: ['Head/Brain','Chest','Abdomen/Pelvis'],
+    body_parts: ['Brain','Thorax','Abdomen and pelvis'],
+    contrast_options: ['None','With contrast','Without contrast','With and without'],
+    contexts: ['Acute','Oncology staging','Follow-up'],
+    conditions: ['Stroke/TIA','Lung nodule','RLQ pain/appendicitis'],
+    common_cpt: ['70450','71260','74177'],
+    cpt_map: {
+      'Head/Brain | Brain | Without contrast': ['70450'],
+      'Chest | Thorax | With contrast': ['71260'],
+      'Abdomen/Pelvis | Abdomen and pelvis | With contrast': ['74177']
+    }
+  };
+  inject('CT', CT);
+  inject('MRI', {
+    regions: ['Brain','Cervical spine','Thoracic spine','Lumbar spine','Prostate (PI-RADS)'],
+    body_parts: ['Brain','Cervical spine','Thoracic spine','Lumbar spine','Prostate'],
+    contrast_options: ['None','With and without','With contrast','Without contrast'],
+    contexts: ['Problem solving','Staging','Follow-up','Acute'],
+    conditions: ['Tumor','MS','Seizure','Radiculopathy','Prostate cancer'],
+    common_cpt: ['70553','72141','72146','72148','72197'],
+    cpt_map: {
+      'Brain | Brain | With and without': ['70553'],
+      'Lumbar spine | Lumbar spine | Without contrast': ['72148'],
+      'Cervical spine | Cervical spine | Without contrast': ['72141'],
+      'Thoracic spine | Thoracic spine | Without contrast': ['72146'],
+      'Prostate (PI-RADS) | Prostate | With and without': ['72197']
+    }
+  });
+  inject('PET/CT', {
+    regions: ['Skull base to mid-thigh','Whole body','Brain'],
+    body_parts: ['Skull base to mid-thigh','Whole body','Brain'],
+    contrast_options: ['None'],
+    contexts: ['Staging','Restaging','Treatment response','Surveillance'],
+    conditions: ['NSCLC','Lymphoma','Colorectal cancer','Melanoma','Head & neck'],
+    common_cpt: ['78815','78816'],
+    cpt_map: { 'Skull base to mid-thigh | Skull base to mid-thigh | None': ['78815'] }
+  });
+  inject('Ultrasound', {
+    regions: ['Abdomen','Pelvis','Carotid (bilateral)','LE Venous (bilateral)'],
+    body_parts: ['Abdomen','Pelvis','Carotid arteries','LE veins'],
+    contrast_options: ['None'],
+    contexts: ['Initial evaluation','Follow-up','Screening'],
+    conditions: ['RUQ pain','AUB','DVT','TIA'],
+    common_cpt: ['76700','76856','93880','93970']
+  });
+  inject('X-Ray', {
+    regions: ['Chest','Abdomen (KUB)','Pelvis','Cervical spine','Thoracic spine','Lumbar spine','Upper extremity','Lower extremity'],
+    body_parts: ['Chest','Abdomen','Pelvis','Cervical spine','Thoracic spine','Lumbar spine','Upper extremity','Lower extremity'],
+    contrast_options: ['None'],
+    contexts: ['Acute','Trauma','Follow-up','Infection'],
+    conditions: ['Fracture','Pneumonia','Effusion','Osteomyelitis'],
+    common_cpt: ['71046','74018']
+  });
+  state.rules.modalities = base;
+}
 
   async function overlayRemoteRules (local) {
     if (!(window.ORADIGIT_FIREBASE_CONFIG && window.firebase)) return local;
