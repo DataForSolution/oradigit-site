@@ -330,3 +330,65 @@ select {
 #btnReset:active {
   transform: translateY(0);
 }
+/* ---- FIX: make all form controls (esp. <select>) readable ---- */
+:root {
+  --oh-bg: #ffffff;
+  --oh-text: #0f172a;
+  --oh-muted: #64748b;
+  --oh-border: #cbd5e1;
+  --oh-bg-muted: #f8fafc;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --oh-bg: #0b1220;
+    --oh-text: #e5e7eb;
+    --oh-muted: #9aa4b2;
+    --oh-border: #334155;
+    --oh-bg-muted: #0f172a;
+  }
+}
+
+/* Apply sane defaults */
+select,
+input[type="text"],
+input[type="date"],
+textarea {
+  color: var(--oh-text) !important;
+  background: var(--oh-bg) !important;
+  border: 1px solid var(--oh-border) !important;
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  font: inherit;
+}
+
+/* Placeholder / first disabled option (the “Select …” row) */
+select option[disabled],
+select option[value=""],
+input::placeholder,
+textarea::placeholder {
+  color: var(--oh-muted) !important;
+}
+
+/* Make actual options readable on all platforms */
+select option {
+  color: var(--oh-text) !important;
+  background: var(--oh-bg) !important; /* fixes white-on-white in some themes */
+}
+
+/* If you used a custom appearance earlier, keep text visible */
+select {
+  -webkit-appearance: auto !important;
+  -moz-appearance: auto !important;
+  appearance: auto !important;
+}
+
+/* Disabled state still looks disabled, but readable */
+select:disabled,
+input:disabled,
+textarea:disabled {
+  color: var(--oh-muted) !important;
+  background: var(--oh-bg-muted) !important;
+}
+
+/* Status bar should never hide behind anything */
+.oh-status, #status { z-index: 2; }
