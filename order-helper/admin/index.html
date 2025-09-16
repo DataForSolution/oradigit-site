@@ -8,10 +8,24 @@ permalink: /order-helper/admin/
   <h1>Rules Editor (Secure)</h1>
   <p class="lead">Sign in to edit PET/CT, CT, and MRI rule sets. Changes save to Firestore.</p>
 
+  <!-- Status beacon (we update this from the loader + admin.js) -->
+  <div id="firebase-status"
+       style="margin:.75rem 0;padding:.5rem .75rem;border-radius:10px;
+              font:14px/1.35 system-ui,Segoe UI,Roboto,Arial,sans-serif;
+              background:#fff3cd;border:1px solid #ffec99;color:#8a6d3b;">
+    Firebase: waiting for config…
+  </div>
+
+  <noscript>
+    <p style="color:#7f1d1d;background:#ffecec;border:1px solid #ff3b30;padding:.5rem .75rem;border-radius:10px;">
+      JavaScript is required to use the admin.
+    </p>
+  </noscript>
+
   <div id="authBox" class="card">
     <h3>Sign In</h3>
-    <input id="email" class="input" type="email" placeholder="Email">
-    <input id="password" class="input" type="password" placeholder="Password">
+    <input id="email" class="input" type="email" placeholder="Email" autocomplete="username">
+    <input id="password" class="input" type="password" placeholder="Password" autocomplete="current-password">
     <button id="signInBtn" class="btn">Sign In</button>
     <p id="authMsg" class="msg"></p>
   </div>
@@ -32,7 +46,7 @@ permalink: /order-helper/admin/
     </div>
 
     <div class="row">
-      <button id="loadBtn" class="btn">Load Rules</button>
+      <button id="loadBtn" class="btn" data-action="load-rules">Load Rules</button>
       <button id="newRuleBtn" class="btn btn-secondary">New Rule</button>
       <button id="saveAllBtn" class="btn btn-primary">Save All</button>
       <span id="saveMsg" class="msg"></span>
@@ -61,42 +75,73 @@ permalink: /order-helper/admin/
 
 <link rel="stylesheet" href="{{ '/order-helper/admin/admin.css' | relative_url }}">
 
-<!-- Firebase libs -->
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-check-compat.js"></script>
+<!-- Optional: relaxed CSP limited to admin page (keeps public site tighter) -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+               script-src 'self' https://www.gstatic.com 'unsafe-inline';
+               connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;
+               img-src 'self' data:;
+               style-src 'self' 'unsafe-inline'">
 
-<script src="{{ '/order-helper/admin/firebase-config.js' | relative_url }}"></script>
-
+<!-- CONFIG LOADER: try auth.oradigit.com first; fallback to local file -->
 <script>
-  // Activate Firebase App Check
-  const appCheck = firebase.appCheck();
-  appCheck.activate('6LdqOKUrAAAAAIpliM6FnuqO8AWvCi66sWd6J6Gr', true);
-</script>
+  (function () {
+    const beacon = document.getElementById('firebase-status');
+    const set = (bg, brd, col, msg) => { beacon.style.background=bg; beacon.style.border=brd; beacon.style.color=col; beacon.textContent=msg; };
+    const ok    = (m) => set('#e6ffed','1px solid #34c759','#1b5e20', m);
+    const warn  = (m) => set('#fff3cd','1px solid #ffec99','#8a6d3b', m);
+    const fail  = (m) => set('#ffecec','1px solid #ff3b30','#7f1d1d', m);
 
-<script src="{{ '/order-helper/admin/admin.js' | relative_url }}" defer></script>
-
-<!-- Load Firebase config at runtime from your Hosting subdomain, then load admin.js -->
-<script>
-  (async () => {
-    try {
-      const res = await fetch('https://auth.oradigit.com/firebase-config.json', { cache: 'no-store' });
-      if (!res.ok) throw new Error('Failed to load Firebase config.');
-      const cfg = await res.json();
-
-      // Expose the config just like the old firebase-config.js did,
-      // so your existing admin.js can keep using window.FIREBASE_CONFIG.
-      window.FIREBASE_CONFIG = cfg;
-
-      // Now load admin.js after config is ready
-      const s = document.createElement('script');
-      s.src = "{{ '/order-helper/admin/admin.js' | relative_url }}";
-      s.defer = true;
-      document.body.appendChild(s);
-    } catch (err) {
-      const msgEl = document.getElementById('authMsg') || document.body;
-      msgEl.textContent = 'Firebase init error: ' + err.message;
+    async function loadScript(src, type) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        if (type) s.type = type;
+        s.src = src;
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('Failed to load script: ' + src));
+        document.head.appendChild(s);
+      });
     }
+
+    async function run() {
+      try {
+        warn('Firebase: loading config from auth.oradigit.com…');
+        // Try hosted JS config (recommended): /oh-admin/firebase-config.js
+        await loadScript('https://auth.oradigit.com/oh-admin/firebase-config.js');
+
+        if (!window.ORADIGIT_FIREBASE_CONFIG) {
+          // Some teams host JSON instead; support that too.
+          const res = await fetch('https://auth.oradigit.com/firebase-config.json', { cache: 'no-store' });
+          if (!res.ok) throw new Error('Hosted JSON config not found.');
+          window.ORADIGIT_FIREBASE_CONFIG = await res.json();
+        }
+
+        ok('Firebase: config loaded.');
+      } catch (e1) {
+        console.warn(e1);
+        warn('Firebase: hosted config missing — trying local fallback…');
+        try {
+          // Local fallback committed in repo
+          await loadScript("{{ '/order-helper/admin/firebase-config.js' | relative_url }}");
+          if (!window.ORADIGIT_FIREBASE_CONFIG) throw new Error('Local firebase-config.js did not set ORADIGIT_FIREBASE_CONFIG.');
+          ok('Firebase: local config loaded.');
+        } catch (e2) {
+          console.error(e2);
+          fail('Firebase init error: ' + e2.message);
+          return; // stop here; admin.js should not run
+        }
+      }
+
+      // With config present, load the admin logic as a module (so it can import Firebase v9)
+      try {
+        await loadScript("{{ '/order-helper/admin/admin.js' | relative_url }}", 'module');
+        ok('Firebase: config ready; admin logic loaded.');
+      } catch (e3) {
+        console.error(e3);
+        fail('Admin script failed: ' + e3.message);
+      }
+    }
+
+    run();
   })();
 </script>
