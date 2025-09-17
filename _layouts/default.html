@@ -69,6 +69,15 @@
 {% if page.custom_css %}
 <link rel="stylesheet" href="{{ page.custom_css | relative_url }}">
 {% endif %}
+{% if page.url contains '/order-helper/' %}
+  <!-- Relaxed CSP for Order Helper so it can load Firebase + Firestore -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 script-src 'self' https://www.gstatic.com 'unsafe-inline';
+                 connect-src 'self' https://firestore.googleapis.com;
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline'">
+{% endif %}
 
  
 </head>
@@ -288,12 +297,113 @@
       }
     });
   });
-</script>
-<body class="{{ page.body_class }}">
-<script src="{{ '/assets/gpt5.js' | relative_url }}" defer></script>
-<script src="{{ '/assets/gpt5-actions.js' | relative_url }}" defer></script>
-<script src="{{ '/assets/gpt5-select.js' | relative_url }}" defer></script>
-<script src="{{ '/assets/gpt5-panel.js' | relative_url }}" defer></script>
+{% if page.url contains '/order-helper/' %}
+  <!-- Firebase client config (same one admin uses) -->
+  <script src="/order-helper/admin/firebase-config.js"></script>
+
+  <!-- Public rules loader: reads /published_rules/{mod}/v1; falls back to local rules.json -->
+  <script type="module">
+    const cfg = window.ORADIGIT_FIREBASE_CONFIG || window.FIREBASE_CONFIG;
+
+    function beacon(msg, type='info') {
+      let el = document.getElementById('oh-status');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'oh-status';
+        el.style.cssText = 'margin:.5rem 0;padding:.5rem .75rem;border-radius:10px;font:14px/1.35 system-ui;border:1px solid #ddd;background:#f8fafc;';
+        (document.querySelector('main') || document.body).prepend(el);
+      }
+      el.textContent = msg;
+      el.style.borderColor = type==='error' ? '#ff3b30' : (type==='ok' ? '#34c759' : '#ddd');
+      el.style.background  = type==='error' ? '#ffecec' : (type==='ok' ? '#e6ffed'  : '#f8fafc');
+    }
+
+    async function loadPublished(mod = 'petct') {
+      try {
+        const [{ initializeApp, getApps }, { getFirestore, doc, getDoc }] =
+          await Promise.all([
+            import('https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js'),
+            import('https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js')
+          ]);
+
+        const app = getApps().length ? getApps()[0] : initializeApp(cfg);
+        const db  = getFirestore(app);
+
+        // Try Firestore "published"
+        const snap = await getDoc(doc(db, 'published_rules', mod, 'v1'));
+        if (snap.exists()) return { source: 'firestore', records: snap.data().records || [] };
+
+        // Fallback to local JSON
+        const res = await fetch(`/order-helper/data/rules.json?v=${Date.now()}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`rules.json HTTP ${res.status}`);
+        const json = await res.json();
+        return { source: 'local', records: Array.isArray(json.records) ? json.records : [] };
+      } catch (e) {
+        console.error(e);
+        beacon('Rules load failed: ' + e.message, 'error');
+        return { source: 'error', records: [] };
+      }
+    }
+
+    function populateUI(records) {
+      // Expect fields: modality, region (strings); others optional
+      const uniq = (a) => [...new Set(a.filter(Boolean))].sort();
+
+      // Try common selectors used in your app; adjust if your IDs differ
+      const modSel    = document.querySelector('#modality, select[name="modality"]');
+      const regionSel = document.querySelector('#region, select[name="region"]');
+
+      const modalities = uniq(records.map(r => r.modality));
+      const regionsByMod = {};
+      records.forEach(r => {
+        if (!regionsByMod[r.modality]) regionsByMod[r.modality] = new Set();
+        if (r.region) regionsByMod[r.modality].add(r.region);
+      });
+
+      function setOptions(sel, values, placeholder='Select…') {
+        if (!sel) return;
+        sel.innerHTML = '';
+        const ph = document.createElement('option');
+        ph.value = ''; ph.disabled = true; ph.selected = true;
+        ph.textContent = placeholder;
+        sel.appendChild(ph);
+        values.forEach(v => {
+          const o = document.createElement('option');
+          o.value = v; o.textContent = v;
+          sel.appendChild(o);
+        });
+        sel.disabled = false;
+      }
+
+      setOptions(modSel, modalities, 'Select modality');
+
+      if (modSel && regionSel) {
+        modSel.addEventListener('change', () => {
+          const m = modSel.value;
+          const regions = uniq(Array.from(regionsByMod[m] || []));
+          setOptions(regionSel, regions, 'Select region');
+        });
+      }
+
+      if (!modSel) console.warn('Modality select not found (#modality or [name="modality"]).');
+      if (!regionSel) console.warn('Region select not found (#region or [name="region"]).');
+    }
+
+    (async () => {
+      beacon('Loading rules…');
+      const { source, records } = await loadPublished('petct');
+      if (!records.length) { beacon('No rules found (published or local).', 'error'); return; }
+      beacon(`Rules loaded from ${source}.`, 'ok');
+      populateUI(records);
+    })();
+  </script>
+
+  <!-- Small CSS fix so options are visible in dark themes -->
+  <style>
+    select, select option { color:#0f172a; background:#fff; }
+    select:disabled { color:#64748b; }
+  </style>
+{% endif %}
 
 </body>
 </html>
