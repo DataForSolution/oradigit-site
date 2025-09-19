@@ -714,3 +714,123 @@
   }
 })();
 </script>
+/* ===== OH loader shim (non-destructive) ===== */
+(() => {
+  // Wait for DOM if this script isn’t loaded with `defer`
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
+
+  function init() {
+    // Namespace (won't clobber your existing code)
+    window.OH = window.OH || {};
+    const $ = (s) => document.querySelector(s);
+    const setText = (el, msg) => { if (el) el.textContent = msg; };
+
+    // Elements (adjust IDs only if yours differ)
+    const els = {
+      status:     $('#status'),
+      modality:   $('#modality'),
+      region:     $('#region'),
+      bodyPart:   $('#bodyPart'),
+      contrast:   $('#contrast'),
+      laterality: $('#laterality'),
+      context:    $('#context'),
+    };
+
+    // Use the exact meta path (you already include ?v=20250913)
+    const RULES_URL =
+      document.querySelector('meta[name="oh-rules-path"]')?.content ||
+      '/order-helper/data/rules.json';
+
+    const FALLBACK = Object.freeze({
+      schema_version: '1.1',
+      modalities: {
+        'PET/CT': {
+          regions:    ['Skull base to mid-thigh', 'Whole body'],
+          body_parts: ['Head/Neck', 'Chest', 'Abdomen/Pelvis'],
+          contrast:   ['None'],
+          laterality: ['N/A'],
+          contexts:   ['Staging','Restaging','Treatment response','Surveillance','Acute'],
+        },
+        'CT': {
+          regions:    ['Head/Brain','Chest','Abdomen/Pelvis'],
+          body_parts: ['Head','Chest','Abdomen','Pelvis'],
+          contrast:   ['None','IV','Oral','IV + Oral'],
+          laterality: ['N/A','Right','Left','Bilateral'],
+          contexts:   ['Acute','Follow-up','Staging'],
+        },
+        'MRI': {
+          regions:    ['Brain','Spine','MSK'],
+          body_parts: ['Brain','Cervical','Lumbar','Hip'],
+          contrast:   ['None','Gadolinium'],
+          laterality: ['N/A','Right','Left','Bilateral'],
+          contexts:   ['Acute','Follow-up','Staging'],
+        }
+      }
+    });
+
+    const validate = (cat) => !!(cat && typeof cat === 'object' && cat.modalities && typeof cat.modalities === 'object');
+
+    function setOptions(selectEl, items, placeholder) {
+      if (!selectEl) return;
+      const list = Array.isArray(items) ? items : [];
+      selectEl.innerHTML = '';
+      const ph = document.createElement('option');
+      ph.value = '';
+      ph.textContent = placeholder || 'Select…';
+      ph.disabled = true; ph.selected = true;
+      selectEl.appendChild(ph);
+      for (const v of list) {
+        const opt = document.createElement('option');
+        opt.value = v; opt.textContent = v;
+        selectEl.appendChild(opt);
+      }
+    }
+
+    function bindCascades(cat) {
+      if (!els.modality) return;
+      const modalities = Object.keys(cat.modalities || {});
+      setOptions(els.modality, modalities, 'Select modality…');
+
+      els.modality.addEventListener('change', () => {
+        const m = els.modality.value;
+        const spec = (cat.modalities || {})[m] || {};
+        setOptions(els.region,     spec.regions,     'Select region…');
+        setOptions(els.bodyPart,   spec.body_parts,  'Select body part…');
+        setOptions(els.contrast,   spec.contrast,    'Select contrast…');
+        setOptions(els.laterality, spec.laterality,  'Select laterality…');
+        setOptions(els.context,    spec.contexts,    'Select context…');
+      });
+    }
+
+    async function loadCatalog() {
+      setText(els.status, 'Loading rules…');
+      try {
+        const res = await fetch(RULES_URL, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (!validate(json)) throw new Error('Invalid rules schema');
+        setText(els.status, 'Rules loaded.');
+        return json;
+      } catch (err) {
+        console.warn('[OH] rules load failed, using fallback:', err);
+        setText(els.status, 'Using built-in defaults (rules.json unavailable).');
+        return FALLBACK;
+      }
+    }
+
+    // Expose for the rest of your app (non-breaking)
+    window.OH.loadCatalog = loadCatalog;
+
+    // Boot: load then bind; announce readiness
+    loadCatalog().then(cat => {
+      window.OH.catalog = cat;
+      bindCascades(cat);
+      document.dispatchEvent(new CustomEvent('oh:catalog-ready', { detail: { catalog: cat } }));
+    });
+  }
+})();
+
