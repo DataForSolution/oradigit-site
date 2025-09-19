@@ -65,10 +65,11 @@
     gtag('js', new Date());
     gtag('config','G-FKVXD8061R',{ send_page_view:true });
   </script>
-<link rel="stylesheet" href="{{ '/assets/css/style.css?v=2' | relative_url }}">
+ <link rel="stylesheet" href="{{ '/assets/css/style.css?v=2' | relative_url }}">
 {% if page.custom_css %}
 <link rel="stylesheet" href="{{ page.custom_css | relative_url }}">
 {% endif %}
+
 {% if page.url contains '/order-helper/' %}
   <!-- Relaxed CSP for Order Helper so it can load Firebase + Firestore -->
   <meta http-equiv="Content-Security-Policy"
@@ -77,9 +78,13 @@
                  connect-src 'self' https://firestore.googleapis.com;
                  img-src 'self' data:;
                  style-src 'self' 'unsafe-inline'">
+
+  <!-- Order Helper styles + meta for rules + cache-busting -->
+  <link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250919">
+  <meta name="oh-rules-path" content="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250919">
+  <meta name="oh-version" content="20250919">
 {% endif %}
 
- 
 </head>
 <body>
   <!-- 4) Google Tag Manager (noscript fallback) -->
