@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Order Helper — Debug</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Use the same metas from layout via the conditional include -->
+  <!-- (These are injected by _layouts/default.html when the URL contains /order-helper/) -->
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; padding: 24px; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin: 12px 0; }
+    .ok { color: #0a7f2e; font-weight: 600; }
+    .warn { color: #a15c00; font-weight: 600; }
+    .err { color: #a00000; font-weight: 600; }
+    code { background:#f6f8fa; padding:2px 6px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <h1>Order Helper — Debug</h1>
+  <p>Quick checks to verify the app is wired correctly before merging.</p>
+
+  <div class="card">
+    <h3>Status</h3>
+    <ul id="status">
+      <li>Layout metas (<code>oh-rules-path</code>, <code>oh-version</code>): <span id="s-metas">…</span></li>
+      <li>Fetch <code>rules.json</code>: <span id="s-fetch">…</span></li>
+      <li>Dropdown elements exist (#modality/#region/#context): <span id="s-dom">…</span></li>
+      <li>Parsed modalities count: <span id="s-count">…</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Live Dropdowns</h3>
+    <label>Modality:
+      <select id="modality"><option value="">(choose)</option></select>
+    </label>
+    &nbsp;&nbsp;
+    <label>Region:
+      <select id="region"><option value="">(choose)</option></select>
+    </label>
+    &nbsp;&nbsp;
+    <label>Context:
+      <select id="context"><option value="">(choose)</option></select>
+    </label>
+    <br/><br/>
+    <label>Condition:
+      <input list="conditions" id="condition-input" placeholder="Start typing…" />
+      <datalist id="conditions"></datalist>
+    </label>
+    <p id="template-preview"></p>
+  </div>
+
+  <script>
+    const q = s => document.querySelector(s);
+    const qs = s => document.querySelectorAll(s);
+    const META = name => document.querySelector(`meta[name="${name}"]`)?.content;
+
+    function status(id, text, cls='ok') {
+      const el = q('#' + id);
+      if (!el) return;
+      el.textContent = text;
+      el.className = cls;
+    }
+
+    (async () => {
+      // 1) metas present?
+      const rulesPath = META('oh-rules-path');
+      const ver = META('oh-version');
+      if (rulesPath && ver) status('s-metas', 'OK (' + ver + ')', 'ok');
+      else status('s-metas', 'Missing — check _layouts/default.html conditional include', 'err');
+
+      // 2) fetch rules
+      let rules = null;
+      try {
+        const res = await fetch(rulesPath || '/order-helper/data/rules.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        rules = await res.json();
+        status('s-fetch', 'OK', 'ok');
+      } catch (e) {
+        status('s-fetch', 'FAIL: ' + (e.message || e), 'err');
+      }
+
+      // 3) DOM elements exist?
+      const hasDom = ['#modality', '#region', '#context'].every(s => !!q(s));
+      status('s-dom', hasDom ? 'OK' : 'Missing one of #modality/#region/#context', hasDom ? 'ok' : 'err');
+
+      // 4) Populate dropdowns if rules loaded
+      if (rules?.modalities) {
+        const names = Object.keys(rules.modalities);
+        status('s-count', String(names.length) + ' modalities', 'ok');
+
+        const modalitySel = q('#modality');
+        const regionSel   = q('#region');
+        const contextSel  = q('#context');
+        const condList    = q('#conditions');
+        const condInput   = q('#condition-input');
+        const preview     = q('#template-preview');
+
+        // Fill modality list
+        modalitySel.innerHTML = '<option value="">(choose)</option>' + names.map(n => `<option>${n}</option>`).join('');
+
+        modalitySel.addEventListener('change', () => {
+          const m = rules.modalities[modalitySel.value];
+          // regions
+          regionSel.innerHTML = '<option value="">(choose)</option>' + (m?.regions || []).map(r => `<option>${r}</option>`).join('');
+          // contexts
+          contextSel.innerHTML = '<option value="">(choose)</option>' + (m?.contexts || []).map(c => `<option>${c}</option>`).join('');
+          // conditions (datalist)
+          condList.innerHTML = (m?.conditions || []).map(c => `<option value="${c}"></option>`).join('');
+          preview.textContent = '';
+        });
+
+        function renderTemplate() {
+          const m = rules.modalities[modalitySel.value];
+          if (!m) return;
+          const region = regionSel.value || '(region)';
+          const context = contextSel.value || '(context)';
+          const condition = condInput.value || '(condition)';
+          const header = m.templates?.header?.replace('${region}', region) ?? '';
+          const reason = m.templates?.reason
+              ?.replace('${context}', context)
+              ?.replace('${condition}', condition) ?? '';
+          preview.textContent = header && reason ? `${header} — ${reason}` : '';
+        }
+
+        regionSel.addEventListener('change', renderTemplate);
+        contextSel.addEventListener('change', renderTemplate);
+        condInput.addEventListener('input', renderTemplate);
+      } else {
+        status('s-count', '0 — no modalities key', 'warn');
+      }
+    })();
+  </script>
+</body>
+</html>
