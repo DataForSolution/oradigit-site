@@ -69,6 +69,15 @@
 {% if page.custom_css %}
 <link rel="stylesheet" href="{{ page.custom_css | relative_url }}">
 {% endif %}
+{% if page.url contains '/order-helper/' %}
+  <!-- Relaxed CSP for Order Helper so it can load Firebase + Firestore -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 script-src 'self' https://www.gstatic.com 'unsafe-inline';
+                 connect-src 'self' https://firestore.googleapis.com;
+                 img-src 'self' data:;
+                 style-src 'self' 'unsafe-inline'">
+{% endif %}
 
 {% if page.url contains '/order-helper/' %}
   <!-- Relaxed CSP for Order Helper so it can load Firebase + Firestore -->
