@@ -17,3 +17,5 @@ order-helper/*.backup.html
 # OraDigit local backups
 order-helper/*.bak.*
 order-helper/*.backup.html
+
+order-helper.bak.*/
