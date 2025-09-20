@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Order Helper Rules",
+  "type": "object",
+  "required": ["schema_version", "modalities"],
+  "properties": {
+    "schema_version": { "type": "string", "minLength": 1 },
+    "generated_at":   { "type": "string" },
+    "modalities": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["regions", "contexts", "conditions", "templates"],
+        "properties": {
+          "regions":   { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "contexts":  { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "conditions":{ "type": "array", "items": { "type": "string" }, "minItems": 1 },
+          "templates": {
+            "type": "object",
+            "required": ["header", "reason"],
+            "properties": {
+              "header": { "type": "string", "minLength": 1 },
+              "reason": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
