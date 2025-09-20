@@ -1,0 +1,58 @@
+name: order-helper-validate
+
+on:
+  pull_request:
+    paths:
+      - "order-helper/**"
+      - "_layouts/**"
+      - ".github/workflows/order-helper-validate.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install validators
+        run: |
+          npm init -y >/dev/null 2>&1 || true
+          npm i -D ajv-cli@5 jsdom@24
+
+      - name: Validate rules.json against schema
+        run: |
+          npx ajv validate -s order-helper/schema/rules.schema.json -d order-helper/data/rules.json
+
+      - name: Path sanity (no uppercase Data directory)
+        run: |
+          if [ -d "order-helper/Data" ]; then
+            echo "ERROR: Found forbidden 'order-helper/Data' directory" >&2
+            exit 1
+          fi
+
+      - name: Required metas present in layout
+        run: |
+          grep -R "oh-rules-path" -n _layouts || (echo "Missing oh-rules-path meta in layout" && exit 1)
+          grep -R "oh-version" -n _layouts || (echo "Missing oh-version meta in layout" && exit 1)
+
+      - name: DOM smoke test for required selects
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const { JSDOM } = require('jsdom');
+          const html = fs.readFileSync('order-helper/index.html','utf8');
+          const dom = new JSDOM(html);
+          const q = s => !!dom.window.document.querySelector(s);
+          const ok = q('#modality') && q('#region') && q('#context');
+          if (!ok) {
+            console.error('Missing one of #modality, #region, #context in order-helper/index.html');
+            process.exit(1);
+          } else {
+            console.log('DOM has required selects');
+          }
+          NODE
