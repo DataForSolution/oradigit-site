@@ -7,8 +7,6 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 
 <!-- Page-scoped assets & config -->
 <link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250904">
-<meta name="oh-rules-path" content="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250904">
-<meta name="oh-version" content="20250904">
 
 <!-- Error beacon: surface JS errors in the status bar -->
 <script>
@@ -31,8 +29,6 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
     const s = document.getElementById('status');
     if (!s) return;
     try {
-      const url = document.querySelector('meta[name="oh-rules-path"]')?.content;
-      if (!url) { s.textContent = 'Missing oh-rules-path meta.'; s.className = 'status error'; return; }
       s.textContent = 'Boot check… fetching rules…';
       const r = await fetch(url, { cache: 'no-store' });
       if (r.ok) { s.textContent = 'Boot check OK. Loading app…'; s.className = 'status success'; }
