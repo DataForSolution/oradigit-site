@@ -7,48 +7,47 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 
 <!-- Page-scoped assets & config -->
 <link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250904">
-<meta name="oh-rules-path" content="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250904">
-<meta name="oh-version" content="20250904">
 
 <!-- Error beacon: surface JS errors in the status bar -->
 <script>
   window.addEventListener('error', e => {
     const s = document.getElementById('status');
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
+
     if (s) {
       s.textContent = 'JavaScript error: ' + (e.message || 'Unknown');
       s.className = 'status error';
     }
-<<<<<<< HEAD
-=======
+
     if (s) { s.textContent = 'JavaScript error: ' + (e.message || 'Unknown'); s.className = 'status error'; }
->>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
-=======
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
   });
 </script>
 
-<!-- Boot probe: confirm rules.json path/case before app.js runs -->
-<script>
+ <script>
   document.addEventListener('DOMContentLoaded', async () => {
     const s = document.getElementById('status');
     if (!s) return;
+
+    const url = '/order-helper/data/rules.json'; // ✅ FIXED: define url
+
     try {
-      const url = document.querySelector('meta[name="oh-rules-path"]')?.content;
-      if (!url) { s.textContent = 'Missing oh-rules-path meta.'; s.className = 'status error'; return; }
       s.textContent = 'Boot check… fetching rules…';
       const r = await fetch(url, { cache: 'no-store' });
-      if (r.ok) { s.textContent = 'Boot check OK. Loading app…'; s.className = 'status success'; }
-      else { s.textContent = `Rules fetch failed (${r.status}). Check path/case: ` + url; s.className = 'status error'; }
+      if (r.ok) {
+        s.textContent = 'Boot check OK. Loading app…';
+        s.className = 'status success';
+      } else {
+        s.textContent = `Rules fetch failed (${r.status}). Check path/case: ` + url;
+        s.className = 'status error';
+      }
     } catch (e) {
       s.textContent = 'Rules fetch error: ' + e.message;
       s.className = 'status error';
     }
   });
 </script>
+
+
+<!-- Boot probe: confirm rules.json path/case before app.js runs -->
 
 <section class="order-helper container" aria-labelledby="oh-title">
   <header class="oh-header">
@@ -71,7 +70,7 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
           <option value="">Select…</option>
           <option value="PET/CT" selected>PET/CT</option>
           <option value="CT">CT</option>
-          <option value="MRI">MRI</option>
+          <option value="MRI">MRI</option>          <option value="X-Ray">X-Ray</option>`r`n
         </select>
         <small class="hint">Regions, contexts, and conditions adapt to your selection.</small>
       </div>
@@ -231,10 +230,7 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
   });
 </script>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
+
 <!-- Tiny UX helpers (keeps the preview in sync; app.js handles business logic) -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -243,7 +239,6 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 
     // Keep preview in sync with the form & chips
     const syncPreview = () => {
-<<<<<<< HEAD
       const $s = (sel) => document.querySelector(sel);
       $s('#pv-modality').textContent  = $s('#modality')?.value || '—';
       $s('#pv-region').textContent    = $s('#region')?.value || '—';
@@ -253,32 +248,6 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       $s('#pv-context').textContent   = ctxOpt.length ? ctxOpt.join(', ') : '—';
 
       $s('#pv-condition').textContent = $s('#condition')?.value || '—';
-=======
-  $('#pv-modality').textContent  = $('#modality')?.value || '—';
-  $('#pv-region').textContent    = $('#region')?.value || '—';
-
-  // NEW: show all selected contexts
-  { const sel = document.getElementById('context');
-    const ctx = sel ? [...sel.selectedOptions].map(o => o.textContent.trim()).filter(Boolean) : [];
-    document.getElementById('pv-context').textContent = ctx.length ? ctx.join(', ') : '—';
-  }
-
-  $('#pv-condition').textContent = $('#condition')?.value || '—';
-
-  const grp = document.getElementById('contrastGroup');
-  if (grp && !grp.classList.contains('hidden')) {
-    const r = grp.querySelector('input[type=radio]:checked');
-    const oral = document.getElementById('oralContrast')?.checked;
-    let txt = r ? (r.value === 'with_iv' ? 'With IV contrast' : 'Without IV contrast') : '—';
-    if (oral) txt += ' + oral';
-    document.getElementById('pv-contrast').textContent = txt;
-  } else {
-    document.getElementById('pv-contrast').textContent = '—';
-  }
-
-  document.getElementById('pv-indication').textContent = document.getElementById('indication')?.value?.trim() || '—';
-};
->>>>>>> d058311 (Update Order Helper: fix context preview and improve app.js rules handling)
 
       const grp = document.getElementById('contrastGroup');
       if (grp && !grp.classList.contains('hidden')) {
@@ -318,13 +287,5 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 </script>
 
 <!-- App logic (must be last so helpers & probes are ready) -->
-<<<<<<< HEAD
 <script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250905"></script>
 
-=======
-<!-- App logic (keep last) -->
-<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250904"></script>
->>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
-=======
-<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250904"></script>
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
