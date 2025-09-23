@@ -6,28 +6,18 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 ---
 
 <!-- Page-scoped assets & config -->
-<link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250904">
 <meta name="oh-rules-path" content="{{ '/order-helper/data/rules.json' | relative_url }}?v=20250904">
 <meta name="oh-version" content="20250904">
+<link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250904">
 
 <!-- Error beacon: surface JS errors in the status bar -->
 <script>
   window.addEventListener('error', e => {
     const s = document.getElementById('status');
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
     if (s) {
       s.textContent = 'JavaScript error: ' + (e.message || 'Unknown');
       s.className = 'status error';
     }
-<<<<<<< HEAD
-=======
-    if (s) { s.textContent = 'JavaScript error: ' + (e.message || 'Unknown'); s.className = 'status error'; }
->>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
-=======
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
   });
 </script>
 
@@ -36,13 +26,24 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
   document.addEventListener('DOMContentLoaded', async () => {
     const s = document.getElementById('status');
     if (!s) return;
+
+    const url = document.querySelector('meta[name="oh-rules-path"]')?.content;
+    if (!url) {
+      s.textContent = 'Missing oh-rules-path meta.';
+      s.className = 'status error';
+      return;
+    }
+
     try {
-      const url = document.querySelector('meta[name="oh-rules-path"]')?.content;
-      if (!url) { s.textContent = 'Missing oh-rules-path meta.'; s.className = 'status error'; return; }
       s.textContent = 'Boot check… fetching rules…';
       const r = await fetch(url, { cache: 'no-store' });
-      if (r.ok) { s.textContent = 'Boot check OK. Loading app…'; s.className = 'status success'; }
-      else { s.textContent = `Rules fetch failed (${r.status}). Check path/case: ` + url; s.className = 'status error'; }
+      if (r.ok) {
+        s.textContent = 'Boot check OK. Loading app…';
+        s.className = 'status success';
+      } else {
+        s.textContent = `Rules fetch failed (${r.status}). Check path/case: ` + url;
+        s.className = 'status error';
+      }
     } catch (e) {
       s.textContent = 'Rules fetch error: ' + e.message;
       s.className = 'status error';
@@ -72,6 +73,7 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
           <option value="PET/CT" selected>PET/CT</option>
           <option value="CT">CT</option>
           <option value="MRI">MRI</option>
+          <option value="X-Ray">X-Ray</option>
         </select>
         <small class="hint">Regions, contexts, and conditions adapt to your selection.</small>
       </div>
@@ -85,13 +87,8 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       <!-- Context (chips UI expected by app.js) -->
       <div class="field">
         <label>Context <span aria-hidden="true">*</span></label>
-
-        <!-- Chips rendered dynamically by app.js -->
         <div id="contextChips" class="oh-chips" role="group" aria-label="Context"></div>
-
-        <!-- Hidden mirror for compatibility (app.js keeps in sync) -->
         <select id="context" name="context" multiple hidden></select>
-
         <small class="hint">Click one or more (e.g., staging, restaging, surveillance, acute, follow-up).</small>
       </div>
 
@@ -184,13 +181,10 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
     </div>
   </section>
 
-  <!-- Hidden by default; enable via /order-helper/?debug=1 -->
   <details id="rulesInfo" style="margin-top:1rem" hidden>
     <summary>What rules are applied?</summary>
     <p>
-      Rules load from <code>/order-helper/data/rules.json</code>. You can update that file anytime
-      (no code changes). The selector scores by keywords, context, and region; if weak, it falls
-      back to generic oncology tags.
+      Rules load from <code>/order-helper/data/rules.json</code>. You can update that file anytime (no code changes). The selector scores by keywords, context, and region; if weak, it falls back to generic oncology tags.
     </p>
   </details>
   <script>
@@ -204,12 +198,12 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
   </noscript>
 </section>
 
-<!-- Firebase (Compat CDN) - optional -->
+<!-- Firebase (Compat CDN) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" defer></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js" defer></script>
 
-<!-- Lightweight auto-init (only runs if you define window.ORADIGIT_FIREBASE_CONFIG site-wide) -->
+<!-- Firebase auto-init -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     try {
@@ -221,65 +215,34 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
           db: firebase.firestore()
         };
         const s = document.getElementById('status');
-        if (s) { s.textContent = 'Firebase ready.'; s.className = 'status success'; }
+        if (s) {
+          s.textContent = 'Firebase ready.';
+          s.className = 'status success';
+        }
       }
     } catch (e) {
       const s = document.getElementById('status');
-      if (s) { s.textContent = 'Firebase failed to initialize. Check your config.'; s.className = 'status warn'; }
+      if (s) {
+        s.textContent = 'Firebase failed to initialize. Check your config.';
+        s.className = 'status warn';
+      }
       console.warn('Firebase init error:', e);
     }
   });
 </script>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
-<!-- Tiny UX helpers (keeps the preview in sync; app.js handles business logic) -->
+<!-- Preview sync + indication copy -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const $ = (s) => document.querySelector(s);
     const form = $('#orderForm');
-
-    // Keep preview in sync with the form & chips
     const syncPreview = () => {
-<<<<<<< HEAD
       const $s = (sel) => document.querySelector(sel);
-      $s('#pv-modality').textContent  = $s('#modality')?.value || '—';
-      $s('#pv-region').textContent    = $s('#region')?.value || '—';
-
-      // Read from the hidden <select multiple> that mirrors the chips
+      $s('#pv-modality').textContent = $s('#modality')?.value || '—';
+      $s('#pv-region').textContent = $s('#region')?.value || '—';
       const ctxOpt = Array.from(document.querySelectorAll('#context option:checked')).map(o => o.value);
-      $s('#pv-context').textContent   = ctxOpt.length ? ctxOpt.join(', ') : '—';
-
+      $s('#pv-context').textContent = ctxOpt.length ? ctxOpt.join(', ') : '—';
       $s('#pv-condition').textContent = $s('#condition')?.value || '—';
-=======
-  $('#pv-modality').textContent  = $('#modality')?.value || '—';
-  $('#pv-region').textContent    = $('#region')?.value || '—';
-
-  // NEW: show all selected contexts
-  { const sel = document.getElementById('context');
-    const ctx = sel ? [...sel.selectedOptions].map(o => o.textContent.trim()).filter(Boolean) : [];
-    document.getElementById('pv-context').textContent = ctx.length ? ctx.join(', ') : '—';
-  }
-
-  $('#pv-condition').textContent = $('#condition')?.value || '—';
-
-  const grp = document.getElementById('contrastGroup');
-  if (grp && !grp.classList.contains('hidden')) {
-    const r = grp.querySelector('input[type=radio]:checked');
-    const oral = document.getElementById('oralContrast')?.checked;
-    let txt = r ? (r.value === 'with_iv' ? 'With IV contrast' : 'Without IV contrast') : '—';
-    if (oral) txt += ' + oral';
-    document.getElementById('pv-contrast').textContent = txt;
-  } else {
-    document.getElementById('pv-contrast').textContent = '—';
-  }
-
-  document.getElementById('pv-indication').textContent = document.getElementById('indication')?.value?.trim() || '—';
-};
->>>>>>> d058311 (Update Order Helper: fix context preview and improve app.js rules handling)
-
       const grp = document.getElementById('contrastGroup');
       if (grp && !grp.classList.contains('hidden')) {
         const r = grp.querySelector('input[type=radio]:checked');
@@ -290,44 +253,32 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       } else {
         $s('#pv-contrast').textContent = '—';
       }
-
       $s('#pv-indication').textContent = $s('#indication')?.value?.trim() || '—';
     };
-
     ['change','input','click'].forEach(evt => {
       form.addEventListener(evt, syncPreview, true);
     });
-
-    // Copy indication button
     $('#copyIndication')?.addEventListener('click', async () => {
       const text = $('#indication')?.value || '';
       if (!text.trim()) return;
       try {
         await navigator.clipboard.writeText(text.trim());
         const s = document.getElementById('status');
-        if (s) { s.textContent = 'Clinical indication copied to clipboard.'; s.className='status success'; }
+        if (s) {
+          s.textContent = 'Clinical indication copied to clipboard.';
+          s.className = 'status success';
+        }
       } catch {
         const s = document.getElementById('status');
-        if (s) { s.textContent = 'Unable to copy. Please select and copy manually.'; s.className='status warn'; }
+        if (s) {
+          s.textContent = 'Unable to copy. Please select and copy manually.';
+          s.className = 'status warn';
+        }
       }
     });
-
-    // Initial render
     syncPreview();
   });
 </script>
 
-<!-- App logic (must be last so helpers & probes are ready) -->
-<<<<<<< HEAD
+<!-- Main app logic -->
 <script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250905"></script>
-
-=======
-<!-- App logic (keep last) -->
-<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250904"></script>
->>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
-=======
-<script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250904"></script>
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
-
-<!-- Emergency loader, safe to remove later -->
-<script src="{{ '/order-helper/app.hotfix.js' | relative_url }}" defer></script>
