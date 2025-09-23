@@ -14,20 +14,15 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 <script>
   window.addEventListener('error', e => {
     const s = document.getElementById('status');
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
+
+
     if (s) {
       s.textContent = 'JavaScript error: ' + (e.message || 'Unknown');
       s.className = 'status error';
     }
-<<<<<<< HEAD
-=======
+
+
     if (s) { s.textContent = 'JavaScript error: ' + (e.message || 'Unknown'); s.className = 'status error'; }
->>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
-=======
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
   });
 </script>
 
@@ -231,10 +226,6 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
   });
 </script>
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
 <!-- Tiny UX helpers (keeps the preview in sync; app.js handles business logic) -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -243,7 +234,7 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 
     // Keep preview in sync with the form & chips
     const syncPreview = () => {
-<<<<<<< HEAD
+
       const $s = (sel) => document.querySelector(sel);
       $s('#pv-modality').textContent  = $s('#modality')?.value || '—';
       $s('#pv-region').textContent    = $s('#region')?.value || '—';
@@ -253,8 +244,8 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       $s('#pv-context').textContent   = ctxOpt.length ? ctxOpt.join(', ') : '—';
 
       $s('#pv-condition').textContent = $s('#condition')?.value || '—';
-=======
-  $('#pv-modality').textContent  = $('#modality')?.value || '—';
+
+  $('#pvmodality').textContent  = $('#modality')?.value || '—';
   $('#pv-region').textContent    = $('#region')?.value || '—';
 
   // NEW: show all selected contexts
@@ -278,8 +269,6 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 
   document.getElementById('pv-indication').textContent = document.getElementById('indication')?.value?.trim() || '—';
 };
->>>>>>> d058311 (Update Order Helper: fix context preview and improve app.js rules handling)
-
       const grp = document.getElementById('contrastGroup');
       if (grp && !grp.classList.contains('hidden')) {
         const r = grp.querySelector('input[type=radio]:checked');
@@ -318,16 +307,12 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 </script>
 
 <!-- App logic (must be last so helpers & probes are ready) -->
-<<<<<<< HEAD
+
 <script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250905"></script>
 
-=======
+
 <!-- App logic (keep last) -->
 <script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250904"></script>
->>>>>>> 47d41e0 (OH: switch to data/ (case fix); update index + app (live preview & loader))
-=======
 <script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250904"></script>
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
-
 <!-- Emergency loader, safe to remove later -->
 <script src="{{ '/order-helper/app.hotfix.js' | relative_url }}" defer></script>

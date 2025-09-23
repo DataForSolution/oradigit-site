@@ -522,7 +522,6 @@
         }
       }
       if (out.length >= 6) break; // keep tidy
->>>>>>> 1a5762e (Order Helper: unify app.js (rules auto-merge + ICD-10) and align with updated index)
     }
     return out;
   }
@@ -539,7 +538,7 @@
 
     const clear = (el) => { while (el && el.firstChild) el.removeChild(el.firstChild); };
     const makeOpt = (v, t = v) => { const o = document.createElement('option'); o.value = v; o.textContent = t; return o; };
-=======
+
   // -------- Populate UI for modality --------
   function populateForModality(modality) {
     const node = getModalityNode(modality) || deriveFromRecords(modality);
