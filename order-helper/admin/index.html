@@ -76,10 +76,11 @@ permalink: /order-helper/admin/
 
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'self';
-               script-src 'self' https://www.gstatic.com 'unsafe-inline';
+               script-src 'self' https://www.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;
                connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;
+               style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com;
                img-src 'self' data:;
-               style-src 'self' 'unsafe-inline'">
+               font-src 'self' https://fonts.gstatic.com;">
 
 <script>
   (function () {
