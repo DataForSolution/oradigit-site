@@ -137,24 +137,25 @@ function normalizeLocalRules(json){
     // 5) Wire Sign In / Out
     const signInBtn = document.getElementById('signInBtn');
     const signOutBtn = document.getElementById('signOutBtn');
-
     if (signInBtn) {
-      signInBtn.onclick = async () => {
-        authMsg.textContent = '';
-        try {
-          const email = (emailEl?.value || '').trim();
-          const pass  = (passEl?.value || '').trim();
-          if (!email || !pass) throw new Error('Enter email and password.');
-          await signInWithEmailAndPassword(auth, email, pass);
-          ok('Signed in.');
-        } catch (e) {
-          console.error(e);
-          authMsg.textContent = e.message;
-          err('Sign-in failed: ' + e.message);
-        }
-      };
+  signInBtn.onclick = async (e) => {
+    e.preventDefault(); // Prevent form submission that might interrupt the request
+    authMsg.textContent = '';
+    try {
+      const email = (emailEl?.value || '').trim();
+      const pass  = (passEl?.value || '').trim();
+      if (!email || !pass) throw new Error('Enter email and password.');
+      await signInWithEmailAndPassword(auth, email, pass);
+      ok('Signed in.');
+    } catch (e) {
+      console.error(e);
+      authMsg.textContent = e.message;
+      err('Sign-in failed: ' + e.message);
     }
+  };
+}
 
+   
     if (signOutBtn) {
       signOutBtn.onclick = async () => {
         try {
