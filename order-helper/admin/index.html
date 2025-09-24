@@ -8,6 +8,7 @@ permalink: /order-helper/admin/
   <h1>Rules Editor (Secure)</h1>
   <p class="lead">Sign in to edit PET/CT, CT, and MRI rule sets. Changes save to Firestore.</p>
 
+  <!-- Status beacon (we update this from the loader + admin.js) -->
   <div id="firebase-status"
        style="margin:.75rem 0;padding:.5rem .75rem;border-radius:10px;
               font:14px/1.35 system-ui,Segoe UI,Roboto,Arial,sans-serif;
@@ -74,6 +75,7 @@ permalink: /order-helper/admin/
 
 <link rel="stylesheet" href="{{ '/order-helper/admin/admin.css' | relative_url }}">
 
+<!-- Updated CSP to allow Firebase Auth and Google Fonts -->
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'self';
                script-src 'self' https://www.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;
@@ -82,51 +84,44 @@ permalink: /order-helper/admin/
                img-src 'self' data:;
                font-src 'self' https://fonts.gstatic.com;">
 
+<!-- CONFIG LOADER: try auth.oradigit.com first; fallback to local file -->
 <script>
   (function () {
     const beacon = document.getElementById('firebase-status');
-    const set = (bg, brd, col, msg) => {
-      if (beacon) {
-        beacon.style.background = bg;
-        beacon.style.border = brd;
-        beacon.style.color = col;
-        beacon.textContent = msg;
-      }
-    };
-    const ok = (m) => set('#e6ffed', '1px solid #34c759', '#1b5e20', m);
-    const warn = (m) => set('#fff3cd', '1px solid #ffec99', '#8a6d3b', m);
-    const fail = (m) => set('#ffecec', '1px solid #ff3b30', '#7f1d1d', m);
+    const set = (bg, brd, col, msg) => { beacon.style.background=bg; beacon.style.border=brd; beacon.style.color=col; beacon.textContent=msg; };
+    const ok    = (m) => set('#e6ffed','1px solid #34c759','#1b5e20', m);
+    const warn  = (m) => set('#fff3cd','1px solid #ffec99','#8a6d3b', m);
+    const fail  = (m) => set('#ffecec','1px solid #ff3b30','#7f1d1d', m);
 
-    async function loadScript(src, moduleType) {
+    async function loadScript(src, type) {
       return new Promise((resolve, reject) => {
         const s = document.createElement('script');
-        if (moduleType) s.type = moduleType;
+        if (type) s.type = type;
         s.src = src;
         s.onload = () => resolve();
-        s.onerror = () => reject(new Error('Failed to load: ' + src));
+        s.onerror = () => reject(new Error('Failed to load script: ' + src));
         document.head.appendChild(s);
       });
     }
 
     async function run() {
       try {
-        warn('Firebase: attempting config from hosted…');
+        warn('Firebase: loading config from auth.oradigit.com…');
         await loadScript('https://auth.oradigit.com/oh-admin/firebase-config.js');
+
         if (!window.ORADIGIT_FIREBASE_CONFIG) {
-          warn('Hosted config not found; fetching JSON fallback…');
           const res = await fetch('https://auth.oradigit.com/firebase-config.json', { cache: 'no-store' });
-          if (!res.ok) throw new Error('Hosted Firebase config JSON fetch failed');
+          if (!res.ok) throw new Error('Hosted JSON config not found.');
           window.ORADIGIT_FIREBASE_CONFIG = await res.json();
         }
+
         ok('Firebase: config loaded.');
       } catch (e1) {
         console.warn(e1);
-        warn('Hosted config failed; loading local fallback…');
+        warn('Firebase: hosted config missing — trying local fallback…');
         try {
           await loadScript("{{ '/order-helper/admin/firebase-config.js' | relative_url }}");
-          if (!window.ORADIGIT_FIREBASE_CONFIG) {
-            throw new Error('Local firebase-config did not define ORADIGIT_FIREBASE_CONFIG');
-          }
+          if (!window.ORADIGIT_FIREBASE_CONFIG) throw new Error('Local firebase-config.js did not set ORADIGIT_FIREBASE_CONFIG.');
           ok('Firebase: local config loaded.');
         } catch (e2) {
           console.error(e2);
@@ -137,10 +132,10 @@ permalink: /order-helper/admin/
 
       try {
         await loadScript("{{ '/order-helper/admin/admin.js' | relative_url }}", 'module');
-        ok('Admin logic loaded.');
+        ok('Firebase: config ready; admin logic loaded.');
       } catch (e3) {
         console.error(e3);
-        fail('Admin script load failed: ' + e3.message);
+        fail('Admin script failed: ' + e3.message);
       }
     }
 
