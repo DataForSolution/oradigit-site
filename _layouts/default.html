@@ -68,8 +68,7 @@
  <link rel="stylesheet" href="{{ '/assets/css/style.css?v=2' | relative_url }}">
 {% if page.custom_css %}
 <link rel="stylesheet" href="{{ page.custom_css | relative_url }}">
-{% endif %}
-  {% if page.url contains '/order-helper/' %}
+ {% if page.url contains '/order-helper/' %}
   <!-- Relaxed CSP for Order Helper so it can use Firebase Auth + Firestore -->
   <meta http-equiv="Content-Security-Policy"
         content="
