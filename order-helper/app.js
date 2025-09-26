@@ -20,8 +20,11 @@
   );
 
   /**
-   * OraDigit Order Helper – app.js (rev2 clean)
+   * OraDigit Order Helper – app.js (rev3, Firestore-enabled)
    */
+
+  // --- Firebase imports (assumes firebase-app + firebase-firestore are loaded via <script> in default.html) ---
+  const { getFirestore, collection, getDocs } = window.firebase.firestore;
 
   const els = {
     status: document.getElementById("status"),
@@ -48,13 +51,9 @@
     dbg: document.getElementById("dbg"),
   };
 
-  const RULES_URL =
-    document.querySelector('meta[name="oh-rules-path"]')?.content ||
-    "./data/rules.json";
-
   let RULES = null;
 
-  // ----------- Fallback rules (trimmed for brevity) -----------
+  // ----------- Fallback rules (minimal) -----------
   const FALLBACK_RULES = {
     modalities: {
       "PET/CT": { regions: ["Skull base to mid-thigh"], contexts: ["Staging"], conditions: ["NSCLC"] },
@@ -68,32 +67,65 @@
 
   async function init() {
     try {
-      RULES = await loadRules();
+      RULES = await loadRulesFromFirestore();
       buildUI(RULES);
       wireEvents();
       setStatus("Rules loaded.");
       if (els.dbg)
         els.dbg.textContent = `[OH] Ready (${new Date().toLocaleString()})`;
     } catch (e) {
+      console.error(e);
       setStatus("Init failed: " + e.message, "status error");
+      RULES = FALLBACK_RULES;
+      buildUI(RULES);
     }
   }
 
-  async function loadRules() {
-    try {
-      const r = await fetch(RULES_URL, { cache: "no-store" });
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      const json = await r.json();
-      return json?.modalities ? json : FALLBACK_RULES;
-    } catch (e) {
-      console.warn("Failed to load rules.json, using fallback", e);
-      setStatus("Using built-in fallback rules", "warn");
+  // ---------- Load rules from Firestore ----------
+  async function loadRulesFromFirestore() {
+    const db = firebase.firestore();
+    const out = { modalities: {}, records: [] };
+
+    const modalities = ["petct", "ct", "mri"];
+
+    for (const mod of modalities) {
+      try {
+        const snap = await db.collection("published_rules").doc(mod).collection("records").get();
+        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        out.records.push(...docs.map(r => ({ ...r, modality: mod.toUpperCase() })));
+
+        // collect modalities summary (regions, contexts, conditions)
+        const regions = new Set();
+        const contexts = new Set();
+        const conditions = new Set();
+        docs.forEach(r => {
+          (r.regions || []).forEach(v => regions.add(v));
+          (r.contexts || []).forEach(v => contexts.add(v));
+          (r.conditions || []).forEach(v => conditions.add(v));
+        });
+
+        out.modalities[mod.toUpperCase()] = {
+          regions: [...regions],
+          contexts: [...contexts],
+          conditions: [...conditions]
+        };
+
+      } catch (err) {
+        console.warn(`Failed to load ${mod} rules`, err);
+      }
+    }
+
+    if (!Object.keys(out.modalities).length) {
+      setStatus("No Firestore rules found, using fallback", "warn");
       return FALLBACK_RULES;
     }
+
+    return out;
   }
 
+  // ---------- UI Build ----------
   function buildUI(cat) {
-    // populate initial UI for default modality
     renderForMod(cat, els.modality?.value || "PET/CT");
   }
 
