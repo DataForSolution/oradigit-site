@@ -20,7 +20,8 @@
   );
 
   /**
-   * OraDigit Order Helper – app.js (Firestore-only, rev4)
+   * OraDigit Order Helper – app.js (Firestore-only, rev5)
+   * Firestore-aware with correct docId mapping
    */
 
   const els = {
@@ -54,10 +55,21 @@
   const FALLBACK_RULES = {
     modalities: {
       "PET/CT": { regions: ["Skull base to mid-thigh"], contexts: ["Staging"], conditions: ["NSCLC"] },
-      CT: { regions: ["Head/Brain"], contexts: ["Acute"], conditions: ["PE"] },
-      MRI: { regions: ["Brain"], contexts: ["Follow-up"], conditions: ["MS"] }
+      "CT": { regions: ["Head/Brain"], contexts: ["Acute"], conditions: ["PE"] },
+      "MRI": { regions: ["Brain"], contexts: ["Follow-up"], conditions: ["MS"] }
     },
     records: []
+  };
+
+  // Map dropdown values → Firestore doc IDs
+  const MODALITY_MAP = {
+    "PET/CT": "PET_CT",
+    "CT": "CT",
+    "MRI": "MRI",
+    "X-Ray": "X_Ray",
+    "Ultrasound": "Ultrasound",
+    "Mammography": "Mammography",
+    "Nuclear Medicine": "Nuclear_Medicine"
   };
 
   document.addEventListener("DOMContentLoaded", init);
@@ -68,8 +80,7 @@
       buildUI(RULES);
       wireEvents();
       setStatus("Rules loaded.");
-      if (els.dbg)
-        els.dbg.textContent = `[OH] Ready (${new Date().toLocaleString()})`;
+      if (els.dbg) els.dbg.textContent = `[OH] Ready (${new Date().toLocaleString()})`;
     } catch (e) {
       console.error(e);
       setStatus("Init failed: " + e.message, "status error");
@@ -83,15 +94,13 @@
     const db = firebase.firestore();
     const out = { modalities: {}, records: [] };
 
-    const modalities = ["petct", "ct", "mri", "xray", "ultrasound", "mammography", "nuclearmedicine"];
-
-    for (const mod of modalities) {
+    for (const [label, path] of Object.entries(MODALITY_MAP)) {
       try {
-        const snap = await db.collection("published_rules").doc(mod).collection("records").get();
+        const snap = await db.collection("published_rules").doc(path).collection("records").get();
         const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         if (docs.length) {
-          out.records.push(...docs.map(r => ({ ...r, modality: mod.toUpperCase() })));
+          out.records.push(...docs.map(r => ({ ...r, modality: label })));
 
           // Collect summaries
           const regions = new Set();
@@ -103,14 +112,14 @@
             (r.conditions || []).forEach(v => conditions.add(v));
           });
 
-          out.modalities[mod.toUpperCase()] = {
+          out.modalities[label] = {
             regions: [...regions],
             contexts: [...contexts],
             conditions: [...conditions]
           };
         }
       } catch (err) {
-        console.warn(`Failed to load ${mod} rules`, err);
+        console.warn(`Failed to load ${label} rules`, err);
       }
     }
 
@@ -278,4 +287,3 @@
     els.results?.removeAttribute("hidden");
   }
 })();
-
