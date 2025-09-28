@@ -1,3 +1,4 @@
+// order-helper/app.js
 (() => {
   const qs = (s) => document.querySelector(s);
   const setStatus = (msg, cls = "status success") => {
@@ -8,7 +9,6 @@
     }
   };
 
-  // Catch sync + async errors
   window.addEventListener("error", (e) =>
     setStatus("JavaScript error: " + (e.message || "Unknown"), "status error")
   );
@@ -20,7 +20,7 @@
   );
 
   /**
-   * OraDigit Order Helper – app.js (Firestore-only, rev6)
+   * OraDigit Order Helper – app.js (Firestore-only, clean rev6)
    */
 
   const els = {
@@ -50,17 +50,16 @@
 
   let RULES = null;
 
-  // ----------- Fallback rules (tiny) -----------
+  // Fallback rules if Firestore fails
   const FALLBACK_RULES = {
     modalities: {
       "PET/CT": { regions: ["Skull base to mid-thigh"], contexts: ["Staging"], conditions: ["NSCLC"] },
-      "CT": { regions: ["Head/Brain"], contexts: ["Acute"], conditions: ["PE"] },
-      "MRI": { regions: ["Brain"], contexts: ["Follow-up"], conditions: ["MS"] }
+      CT: { regions: ["Head/Brain"], contexts: ["Acute"], conditions: ["PE"] },
+      MRI: { regions: ["Brain"], contexts: ["Follow-up"], conditions: ["MS"] }
     },
     records: []
   };
 
-  // Map dropdown labels → Firestore doc IDs
   const MODALITY_MAP = {
     "PET/CT": "PET_CT",
     "CT": "CT",
@@ -88,7 +87,6 @@
     }
   }
 
-  // ---------- Load rules from Firestore ----------
   async function loadRulesFromFirestore() {
     const db = firebase.firestore();
     const out = { modalities: {}, records: [] };
@@ -100,22 +98,13 @@
 
         if (docs.length) {
           out.records.push(...docs.map(r => ({ ...r, modality: label })));
-
-          // Collect summaries
-          const regions = new Set();
-          const contexts = new Set();
-          const conditions = new Set();
+          const regions = new Set(), contexts = new Set(), conditions = new Set();
           docs.forEach(r => {
             (r.regions || []).forEach(v => regions.add(v));
             (r.contexts || []).forEach(v => contexts.add(v));
             (r.conditions || []).forEach(v => conditions.add(v));
           });
-
-          out.modalities[label] = {
-            regions: [...regions],
-            contexts: [...contexts],
-            conditions: [...conditions]
-          };
+          out.modalities[label] = { regions: [...regions], contexts: [...contexts], conditions: [...conditions] };
         }
       } catch (err) {
         console.warn(`Failed to load ${label} rules`, err);
@@ -130,7 +119,6 @@
     return out;
   }
 
-  // ---------- UI Build ----------
   function buildUI(cat) {
     renderForMod(cat, els.modality?.value || "PET/CT");
   }
@@ -215,7 +203,6 @@
     qs("#pv-indication").textContent = els.indication?.value || "—";
   }
 
-  // ----------- Event wiring -----------
   function wireEvents() {
     els.modality?.addEventListener("change", () =>
       renderForMod(RULES, els.modality.value)
@@ -231,7 +218,6 @@
       suggestStudies();
     });
 
-    // Copy Clinical Indication
     qs("#copyIndication")?.addEventListener("click", async () => {
       const txt = els.indication?.value?.trim();
       if (!txt) return;
@@ -243,7 +229,6 @@
       }
     });
 
-    // Copy Reason
     els.copyReasonBtn?.addEventListener("click", async () => {
       const v = els.outReason?.value?.trim();
       if (!v) return;
@@ -255,7 +240,6 @@
       }
     });
 
-    // Copy All
     els.copyAllBtn?.addEventListener("click", async () => {
       const parts = [];
       if (els.outHeader) parts.push(els.outHeader.textContent);
@@ -270,7 +254,6 @@
       }
     });
 
-    // Print
     els.printBtn?.addEventListener("click", () => window.print());
   }
 
@@ -286,5 +269,3 @@
     els.results?.removeAttribute("hidden");
   }
 })();
-
-
