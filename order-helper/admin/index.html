@@ -6,7 +6,7 @@ permalink: /order-helper/admin/
 
 <section class="container">
   <h1>Rules Editor (Secure)</h1>
-  <p class="lead">Sign in to edit PET/CT, CT, and MRI rule sets. Changes save to Firestore.</p>
+  <p class="lead">Sign in to edit rule sets for all supported modalities. Changes save to Firestore <code>/published_rules/{modality}/records</code>.</p>
 
   <!-- Status beacon (we update this from the loader + admin.js) -->
   <div id="firebase-status"
@@ -21,16 +21,6 @@ permalink: /order-helper/admin/
       JavaScript is required to use the admin.
     </p>
   </noscript>
-  <meta http-equiv="Content-Security-Policy"
-      content="
-        default-src 'self';
-        script-src 'self' 'unsafe-inline' https://www.gstatic.com https://auth.oradigit.com https://www.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;
-        connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://auth.oradigit.com https://www.googleapis.com;
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-        font-src 'self' https://fonts.gstatic.com;
-        img-src 'self' data: https://*.gstatic.com;
-      ">
-
 
   <div id="authBox" class="card">
     <h3>Sign In</h3>
@@ -43,11 +33,15 @@ permalink: /order-helper/admin/
   <div id="appBox" class="card" hidden>
     <div class="row">
       <div>
-        <label class="label">Module</label>
+        <label class="label">Modality</label>
         <select id="module" class="input">
-          <option value="rules_petct" selected>PET/CT</option>
-          <option value="rules_ct">CT</option>
-          <option value="rules_mri">MRI</option>
+          <option value="PET_CT" selected>PET/CT</option>
+          <option value="CT">CT</option>
+          <option value="MRI">MRI</option>
+          <option value="X_Ray">X-Ray</option>
+          <option value="Ultrasound">Ultrasound</option>
+          <option value="Mammography">Mammography</option>
+          <option value="Nuclear_Medicine">Nuclear Medicine</option>
         </select>
       </div>
       <div>
@@ -85,16 +79,16 @@ permalink: /order-helper/admin/
 
 <link rel="stylesheet" href="{{ '/order-helper/admin/admin.css' | relative_url }}">
 
-<!-- Updated CSP to allow Firebase Auth and Google Fonts -->
+<!-- CSP for Firebase + Google Fonts -->
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'self';
-               script-src 'self' https://www.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;
+               script-src 'self' 'unsafe-inline' https://www.gstatic.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;
                connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;
                style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com;
                img-src 'self' data:;
                font-src 'self' https://fonts.gstatic.com;">
 
-<!-- CONFIG LOADER: try auth.oradigit.com first; fallback to local file -->
+<!-- CONFIG LOADER -->
 <script>
   (function () {
     const beacon = document.getElementById('firebase-status');

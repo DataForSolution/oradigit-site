@@ -21,7 +21,7 @@
 
   /**
    * OraDigit Order Helper – app.js (Firestore-only, rev5)
-   * Firestore-aware with correct docId mapping
+   * Loads rules only from Firestore published_rules/*/records
    */
 
   const els = {
@@ -287,3 +287,4 @@
     els.results?.removeAttribute("hidden");
   }
 })();
+
