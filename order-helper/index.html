@@ -59,14 +59,14 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
         <select id="region" name="region" required></select>
       </div>
 
-      <!-- Context (chips UI expected by app.fs.js) -->
+      <!-- Context (chips UI expected by app.js) -->
       <div class="field">
         <label>Context <span aria-hidden="true">*</span></label>
 
-        <!-- Chips rendered dynamically by app.fs.js -->
+        <!-- Chips rendered dynamically by app.js -->
         <div id="contextChips" class="oh-chips" role="group" aria-label="Context"></div>
 
-        <!-- Hidden mirror for compatibility (app.fs.js keeps in sync) -->
+        <!-- Hidden mirror for compatibility (app.js keeps in sync) -->
         <select id="context" name="context" multiple hidden></select>
 
         <small class="hint">Click one or more (e.g., staging, restaging, surveillance, acute, follow-up).</small>
@@ -128,7 +128,7 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
     </aside>
   </div>
 
-  <!-- ================= RESULTS (filled by app.fs.js) ================= -->
+  <!-- ================= RESULTS (filled by app.js) ================= -->
   <section id="results" hidden style="margin-top:16px">
     <h2 id="outHeader"></h2>
 
@@ -180,7 +180,7 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
   </noscript>
 </section>
 
-<!-- Boot loader: config → SDKs → app.fs.js (Firestore-only) -->
+<!-- Boot loader: config → SDKs → app.js (Firestore-only) -->
 <script>
 (async function boot() {
   const set = (m, cls='status success') => {
@@ -191,7 +191,9 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
   function loadScript(src) {
     return new Promise((res, rej) => {
       const sc = document.createElement('script');
-      sc.src = src; sc.onload = res; sc.onerror = () => rej(new Error('Failed to load: ' + src));
+      sc.src = src;
+      sc.onload = res;
+      sc.onerror = () => rej(new Error('Failed to load: ' + src));
       document.head.appendChild(sc);
     });
   }
@@ -216,8 +218,8 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
     window.OH_FIREBASE = { app: firebase.app(), db: firebase.firestore() };
     set('Firebase ready.', 'status success');
 
-    // 4) App (Firestore-only)
-    <script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250922"></script>
+    // 4) Load app.js dynamically
+    await loadScript("{{ '/order-helper/app.js' | relative_url }}?v=20250922");
 
   } catch (e) {
     console.error(e);
