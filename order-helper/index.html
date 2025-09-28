@@ -217,7 +217,8 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
     set('Firebase ready.', 'status success');
 
     // 4) App (Firestore-only)
-    await loadScript("{{ '/order-helper/app.fs.js' | relative_url }}?v=20250922");
+    <script defer src="{{ '/order-helper/app.js' | relative_url }}?v=20250922"></script>
+
   } catch (e) {
     console.error(e);
     set('Init error: ' + e.message, 'status error');
