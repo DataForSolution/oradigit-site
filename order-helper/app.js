@@ -20,8 +20,7 @@
   );
 
   /**
-   * OraDigit Order Helper – app.js (Firestore-only, rev5)
-   * Loads rules only from Firestore published_rules/*/records
+   * OraDigit Order Helper – app.js (Firestore-only, rev6)
    */
 
   const els = {
@@ -61,7 +60,7 @@
     records: []
   };
 
-  // Map dropdown values → Firestore doc IDs
+  // Map dropdown labels → Firestore doc IDs
   const MODALITY_MAP = {
     "PET/CT": "PET_CT",
     "CT": "CT",
@@ -287,4 +286,5 @@
     els.results?.removeAttribute("hidden");
   }
 })();
+
 
