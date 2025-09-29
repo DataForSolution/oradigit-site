@@ -1,26 +1,24 @@
-// order-helper/app.js
+// order-helper/app.js  (Firestore-only, robust normalize, rev7)
 (() => {
   const qs = (s) => document.querySelector(s);
   const setStatus = (msg, cls = "status success") => {
     const s = qs("#status");
-    if (s) {
-      s.textContent = msg;
-      s.className = cls;
-    }
+    if (s) { s.textContent = msg; s.className = cls; }
   };
 
+  // Surface runtime errors in the status bar
   window.addEventListener("error", (e) =>
     setStatus("JavaScript error: " + (e.message || "Unknown"), "status error")
   );
   window.addEventListener("unhandledrejection", (e) =>
-    setStatus(
-      "App error: " + (e.reason?.message || e.reason || "Unknown"),
-      "status error"
-    )
+    setStatus("App error: " + (e.reason?.message || e.reason || "Unknown"), "status error")
   );
 
   /**
-   * OraDigit Order Helper – app.js (Firestore-only, clean rev6)
+   * OraDigit Order Helper – Firestore-only frontend
+   * - Loads rules from /published_rules/{modality}/records
+   * - Normalizes varying shapes (region/regions/study_name/header_coverage)
+   * - Populates Region / Context / Condition suggestions
    */
 
   const els = {
@@ -48,18 +46,7 @@
     dbg: document.getElementById("dbg"),
   };
 
-  let RULES = null;
-
-  // Fallback rules if Firestore fails
-  const FALLBACK_RULES = {
-    modalities: {
-      "PET/CT": { regions: ["Skull base to mid-thigh"], contexts: ["Staging"], conditions: ["NSCLC"] },
-      CT: { regions: ["Head/Brain"], contexts: ["Acute"], conditions: ["PE"] },
-      MRI: { regions: ["Brain"], contexts: ["Follow-up"], conditions: ["MS"] }
-    },
-    records: []
-  };
-
+  // Map UI modality value -> Firestore doc id
   const MODALITY_MAP = {
     "PET/CT": "PET_CT",
     "CT": "CT",
@@ -70,65 +57,151 @@
     "Nuclear Medicine": "Nuclear_Medicine"
   };
 
-  document.addEventListener("DOMContentLoaded", init);
+  // Defaults used if a record doesn’t list contexts
+  const DEFAULT_CONTEXTS = {
+    "PET/CT": ["Staging", "Restaging", "Treatment response", "Surveillance", "Suspected recurrence", "Infection"],
+    "CT": ["Acute", "Follow-up", "Oncology staging", "Trauma", "Screening", "Infection/inflammation"],
+    "MRI": ["Acute", "Problem solving", "Follow-up", "Staging", "Restaging", "Surveillance"],
+    "X-Ray": ["Acute", "Trauma", "Follow-up", "Infection"],
+    "Ultrasound": ["Acute", "Screening", "Surveillance", "Follow-up"],
+    "Mammography": ["Screening", "Diagnostic"],
+    "Nuclear Medicine": ["Staging", "Evaluation", "Follow-up"]
+  };
 
-  async function init() {
-    try {
-      RULES = await loadRulesFromFirestore();
-      buildUI(RULES);
-      wireEvents();
-      setStatus("Rules loaded.");
-      if (els.dbg) els.dbg.textContent = `[OH] Ready (${new Date().toLocaleString()})`;
-    } catch (e) {
-      console.error(e);
-      setStatus("Init failed: " + e.message, "status error");
-      RULES = FALLBACK_RULES;
-      buildUI(RULES);
+  // Fallback if Firestore is unavailable (kept tiny on purpose)
+  const FALLBACK_RULES = {
+    modalities: {
+      "PET/CT": { regions: ["Skull base to mid-thigh"], contexts: DEFAULT_CONTEXTS["PET/CT"], conditions: ["NSCLC", "Lymphoma"] },
+      "CT":    { regions: ["Head/Brain"],               contexts: DEFAULT_CONTEXTS["CT"],     conditions: ["PE", "Renal colic"] },
+      "MRI":   { regions: ["Brain"],                    contexts: DEFAULT_CONTEXTS["MRI"],    conditions: ["MS"] }
+    },
+    records: []
+  };
+
+  // ------------- Normalization helpers -------------
+  const toArray = (v) => Array.isArray(v) ? v : (v ? [v] : []);
+  const clean = (arr) => [...new Set((arr || []).map(x => (x || "").toString().trim()).filter(Boolean))];
+
+  function guessRegion(rec) {
+    // Prefer explicit region
+    if (rec.region && typeof rec.region === "string") return rec.region.trim();
+    // Some records might have regions: []
+    if (Array.isArray(rec.regions) && rec.regions.length) return rec.regions[0];
+    // Fall back to header_coverage (e.g., "Skull base → mid-thigh")
+    if (rec.header_coverage) return rec.header_coverage.toString().trim();
+    // Try parsing from study_name: "FDG PET/CT — Skull Base to Mid-Thigh"
+    if (rec.study_name && rec.study_name.includes("—")) {
+      const t = rec.study_name.split("—").pop().trim();
+      if (t && t.length < 120) return t;
     }
+    return null;
   }
 
+  function normalizeContexts(rec, modalityLabel) {
+    const fromDoc = clean(rec.contexts);
+    if (fromDoc.length) return fromDoc;
+    // Some authors may place context-like words in tags/keywords
+    const derived = clean([...(rec.tags || []), ...(rec.keywords || [])])
+      .filter(w => /staging|restaging|surveillance|treatment|acute|follow|infection|diagnostic|screening/i.test(w));
+    if (derived.length) return derived;
+    return DEFAULT_CONTEXTS[modalityLabel] || [];
+  }
+
+  function normalizeConditions(rec) {
+    // Prefer explicit conditions, then keywords, then tags
+    const cand = clean([...(rec.conditions || []), ...(rec.keywords || []), ...(rec.tags || [])]);
+    return cand;
+  }
+
+  function normalizeRecord(raw, modalityLabel) {
+    return {
+      id: raw.id || "",
+      modality: modalityLabel,
+      region: guessRegion(raw) || "General",
+      contexts: normalizeContexts(raw, modalityLabel),
+      conditions: normalizeConditions(raw),
+      // Keep references around for future features
+      study_name: raw.study_name || "",
+      header_coverage: raw.header_coverage || "",
+      prep_notes: clean(raw.prep_notes),
+      supporting_docs: clean(raw.supporting_docs),
+      flags: clean(raw.flags),
+      reason_templates: clean(raw.reasons)
+    };
+  }
+
+  // ------------- Firestore load -------------
   async function loadRulesFromFirestore() {
-    const db = firebase.firestore();
+    const db = (window.OH_FIREBASE && window.OH_FIREBASE.db) || (window.firebase && window.firebase.firestore && window.firebase.firestore());
+    if (!db) throw new Error("Firebase Firestore not initialized. Check index loader.");
+
     const out = { modalities: {}, records: [] };
 
     for (const [label, path] of Object.entries(MODALITY_MAP)) {
       try {
-        const snap = await db.collection("published_rules").doc(path).collection("records").get();
+        const colRef = db.collection("published_rules").doc(path).collection("records");
+        const snap = await colRef.get();
         const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        if (docs.length) {
-          out.records.push(...docs.map(r => ({ ...r, modality: label })));
-          const regions = new Set(), contexts = new Set(), conditions = new Set();
-          docs.forEach(r => {
-            (r.regions || []).forEach(v => regions.add(v));
-            (r.contexts || []).forEach(v => contexts.add(v));
-            (r.conditions || []).forEach(v => conditions.add(v));
-          });
-          out.modalities[label] = { regions: [...regions], contexts: [...contexts], conditions: [...conditions] };
-        }
+        console.log(`[OH] ${label} records: ${docs.length}`, docs.map(d => d.id));
+
+        const normalized = docs.map(r => normalizeRecord(r, label));
+        out.records.push(...normalized);
+
+        // Aggregate unique lists for UI
+        const regions = new Set();
+        const contexts = new Set();
+        const conditions = new Set();
+
+        normalized.forEach(r => {
+          if (r.region) regions.add(r.region);
+          (r.contexts || []).forEach(c => contexts.add(c));
+          (r.conditions || []).forEach(c => conditions.add(c));
+        });
+
+        // Ensure we always have at least defaults for contexts
+        const contextsList = [...contexts];
+        const ensuredContexts = contextsList.length ? contextsList : (DEFAULT_CONTEXTS[label] || []);
+
+        out.modalities[label] = {
+          regions: [...regions],
+          contexts: ensuredContexts,
+          conditions: [...conditions]
+        };
       } catch (err) {
-        console.warn(`Failed to load ${label} rules`, err);
+        console.warn(`[OH] Failed to load ${label} rules`, err);
       }
     }
 
     if (!Object.keys(out.modalities).length) {
-      setStatus("No Firestore rules found, using fallback", "warn");
+      setStatus("No Firestore rules found, using fallback", "status warn");
       return FALLBACK_RULES;
     }
 
     return out;
   }
 
+  // ------------- UI build -------------
   function buildUI(cat) {
     renderForMod(cat, els.modality?.value || "PET/CT");
   }
 
   function renderForMod(cat, modality) {
     const spec = cat.modalities[modality] || { regions: [], contexts: [], conditions: [] };
+
+    // Regions
     fillSelect(els.region, spec.regions, "Select region…");
+
+    // Contexts -> chips
     renderContextChips(spec.contexts);
+
+    // Conditions -> datalist
+    // Use both conditions and “keywords-like” terms collected earlier
     fillDatalist(els.conditionList, spec.conditions);
+
+    // CT contrast visibility
     showContrast(modality === "CT");
+
     syncPreview();
   }
 
@@ -139,6 +212,7 @@
     ph.value = "";
     ph.textContent = placeholder;
     selectEl.appendChild(ph);
+
     (values || []).forEach((v) => {
       const opt = document.createElement("option");
       opt.value = v;
@@ -174,6 +248,8 @@
       });
       els.contextChips.appendChild(btn);
     });
+    // Keep hidden <select> in sync on render
+    mirrorChipsToHiddenSelect();
   }
 
   function mirrorChipsToHiddenSelect() {
@@ -203,10 +279,11 @@
     qs("#pv-indication").textContent = els.indication?.value || "—";
   }
 
+  // ------------- UX wiring -------------
   function wireEvents() {
-    els.modality?.addEventListener("change", () =>
-      renderForMod(RULES, els.modality.value)
-    );
+    els.modality?.addEventListener("change", () => {
+      renderForMod(RULES, els.modality.value);
+    });
 
     ["change", "input"].forEach((evt) => {
       els.region?.addEventListener(evt, syncPreview);
@@ -218,28 +295,31 @@
       suggestStudies();
     });
 
+    // Copy Clinical Indication
     qs("#copyIndication")?.addEventListener("click", async () => {
       const txt = els.indication?.value?.trim();
       if (!txt) return;
       try {
         await navigator.clipboard.writeText(txt);
-        setStatus("Clinical indication copied.", "success");
+        setStatus("Clinical indication copied.", "status success");
       } catch {
-        setStatus("Unable to copy. Please copy manually.", "warn");
+        setStatus("Unable to copy. Please copy manually.", "status warn");
       }
     });
 
+    // Copy Reason
     els.copyReasonBtn?.addEventListener("click", async () => {
       const v = els.outReason?.value?.trim();
       if (!v) return;
       try {
         await navigator.clipboard.writeText(v);
-        setStatus("Reason copied.", "success");
+        setStatus("Reason copied.", "status success");
       } catch {
-        setStatus("Unable to copy reason.", "warn");
+        setStatus("Unable to copy reason.", "status warn");
       }
     });
 
+    // Copy All
     els.copyAllBtn?.addEventListener("click", async () => {
       const parts = [];
       if (els.outHeader) parts.push(els.outHeader.textContent);
@@ -248,24 +328,50 @@
       if (!text.trim()) return;
       try {
         await navigator.clipboard.writeText(text);
-        setStatus("All details copied.", "success");
+        setStatus("All details copied.", "status success");
       } catch {
-        setStatus("Unable to copy all.", "warn");
+        setStatus("Unable to copy all.", "status warn");
       }
     });
 
+    // Print
     els.printBtn?.addEventListener("click", () => window.print());
   }
 
+  // Simple placeholder to keep current UX
   function suggestStudies() {
-    const modality = els.modality?.value || "";
-    const region = els.region?.value || "";
-    const ctx = [...els.context.selectedOptions].map((o) => o.value);
+    const modality  = els.modality?.value || "";
+    const region    = els.region?.value || "";
+    const ctx       = [...els.context.selectedOptions].map((o) => o.value);
     const condition = els.condition?.value || "";
     els.suggestions.innerHTML = "";
     const li = document.createElement("li");
-    li.textContent = `${modality} ${region} ${ctx.join(", ")} ${condition}`;
+    li.textContent = `${modality} ${region} ${ctx.join(", ")} ${condition}`.replace(/\s+/g, " ").trim();
     els.suggestions.appendChild(li);
     els.results?.removeAttribute("hidden");
   }
+
+  // ------------- Boot -------------
+  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      // Ensure Firebase exists (index.html boot loader sets OH_FIREBASE)
+      if (!window.firebase && !(window.OH_FIREBASE && window.OH_FIREBASE.db)) {
+        throw new Error("Firebase SDK not loaded.");
+      }
+      setStatus("Loading rules…", "status");
+      const data = await loadRulesFromFirestore();
+      console.log("[OH] Modalities summary:", data.modalities);
+      RULES = data;
+      buildUI(RULES);
+      wireEvents();
+      setStatus("Rules loaded.", "status success");
+      if (els.dbg) els.dbg.textContent = `[OH] Ready (${new Date().toLocaleString()})`;
+    } catch (e) {
+      console.error(e);
+      setStatus("Init failed: " + e.message, "status error");
+      RULES = FALLBACK_RULES;
+      buildUI(RULES);
+    }
+  });
 })();
+
