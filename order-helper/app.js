@@ -1,27 +1,18 @@
-// order-helper/app.js
+<!-- order-helper/app.js -->
+<script>
 (() => {
   const qs = (s) => document.querySelector(s);
   const setStatus = (msg, cls = "status success") => {
-    const s = qs("#status");
-    if (s) {
-      s.textContent = msg;
-      s.className = cls;
-    }
+    const s = qs("#status"); if (s) { s.textContent = msg; s.className = cls; }
   };
 
+  // Friendly error beacons
   window.addEventListener("error", (e) =>
     setStatus("JavaScript error: " + (e.message || "Unknown"), "status error")
   );
   window.addEventListener("unhandledrejection", (e) =>
-    setStatus(
-      "App error: " + (e.reason?.message || e.reason || "Unknown"),
-      "status error"
-    )
+    setStatus("App error: " + (e.reason?.message || e.reason || "Unknown"), "status error")
   );
-
-  /**
-   * OraDigit Order Helper – app.js (Firestore-only, clean rev6)
-   */
 
   const els = {
     status: document.getElementById("status"),
@@ -50,16 +41,17 @@
 
   let RULES = null;
 
-  // Fallback rules if Firestore fails
+  // Simple fallback if Firestore is unreachable
   const FALLBACK_RULES = {
     modalities: {
       "PET/CT": { regions: ["Skull base to mid-thigh"], contexts: ["Staging"], conditions: ["NSCLC"] },
-      CT: { regions: ["Head/Brain"], contexts: ["Acute"], conditions: ["PE"] },
-      MRI: { regions: ["Brain"], contexts: ["Follow-up"], conditions: ["MS"] }
+      "CT":     { regions: ["Head/Brain"],               contexts: ["Acute"],   conditions: ["PE"]    },
+      "MRI":    { regions: ["Brain"],                    contexts: ["Follow-up"], conditions: ["MS"]  }
     },
     records: []
   };
 
+  // UI value → Firestore doc id
   const MODALITY_MAP = {
     "PET/CT": "PET_CT",
     "CT": "CT",
@@ -70,11 +62,28 @@
     "Nuclear Medicine": "Nuclear_Medicine"
   };
 
+  const uniqSorted = (arr) => Array.from(new Set(arr)).filter(Boolean).sort((a,b)=>a.localeCompare(b));
+
+  // Region derivation when a record has no explicit `region`
+  function deriveRegion(rec, label){
+    if (typeof rec.region === 'string' && rec.region.trim()) return rec.region.trim();
+    if (typeof rec.header_coverage === 'string' && rec.header_coverage.trim()) return rec.header_coverage.trim();
+    if (typeof rec.study_name === 'string' && rec.study_name.trim()) {
+      const parts = rec.study_name.split('—'); // em dash
+      if (parts.length > 1) return parts[1].trim();
+      const dash = rec.study_name.split('-');
+      if (dash.length > 1) return dash.slice(1).join('-').trim();
+      return rec.study_name.trim();
+    }
+    return ""; // best-effort only
+  }
+
   document.addEventListener("DOMContentLoaded", init);
 
   async function init() {
     try {
       RULES = await loadRulesFromFirestore();
+      window.__OH_RULES = RULES; // handy for console inspection
       buildUI(RULES);
       wireEvents();
       setStatus("Rules loaded.");
@@ -83,28 +92,55 @@
       console.error(e);
       setStatus("Init failed: " + e.message, "status error");
       RULES = FALLBACK_RULES;
+      window.__OH_RULES = RULES;
       buildUI(RULES);
     }
   }
 
+  // ---------- Firestore loader with doc-level fallbacks ----------
   async function loadRulesFromFirestore() {
-    const db = firebase.firestore();
+    const db = (window.OH_FIREBASE?.db) || firebase.firestore();
     const out = { modalities: {}, records: [] };
 
-    for (const [label, path] of Object.entries(MODALITY_MAP)) {
+    for (const [label, docId] of Object.entries(MODALITY_MAP)) {
       try {
-        const snap = await db.collection("published_rules").doc(path).collection("records").get();
+        const docRef = db.collection("published_rules").doc(docId);
+
+        // Read parent doc to merge any modality-level defaults (contexts/conditions/regions)
+        const parentSnap = await docRef.get();
+        const parent = parentSnap.exists ? (parentSnap.data() || {}) : {};
+        const parentCtx  = Array.isArray(parent.contexts)   ? parent.contexts   : [];
+        const parentCond = Array.isArray(parent.conditions) ? parent.conditions : [];
+        const parentReg  = Array.isArray(parent.regions)    ? parent.regions    : [];
+
+        // Read records
+        const snap = await docRef.collection("records").get();
         const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         if (docs.length) {
           out.records.push(...docs.map(r => ({ ...r, modality: label })));
-          const regions = new Set(), contexts = new Set(), conditions = new Set();
+
+          const regions = [...parentReg];
+          const contexts = [...parentCtx];
+          const conditions = [...parentCond];
+
           docs.forEach(r => {
-            (r.regions || []).forEach(v => regions.add(v));
-            (r.contexts || []).forEach(v => contexts.add(v));
-            (r.conditions || []).forEach(v => conditions.add(v));
+            const reg = deriveRegion(r, label);
+            if (reg) regions.push(reg);
+
+            if (Array.isArray(r.contexts)) r.contexts.forEach(c => contexts.push(String(c).trim()));
+
+            const condSrc = Array.isArray(r.conditions) ? r.conditions
+                          : Array.isArray(r.keywords)  ? r.keywords
+                          : [];
+            condSrc.forEach(c => conditions.push(String(c).trim()));
           });
-          out.modalities[label] = { regions: [...regions], contexts: [...contexts], conditions: [...conditions] };
+
+          out.modalities[label] = {
+            regions: uniqSorted(regions),
+            contexts: uniqSorted(contexts),
+            conditions: uniqSorted(conditions),
+          };
         }
       } catch (err) {
         console.warn(`Failed to load ${label} rules`, err);
@@ -112,13 +148,13 @@
     }
 
     if (!Object.keys(out.modalities).length) {
-      setStatus("No Firestore rules found, using fallback", "warn");
+      setStatus("No Firestore rules found, using fallback", "status warn");
       return FALLBACK_RULES;
     }
-
     return out;
   }
 
+  // ---------- UI build ----------
   function buildUI(cat) {
     renderForMod(cat, els.modality?.value || "PET/CT");
   }
@@ -178,7 +214,8 @@
 
   function mirrorChipsToHiddenSelect() {
     if (!els.context) return;
-    const chips = [...els.contextChips.querySelectorAll('.oh-chip[aria-pressed="true"]')].map((c) => c.textContent.trim());
+    const chips = [...els.contextChips.querySelectorAll('.oh-chip[aria-pressed="true"]')]
+      .map((c) => c.textContent.trim());
     els.context.innerHTML = "";
     chips.forEach((label) => {
       const opt = document.createElement("option");
@@ -196,10 +233,10 @@
 
   function syncPreview() {
     qs("#pv-modality").textContent = els.modality?.value || "—";
-    qs("#pv-region").textContent = els.region?.value || "—";
+    qs("#pv-region").textContent   = els.region?.value || "—";
     const ctx = [...els.context.selectedOptions].map((o) => o.value);
-    qs("#pv-context").textContent = ctx.length ? ctx.join(", ") : "—";
-    qs("#pv-condition").textContent = els.condition?.value || "—";
+    qs("#pv-context").textContent  = ctx.length ? ctx.join(", ") : "—";
+    qs("#pv-condition").textContent= els.condition?.value || "—";
     qs("#pv-indication").textContent = els.indication?.value || "—";
   }
 
@@ -218,28 +255,31 @@
       suggestStudies();
     });
 
+    // Copy Clinical Indication
     qs("#copyIndication")?.addEventListener("click", async () => {
       const txt = els.indication?.value?.trim();
       if (!txt) return;
       try {
         await navigator.clipboard.writeText(txt);
-        setStatus("Clinical indication copied.", "success");
+        setStatus("Clinical indication copied.", "status success");
       } catch {
-        setStatus("Unable to copy. Please copy manually.", "warn");
+        setStatus("Unable to copy. Please copy manually.", "status warn");
       }
     });
 
+    // Copy Reason
     els.copyReasonBtn?.addEventListener("click", async () => {
       const v = els.outReason?.value?.trim();
       if (!v) return;
       try {
         await navigator.clipboard.writeText(v);
-        setStatus("Reason copied.", "success");
+        setStatus("Reason copied.", "status success");
       } catch {
-        setStatus("Unable to copy reason.", "warn");
+        setStatus("Unable to copy reason.", "status warn");
       }
     });
 
+    // Copy All
     els.copyAllBtn?.addEventListener("click", async () => {
       const parts = [];
       if (els.outHeader) parts.push(els.outHeader.textContent);
@@ -248,15 +288,17 @@
       if (!text.trim()) return;
       try {
         await navigator.clipboard.writeText(text);
-        setStatus("All details copied.", "success");
+        setStatus("All details copied.", "status success");
       } catch {
-        setStatus("Unable to copy all.", "warn");
+        setStatus("Unable to copy all.", "status warn");
       }
     });
 
+    // Print
     els.printBtn?.addEventListener("click", () => window.print());
   }
 
+  // Placeholder suggestion logic
   function suggestStudies() {
     const modality = els.modality?.value || "";
     const region = els.region?.value || "";
@@ -264,8 +306,9 @@
     const condition = els.condition?.value || "";
     els.suggestions.innerHTML = "";
     const li = document.createElement("li");
-    li.textContent = `${modality} ${region} ${ctx.join(", ")} ${condition}`;
+    li.textContent = `${modality} ${region} ${ctx.join(", ")} ${condition}`.trim();
     els.suggestions.appendChild(li);
     els.results?.removeAttribute("hidden");
   }
 })();
+</script>
