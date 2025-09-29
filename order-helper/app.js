@@ -20,7 +20,7 @@
   );
 
   /**
-   * OraDigit Order Helper – app.js (Firestore-only, stable working version)
+   * OraDigit Order Helper – app.js (Firestore-only, clean rev6)
    */
 
   const els = {
