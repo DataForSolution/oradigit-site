@@ -392,3 +392,72 @@ textarea:disabled {
 
 /* Status bar should never hide behind anything */
 .oh-status, #status { z-index: 2; }
+/* ====== Order Helper: HTML class bridge & utilities (append at end) ====== */
+
+/* Utility to toggle elements from JS (used for Indication “Other”, CT contrast, etc.) */
+.hidden { display: none !important; }
+
+/* Bridge: the HTML uses .oh-form .field and .oh-aside .card — map them to the theme tokens */
+.oh-form .field {
+  display: grid;
+  gap: .5rem;
+  margin-bottom: .9rem;
+}
+.oh-aside .card {
+  background: var(--oh-surface);
+  border: 1px solid var(--oh-border);
+  border-radius: var(--oh-radius);
+  box-shadow: var(--oh-shadow);
+  padding: 1rem;
+}
+
+/* Status bar (your #status element uses class="status …") */
+#status.status { 
+  margin-top: .6rem; 
+  font-size: .92rem; 
+  color: var(--oh-text-muted);
+}
+#status.status.success { color: var(--oh-success); }
+#status.status.warn    { color: var(--oh-warn); }
+#status.status.error   { color: var(--oh-error); }
+
+/* Context chips (rendered by app.js) */
+#contextChips { 
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: .4rem; 
+}
+#contextChips .oh-chip {
+  border: 1px solid var(--oh-border-strong);
+  background: var(--oh-surface);
+  color: var(--oh-text);
+  border-radius: 999px;
+  padding: .35rem .6rem;
+  font-size: .9rem;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+#contextChips .oh-chip:hover { background: var(--oh-surface-2); }
+#contextChips .oh-chip[aria-pressed="true"] {
+  background: var(--oh-primary);
+  color: #fff;
+  border-color: var(--oh-primary);
+}
+
+/* Clinical Indication preview box on the right panel */
+.indication-box {
+  background: var(--oh-surface-2);
+  border: 1px dashed var(--oh-border);
+  border-radius: var(--oh-radius-sm);
+  padding: .6rem .7rem;
+  white-space: pre-wrap;
+}
+
+/* CT contrast fieldset styling (shown/hidden by JS) */
+.oh-contrast {
+  border: 1px solid var(--oh-border);
+  border-radius: var(--oh-radius-sm);
+  padding: .6rem .8rem;
+  background: var(--oh-surface);
+}
+.oh-contrast legend { font-weight: 600; }

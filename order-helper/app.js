@@ -329,6 +329,22 @@ async function loadRulesFromFirestore() {
       val = els.indication.value || els.indication.placeholder || "";
     }
     qs("#pv-indication").textContent = val || "—";
+   // Inside syncPreview()
+if (els.indication) {
+  let val = "";
+  if (els.indication.tagName === "SELECT") {
+    if (els.indication.value === "__other__") {
+      const other = document.getElementById("indicationOther");
+      val = (other?.value || "").trim();
+    } else {
+      val = els.indication.value;
+    }
+  } else {
+    val = els.indication.value || els.indication.placeholder || "";
+  }
+  qs("#pv-indication").textContent = val || "—";
+}
+
   }
 }
 
@@ -390,6 +406,10 @@ async function loadRulesFromFirestore() {
 
     // Print
     els.printBtn?.addEventListener("click", () => window.print());
+    document.getElementById("indicationOther")
+    ?.addEventListener("input", syncPreview);
+  document.getElementById("indication")
+    ?.addEventListener("change", syncPreview);
   }
 
   // Simple placeholder to keep current UX

@@ -6,7 +6,8 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
 ---
 
 <!-- Page-scoped assets & config -->
-<link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250922">
+<link rel="stylesheet" href="{{ '/order-helper/style.css' | relative_url }}?v=20250930">
+
 <meta name="oh-version" content="20250922">
 
 <!-- Error beacon: surface JS errors in the status bar -->
@@ -54,10 +55,21 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       </div>
 
       <!-- Region -->
-      <div class="field">
-        <label for="region">Region <span aria-hidden="true">*</span></label>
-        <select id="region" name="region" required></select>
-      </div>
+      <!-- Clinical Indication (dropdown + free text fallback) -->
+<div class="field">
+  <label for="indication">Clinical Indication</label>
+  <select id="indication" name="indication">
+    <option value="">Select clinical indication…</option>
+    <!-- app.js will populate Firestore templates here -->
+    <option value="__other__">Other (type manually)</option>
+  </select>
+  
+  <!-- Shown only if "Other" is chosen -->
+  <textarea id="indicationOther" name="indicationOther" rows="3" class="hidden"
+            placeholder="Enter custom clinical indication…"></textarea>
+  <small class="hint">Pick from the list or select “Other” to enter your own.</small>
+</div>
+
 
       <!-- Context (chips UI expected by app.js) -->
       <div class="field">
@@ -179,6 +191,23 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
     <p class="status error">JavaScript is required for the Order Helper to function.</p>
   </noscript>
 </section>
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+  const sel = document.getElementById("indication");
+  const otherBox = document.getElementById("indicationOther");
+  if (!sel || !otherBox) return;
+  sel.addEventListener("change", () => {
+    if (sel.value === "__other__") {
+      otherBox.classList.remove("hidden");
+      otherBox.focus();
+    } else {
+      otherBox.classList.add("hidden");
+      otherBox.value = "";
+    }
+  });
+});
+</script>
+
 
 <!-- Boot loader: config → SDKs → app.js (Firestore-only) -->
 <script>
