@@ -231,14 +231,15 @@ async function saveAll() {
 // Must use even segments: published_rules/{MOD}/spec/spec
 const specRef = doc(db, 'published_rules', MOD, 'spec', 'spec');
 batch.set(specRef, spec);
+    // Write meta into a single doc inside the meta collection
+const metaRef = doc(db, 'published_rules', MOD, 'meta', 'meta');
+batch.set(metaRef, {
+  modality: MOD,
+  recordCount: toAdd.length,
+  updatedAt: spec.updatedAt,
+  updatedBy: spec.updatedBy
+});
 
-    const metaRef = doc(db, 'published_rules', MOD, 'meta');
-    batch.set(metaRef, {
-      modality: MOD,
-      recordCount: toAdd.length,
-      updatedAt: spec.updatedAt,
-      updatedBy: spec.updatedBy
-    });
 
     // Commit all changes
     await batch.commit();
