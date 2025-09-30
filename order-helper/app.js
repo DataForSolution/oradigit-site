@@ -126,116 +126,125 @@
       prep_notes: clean(raw.prep_notes),
       supporting_docs: clean(raw.supporting_docs),
       flags: clean(raw.flags),
-      reason_templates: clean(raw.reasons)
+      reason_templates: clean(raw.reasons)// Try to load the structured spec document (preferred)
+async function loadSpecDoc(db, path, label) {
+  // Admin.js writes to: /published_rules/{MOD}/spec/spec
+  const specRef = db.collection("published_rules").doc(path).collection("spec").doc("spec");
+  const snap = await specRef.get();
+  if (snap.exists) {
+    const spec = snap.data();
+    console.log(`[OH] Loaded spec for ${label}`, spec);
+    return {
+      regions: spec.regions || [],
+      contexts: spec.contexts || (DEFAULT_CONTEXTS[label] || []),
+      conditions: spec.conditions || [],
+      indication_templates: spec.indication_templates || []
+    };
+  }
+  return null;
+}
+
     };
   }
 
-  // ------------- Firestore load -------------
-  async function loadRulesFromFirestore() {
-    const db = (window.OH_FIREBASE && window.OH_FIREBASE.db) || (window.firebase && window.firebase.firestore && window.firebase.firestore());
-    if (!db) throw new Error("Firebase Firestore not initialized. Check index loader.");
+ // ------------- Firestore load -------------
+async function loadRulesFromFirestore() {
+  const db = (window.OH_FIREBASE && window.OH_FIREBASE.db) || 
+             (window.firebase && window.firebase.firestore && window.firebase.firestore());
+  if (!db) throw new Error("Firebase Firestore not initialized. Check index loader.");
 
-    const out = { modalities: {}, records: [] };
+  const out = { modalities: {}, records: [] };
 
-    for (const [label, path] of Object.entries(MODALITY_MAP)) {
-      try {
-        const colRef = db.collection("published_rules").doc(path).collection("records");
-        const snap = await colRef.get();
-        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // inside loadRulesFromFirestore(), after docs = snap.docs.map(...)
-if (docs.length) {
-  out.records.push(...docs.map(r => ({ ...r, modality: label })));
-
-  const regions = new Set();
-  const contexts = new Set();
-  const conditions = new Set();
-
-  docs.forEach(r => {
-    // Normalize field names from Firestore docs
-    if (r.region) regions.add(r.region);
-    if (r.regions) (r.regions || []).forEach(v => regions.add(v));
-
-    if (r.context) contexts.add(r.context);
-    if (r.contexts) (r.contexts || []).forEach(v => contexts.add(v));
-
-    if (r.condition) conditions.add(r.condition);
-    if (r.conditions) (r.conditions || []).forEach(v => conditions.add(v));
-
-    // fallbacks: check header/reasons if region missing
-    if (!r.region && r.header) regions.add(r.header);
-    if (!r.context && r.reasons) (r.reasons || []).forEach(v => contexts.add(v));
-  });
-
-  out.modalities[label] = {
-    regions: [...regions],
-    contexts: [...contexts],
-    conditions: [...conditions]
-  };
-}
-
-
-        console.log(`[OH] ${label} records: ${docs.length}`, docs.map(d => d.id));
-
-        const normalized = docs.map(r => normalizeRecord(r, label));
-        out.records.push(...normalized);
-
-        // Aggregate unique lists for UI
-        const regions = new Set();
-        const contexts = new Set();
-        const conditions = new Set();
-
-        normalized.forEach(r => {
-          if (r.region) regions.add(r.region);
-          (r.contexts || []).forEach(c => contexts.add(c));
-          (r.conditions || []).forEach(c => conditions.add(c));
-        });
-
-        // Ensure we always have at least defaults for contexts
-        const contextsList = [...contexts];
-        const ensuredContexts = contextsList.length ? contextsList : (DEFAULT_CONTEXTS[label] || []);
+  for (const [label, path] of Object.entries(MODALITY_MAP)) {
+    try {
+      // 1) Try to load structured spec first
+      const specRef = db.collection("published_rules").doc(path).collection("spec").doc("spec");
+      const specSnap = await specRef.get();
+      if (specSnap.exists) {
+        const spec = specSnap.data();
+        console.log(`[OH] ${label} spec loaded`, spec);
 
         out.modalities[label] = {
-          regions: [...regions],
-          contexts: ensuredContexts,
-          conditions: [...conditions]
+          regions: spec.regions || [],
+          contexts: spec.contexts || (DEFAULT_CONTEXTS[label] || []),
+          conditions: spec.conditions || [],
+          indication_templates: spec.indication_templates || []
         };
-      } catch (err) {
-        console.warn(`[OH] Failed to load ${label} rules`, err);
+        continue; // go to next modality
       }
-    }
 
-    if (!Object.keys(out.modalities).length) {
-      setStatus("No Firestore rules found, using fallback", "status warn");
-      return FALLBACK_RULES;
-    }
+      // 2) Fallback → use /records aggregation
+      const colRef = db.collection("published_rules").doc(path).collection("records");
+      const snap = await colRef.get();
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log(`[OH] ${label} records: ${docs.length}`, docs.map(d => d.id));
 
-    return out;
+      const normalized = docs.map(r => normalizeRecord(r, label));
+      out.records.push(...normalized);
+
+      const regions = new Set(), contexts = new Set(), conditions = new Set();
+      normalized.forEach(r => {
+        if (r.region) regions.add(r.region);
+        (r.contexts || []).forEach(c => contexts.add(c));
+        (r.conditions || []).forEach(c => conditions.add(c));
+      });
+
+      out.modalities[label] = {
+        regions: [...regions],
+        contexts: contexts.size ? [...contexts] : (DEFAULT_CONTEXTS[label] || []),
+        conditions: [...conditions],
+        indication_templates: []
+      };
+    } catch (err) {
+      console.warn(`[OH] Failed to load ${label} rules`, err);
+    }
   }
+
+  if (!Object.keys(out.modalities).length) {
+    setStatus("No Firestore rules found, using fallback", "status warn");
+    return FALLBACK_RULES;
+  }
+
+  return out;
+}
+
 
   // ------------- UI build -------------
   function buildUI(cat) {
     renderForMod(cat, els.modality?.value || "PET/CT");
   }
+   function renderForMod(cat, modality) {
+  const spec = cat.modalities[modality] || { 
+    regions: [], 
+    contexts: [], 
+    conditions: [], 
+    indication_templates: [] 
+  };
 
-  function renderForMod(cat, modality) {
-    const spec = cat.modalities[modality] || { regions: [], contexts: [], conditions: [] };
+  // Regions
+  fillSelect(els.region, spec.regions, "Select region…");
 
-    // Regions
-    fillSelect(els.region, spec.regions, "Select region…");
+  // Contexts -> chips
+  renderContextChips(spec.contexts);
 
-    // Contexts -> chips
-    renderContextChips(spec.contexts);
+  // Conditions -> datalist
+  fillDatalist(els.conditionList, spec.conditions);
 
-    // Conditions -> datalist
-    // Use both conditions and “keywords-like” terms collected earlier
-    fillDatalist(els.conditionList, spec.conditions);
-
-    // CT contrast visibility
-    showContrast(modality === "CT");
-
-    syncPreview();
+  // Clinical Indications -> select dropdown
+  if (els.indication && els.indication.tagName === "SELECT") {
+    fillSelect(els.indication, spec.indication_templates, "Select clinical indication…");
+  } else if (els.indication) {
+    // fallback if it's still a textarea or input
+    els.indication.placeholder = "Enter clinical indication (or auto-generate)";
   }
 
+  // CT contrast visibility
+  showContrast(modality === "CT");
+
+  syncPreview();
+}
+
+ 
   function fillSelect(selectEl, values, placeholder) {
     if (!selectEl) return;
     selectEl.innerHTML = "";
@@ -300,16 +309,30 @@ if (docs.length) {
     if (!els.contrastGroup) return;
     els.contrastGroup.classList.toggle("hidden", !show);
   }
-
   function syncPreview() {
-    qs("#pv-modality").textContent = els.modality?.value || "—";
-    qs("#pv-region").textContent = els.region?.value || "—";
-    const ctx = [...els.context.selectedOptions].map((o) => o.value);
-    qs("#pv-context").textContent = ctx.length ? ctx.join(", ") : "—";
-    qs("#pv-condition").textContent = els.condition?.value || "—";
-    qs("#pv-indication").textContent = els.indication?.value || "—";
-  }
+  qs("#pv-modality").textContent = els.modality?.value || "—";
+  qs("#pv-region").textContent = els.region?.value || "—";
 
+  // Selected contexts
+  const ctx = [...els.context.selectedOptions].map(o => o.value).filter(Boolean);
+  qs("#pv-context").textContent = ctx.length ? ctx.join(", ") : "—";
+
+  // Condition
+  qs("#pv-condition").textContent = els.condition?.value || "—";
+
+  // Clinical Indication (supports <select>, <input>, or <textarea>)
+  if (els.indication) {
+    let val = "";
+    if (els.indication.tagName === "SELECT") {
+      val = els.indication.value;
+    } else {
+      val = els.indication.value || els.indication.placeholder || "";
+    }
+    qs("#pv-indication").textContent = val || "—";
+  }
+}
+
+ 
   // ------------- UX wiring -------------
   function wireEvents() {
     els.modality?.addEventListener("change", () => {
