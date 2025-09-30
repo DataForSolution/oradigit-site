@@ -41,6 +41,63 @@ function rowToRule(tr){
     tags: splitCSV(q('.tags')),
   };
 }
+ // ---------- Helpers for publishing a structured spec ----------
+
+// unique, trimmed, sorted
+function uniq(arr) {
+  return Array.from(new Set((arr || []).filter(Boolean).map(s => String(s).trim())))
+              .sort((a, b) => a.localeCompare(b));
+}
+
+// PET/CT → PET_CT  (folder-safe, normalized)
+function canonicalizeModalityId(v) {
+  return (v || 'PET_CT').replace(/[\/\s-]+/g, '_').replace(/_{2,}/g, '_').toUpperCase();
+}
+
+// Build a structured spec from the flat rows (used by public app dropdowns)
+function aggregateForModality(rows, meta = {}) {
+  const regions    = uniq(rows.map(r => r.region));
+  const contexts   = uniq(rows.flatMap(r => r.contexts || []));
+  // If you add a dedicated "conditions" column later, swap to r.conditions. For now we derive from keywords.
+  const conditions = uniq(rows.flatMap(r => r.conditions || r.keywords || []));
+  const headers    = uniq(rows.map(r => r.header));
+  const reasons    = uniq(rows.flatMap(r => r.reasons || []));  // we reuse as indication templates
+
+  // Optional extras if you begin storing on rows; kept for future-proofing:
+  const contrast_options = uniq(rows.flatMap(r => r.contrast_options || []));
+  const laterality       = uniq(rows.flatMap(r => r.laterality || []));
+  const body_parts       = uniq(rows.flatMap(r => r.body_parts || []));
+
+  // CPT roll-up (minimal map from row data if present)
+  const common_cpt = uniq(rows.flatMap(r => r.cpt || []));
+  const cpt_map = {};
+  rows.forEach(r => {
+    if (r.cpt && r.cpt.length) {
+      const contrast = r.contrast || r.contrast_text || 'None';
+      const key = `${r.region || ''} | ${r.header || ''} | ${contrast}`;
+      cpt_map[key] = uniq(r.cpt);
+    }
+  });
+
+  const now = Date.now();
+  return {
+    schema_version: '2.0',
+    regions,
+    body_parts,
+    contrast_options,
+    laterality,
+    contexts,
+    conditions,
+    icd10: uniq(rows.flatMap(r => r.icd10 || [])),
+    common_cpt,
+    cpt_map,
+    indication_templates: reasons,   // public app uses these to seed the Clinical Indication dropdown
+    headers,
+    updatedAt: now,
+    updatedBy: (window.__OH_ADMIN?.auth?.currentUser?.email) || null,
+    ...meta
+  };
+}
 
 // Render a row into the table
 function addRuleRow(rule = {}){
@@ -140,32 +197,59 @@ function addRuleRow(rule = {}){
       }
     }
 
-    // 7) SAVE ALL — wipe & rewrite /published_rules/{modality}/records
-    async function saveAll() {
-      const modality = moduleEl?.value || 'PET_CT';
-      saveMsg.textContent = 'Saving…';
+    // 7)// 7) SAVE ALL — wipe & rewrite /published_rules/{MOD}/records + write /spec
+async function saveAll() {
+  const modalityRaw = moduleEl?.value || 'PET_CT';
+  const MOD = canonicalizeModalityId(modalityRaw);  // e.g., PET_CT, CT, MRI
+  saveMsg.textContent = `Saving ${MOD}…`;
+  try {
+    // Collect rows from the table and lightly validate
+    const trs   = Array.from(rulesTableBody.querySelectorAll('tr'));
+    const toAdd = trs.map(rowToRule)
+      .filter(r => (r.region || r.header || (r.reasons && r.reasons[0]))); // keep non-empty rows
 
-      // Delete existing
-      const snap = await getDocs(collection(db, 'published_rules', modality, 'records'));
-      const delBatch = writeBatch(db);
-      snap.forEach(d => delBatch.delete(d.ref));
-      await delBatch.commit();
-
-      // Collect rows
-      const trs = Array.from(rulesTableBody.querySelectorAll('tr'));
-      const toAdd = trs.map(rowToRule);
-
-      // Write new
-      const addBatch = writeBatch(db);
-      toAdd.forEach(obj => {
-        const ref = doc(collection(db, 'published_rules', modality, 'records'));
-        addBatch.set(ref, obj);
-      });
-      await addBatch.commit();
-
-      saveMsg.textContent = `Saved ${toAdd.length} rule(s) to ${modality}.`;
-      ok(`Saved ${toAdd.length} rules.`);
+    if (toAdd.length === 0) {
+      saveMsg.textContent = 'Nothing to save — add at least one row.';
+      warn('Save aborted: zero rows.');
+      return;
     }
+
+    // 1) Delete existing docs under /published_rules/{MOD}/records
+    const snap = await getDocs(collection(db, 'published_rules', MOD, 'records'));
+    const batch = writeBatch(db);
+    snap.forEach(d => batch.delete(d.ref));
+
+    // 2) Write new flat records
+    toAdd.forEach(obj => {
+      const ref = doc(collection(db, 'published_rules', MOD, 'records')); // auto-id
+      batch.set(ref, obj);
+    });
+
+    // 3) Write aggregated spec (+ meta)
+    const spec = aggregateForModality(toAdd);
+    const specRef = doc(db, 'published_rules', MOD, 'spec');
+    batch.set(specRef, spec);
+
+    const metaRef = doc(db, 'published_rules', MOD, 'meta');
+    batch.set(metaRef, {
+      modality: MOD,
+      recordCount: toAdd.length,
+      updatedAt: spec.updatedAt,
+      updatedBy: spec.updatedBy
+    });
+
+    // Commit all changes
+    await batch.commit();
+
+    ok(`Saved ${toAdd.length} rule(s) + spec for ${MOD}.`);
+    saveMsg.textContent = `Saved ${toAdd.length} rule(s) + spec for ${MOD}.`;
+  } catch (e) {
+    console.error(e);
+    err('Save failed: ' + e.message);
+    saveMsg.textContent = 'Save failed: ' + e.message;
+    alert('Save failed: ' + e.message);
+  }
+}
 
     // 8) Wire buttons
     document.getElementById('loadBtn')?.addEventListener('click', loadRules);
