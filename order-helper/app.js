@@ -142,6 +142,37 @@
         const colRef = db.collection("published_rules").doc(path).collection("records");
         const snap = await colRef.get();
         const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // inside loadRulesFromFirestore(), after docs = snap.docs.map(...)
+if (docs.length) {
+  out.records.push(...docs.map(r => ({ ...r, modality: label })));
+
+  const regions = new Set();
+  const contexts = new Set();
+  const conditions = new Set();
+
+  docs.forEach(r => {
+    // Normalize field names from Firestore docs
+    if (r.region) regions.add(r.region);
+    if (r.regions) (r.regions || []).forEach(v => regions.add(v));
+
+    if (r.context) contexts.add(r.context);
+    if (r.contexts) (r.contexts || []).forEach(v => contexts.add(v));
+
+    if (r.condition) conditions.add(r.condition);
+    if (r.conditions) (r.conditions || []).forEach(v => conditions.add(v));
+
+    // fallbacks: check header/reasons if region missing
+    if (!r.region && r.header) regions.add(r.header);
+    if (!r.context && r.reasons) (r.reasons || []).forEach(v => contexts.add(v));
+  });
+
+  out.modalities[label] = {
+    regions: [...regions],
+    contexts: [...contexts],
+    conditions: [...conditions]
+  };
+}
+
 
         console.log(`[OH] ${label} records: ${docs.length}`, docs.map(d => d.id));
 
