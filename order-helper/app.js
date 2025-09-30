@@ -129,9 +129,8 @@
     reason_templates: clean(raw.reasons)
   };
 }
-
-// Try to load the structured spec document (preferred)
-async function loadSpecDoc(db, path, label) {
+   // Try to load the structured spec document (preferred)
+const loadSpecDoc = async (db, path, label) => {
   // Admin.js writes to: /published_rules/{MOD}/spec/spec
   const specRef = db.collection("published_rules").doc(path).collection("spec").doc("spec");
   const snap = await specRef.get();
@@ -146,11 +145,10 @@ async function loadSpecDoc(db, path, label) {
     };
   }
   return null;
-}
+};
 
-
- // ------------- Firestore load -------------
-async function loadRulesFromFirestore() {
+// ------------- Firestore load -------------
+const loadRulesFromFirestore = async () => {
   const db = (window.OH_FIREBASE && window.OH_FIREBASE.db) || 
              (window.firebase && window.firebase.firestore && window.firebase.firestore());
   if (!db) throw new Error("Firebase Firestore not initialized. Check index loader.");
@@ -208,7 +206,7 @@ async function loadRulesFromFirestore() {
   }
 
   return out;
-}
+};
 
 
   // ------------- UI build -------------
