@@ -227,8 +227,10 @@ async function saveAll() {
 
     // 3) Write aggregated spec (+ meta)
     const spec = aggregateForModality(toAdd);
-    const specRef = doc(db, 'published_rules', MOD, 'spec');
-    batch.set(specRef, spec);
+
+// Must use even segments: published_rules/{MOD}/spec/spec
+const specRef = doc(db, 'published_rules', MOD, 'spec', 'spec');
+batch.set(specRef, spec);
 
     const metaRef = doc(db, 'published_rules', MOD, 'meta');
     batch.set(metaRef, {
