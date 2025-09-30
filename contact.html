@@ -3,7 +3,7 @@ layout: default
 title: Contact
 permalink: /contact/
 description: Get in touch with OraDigit. Healthcare-first AI & data solutions—strategy, ML, MLOps, imaging ops, and more.
-last_updated: 2025-08-15
+last_updated: 2025-09-30
 ---
 
 <section class="contact-section" aria-labelledby="contact-title">
@@ -14,21 +14,21 @@ last_updated: 2025-08-15
       Fields marked with * are required.
     </p>
 
-    <!--
-      Keeps your current pipeline:
-      - FormSubmit posts to admin@oradigit.com (Zoho receives)
-      - Redirects to /thank-you
-    -->
-    <form action="https://formsubmit.co/admin@oradigit.com" method="POST" class="contact-form" novalidate>
+    <!-- Dual-mode form: FormSubmit → email + optional Firebase write -->
+    <form id="contactForm"
+          action="https://formsubmit.co/admin@oradigit.com"
+          method="POST"
+          class="contact-form"
+          novalidate>
       <!-- Hidden (FormSubmit) -->
       <input type="hidden" name="_captcha" value="false">
       <input type="hidden" name="_next" value="https://oradigit.com/thank-you/">
       <input type="hidden" name="_subject" value="OraDigit Contact Form Submission">
       <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
 
-      <!-- Type of Inquiry -->
+      <!-- Inquiry type -->
       <div class="form-group">
-        <label class="form-label" for="inquiry">Type of inquiry*</label>
+        <label for="inquiry">Type of inquiry*</label>
         <select id="inquiry" name="inquiry" required>
           <option value="" disabled selected>Select one</option>
           <option>Project / Consulting</option>
@@ -39,28 +39,26 @@ last_updated: 2025-08-15
         </select>
       </div>
 
-      <!-- What We Do (Service interest) -->
+      <!-- Services -->
       <div class="form-group">
-        <label class="form-label" for="services">What can we help with?*</label>
-        <select id="services" name="services[]" multiple required aria-describedby="services-help">
+        <label for="services">What can we help with?*</label>
+        <select id="services" name="services[]" multiple required>
           <option value="ai-strategy">AI Strategy & Roadmap</option>
           <option value="imaging-ops">Imaging Operations (PET/CT workflow, protocol, quality)</option>
-          <option value="revenue-integrity">Prior Auth & Revenue Integrity (order/header validation)</option>
-          <option value="llm-apps">LLM Apps (RAG/agents, document intelligence)</option>
-          <option value="mlops">MLOps (model CI/CD, monitoring, governance)</option>
-          <option value="data-platform">Data Platform (FHIR/HL7, pipelines, quality, lineage)</option>
-          <option value="digital-twins">Digital Twins & Simulation</option>
-          <option value="iot">IoT / Telemetry & Asset Analytics</option>
+          <option value="revenue-integrity">Revenue Integrity (order/header validation)</option>
+          <option value="llm-apps">LLM Apps</option>
+          <option value="mlops">MLOps</option>
+          <option value="data-platform">Data Platform</option>
+          <option value="digital-twins">Digital Twins</option>
+          <option value="iot">IoT / Asset Analytics</option>
           <option value="training">Upskilling & Training</option>
         </select>
-        <small id="services-help" class="hint">
-          Hold Ctrl (Windows) or ⌘ (Mac) to select multiple.
-        </small>
+        <small class="hint">Hold Ctrl (Windows) or ⌘ (Mac) to select multiple.</small>
       </div>
 
       <!-- Industry -->
       <div class="form-group">
-        <label class="form-label" for="industry">Industry*</label>
+        <label for="industry">Industry*</label>
         <select id="industry" name="industry" required>
           <option value="" disabled selected>Select one</option>
           <option>Healthcare</option>
@@ -73,108 +71,59 @@ last_updated: 2025-08-15
         </select>
       </div>
 
-      <!-- Name -->
+      <!-- Name + Org -->
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label" for="first_name">First name*</label>
-          <input type="text" id="first_name" name="first_name" autocomplete="given-name" required>
+          <label for="first_name">First name*</label>
+          <input type="text" id="first_name" name="first_name" required>
         </div>
         <div class="form-group">
-          <label class="form-label" for="last_name">Last name*</label>
-          <input type="text" id="last_name" name="last_name" autocomplete="family-name" required>
+          <label for="last_name">Last name*</label>
+          <input type="text" id="last_name" name="last_name" required>
         </div>
       </div>
 
-      <!-- Email & Organization -->
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label" for="email">Work email*</label>
-          <input type="email" id="email" name="email" autocomplete="email" required>
+          <label for="email">Work email*</label>
+          <input type="email" id="email" name="email" required>
         </div>
         <div class="form-group">
-          <label class="form-label" for="org">Organization</label>
-          <input type="text" id="org" name="organization" autocomplete="organization">
+          <label for="org">Organization</label>
+          <input type="text" id="org" name="organization">
         </div>
       </div>
 
       <!-- Subject -->
       <div class="form-group">
-        <label class="form-label" for="subject">Subject*</label>
+        <label for="subject">Subject*</label>
         <input type="text" id="subject" name="subject" required>
-      </div>
-
-      <!-- Project qualifiers -->
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" for="timeline">Target timeline*</label>
-          <select id="timeline" name="timeline" required>
-            <option value="" disabled selected>Select one</option>
-            <option>ASAP (0–4 weeks)</option>
-            <option>Short term (1–3 months)</option>
-            <option>Mid term (3–6 months)</option>
-            <option>Exploring / Not sure</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="budget">Budget range (USD)</label>
-          <select id="budget" name="budget">
-            <option value="" selected>Prefer not to say</option>
-            <option>Under 25,000</option>
-            <option>25,000 – 75,000</option>
-            <option>75,000 – 150,000</option>
-            <option>150,000+</option>
-          </select>
-        </div>
       </div>
 
       <!-- Message -->
       <div class="form-group">
-        <label class="form-label" for="message">Message*</label>
-        <textarea id="message" name="message" rows="6" placeholder="Briefly describe your goals, current systems, and success criteria." required></textarea>
+        <label for="message">Message*</label>
+        <textarea id="message" name="message" rows="6" required></textarea>
       </div>
 
       <!-- Preferred contact -->
       <fieldset class="form-group">
-        <legend class="form-label">Preferred contact method*</legend>
-        <label class="radio">
-          <input type="radio" name="contact_method" value="email" required> Email
-        </label>
-        <label class="radio">
-          <input type="radio" name="contact_method" value="meeting"> Schedule a meeting
-        </label>
+        <legend>Preferred contact method*</legend>
+        <label><input type="radio" name="contact_method" value="email" required> Email</label>
+        <label><input type="radio" name="contact_method" value="meeting"> Schedule a meeting</label>
       </fieldset>
-
-      <!-- How did you hear about us -->
-      <div class="form-group">
-        <label class="form-label" for="ref">How did you hear about OraDigit?</label>
-        <select id="ref" name="referral">
-          <option value="" selected>Select one (optional)</option>
-          <option>Search engine</option>
-          <option>LinkedIn</option>
-          <option>Conference / Event</option>
-          <option>Referral</option>
-          <option>Other</option>
-        </select>
-      </div>
-
-      <!-- Security validation (simple) -->
-      <div class="form-group">
-        <label class="form-label" for="validation">Security validation*</label>
-        <input type="text" id="validation" name="validation" inputmode="numeric" pattern="[0-9]*" placeholder="Type 7 to verify" required>
-      </div>
 
       <!-- Consent -->
       <div class="form-group consent">
-        <label class="checkbox">
-          <input type="checkbox" name="consent" value="yes" required>
+        <label><input type="checkbox" name="consent" value="yes" required>
           I agree to the processing of my information in accordance with the
           <a href="{{ '/privacy/' | relative_url }}">Privacy Policy</a>.*
         </label>
       </div>
 
       <div class="actions">
-        <button type="submit" class="submit-btn" aria-label="Submit contact request to OraDigit">Submit</button>
-        <a class="btn btn-ghost" href="/" aria-label="Return to OraDigit home">Back to Home</a>
+        <button type="submit" class="submit-btn">Submit</button>
+        <a href="/" class="btn btn-ghost">Back to Home</a>
       </div>
     </form>
   </div>
@@ -183,7 +132,7 @@ last_updated: 2025-08-15
     <div class="contact-aside-card">
       <h3>Why OraDigit</h3>
       <ul>
-        <li>Healthcare‑grade AI with governance and safety.</li>
+        <li>Healthcare-grade AI with governance and safety.</li>
         <li>Clinical, imaging, and MLOps expertise.</li>
         <li>From idea → production with measurable impact.</li>
       </ul>
@@ -195,4 +144,23 @@ last_updated: 2025-08-15
     </div>
   </aside>
 </section>
-<!-- contact update 2025-09-10T12:44:47 -->
+
+<!-- Firebase write (optional) -->
+<script type="module">
+  document.getElementById('contactForm')?.addEventListener('submit', async (e) => {
+    if (!(window.ORADIGIT_FIREBASE_CONFIG && window.firebase)) return;
+    try {
+      const app = firebase.apps?.length ? firebase.app() : firebase.initializeApp(window.ORADIGIT_FIREBASE_CONFIG);
+      const db = firebase.firestore();
+      const fd = new FormData(e.target);
+      const obj = {};
+      fd.forEach((v,k) => obj[k] = v);
+      obj.submitted_at = new Date().toISOString();
+      await db.collection('contacts').add(obj);
+      console.log("✅ Contact saved to Firestore");
+    } catch (err) {
+      console.warn("⚠️ Firestore write failed:", err);
+    }
+  });
+</script>
+
