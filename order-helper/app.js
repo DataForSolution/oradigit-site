@@ -114,19 +114,23 @@
   }
 
   function normalizeRecord(raw, modalityLabel) {
-    return {
-      id: raw.id || "",
-      modality: modalityLabel,
-      region: guessRegion(raw) || "General",
-      contexts: normalizeContexts(raw, modalityLabel),
-      conditions: normalizeConditions(raw),
-      // Keep references around for future features
-      study_name: raw.study_name || "",
-      header_coverage: raw.header_coverage || "",
-      prep_notes: clean(raw.prep_notes),
-      supporting_docs: clean(raw.supporting_docs),
-      flags: clean(raw.flags),
-      reason_templates: clean(raw.reasons)// Try to load the structured spec document (preferred)
+  return {
+    id: raw.id || "",
+    modality: modalityLabel,
+    region: guessRegion(raw) || "General",
+    contexts: normalizeContexts(raw, modalityLabel),
+    conditions: normalizeConditions(raw),
+    // Keep references around for future features
+    study_name: raw.study_name || "",
+    header_coverage: raw.header_coverage || "",
+    prep_notes: clean(raw.prep_notes),
+    supporting_docs: clean(raw.supporting_docs),
+    flags: clean(raw.flags),
+    reason_templates: clean(raw.reasons)
+  };
+}
+
+// Try to load the structured spec document (preferred)
 async function loadSpecDoc(db, path, label) {
   // Admin.js writes to: /published_rules/{MOD}/spec/spec
   const specRef = db.collection("published_rules").doc(path).collection("spec").doc("spec");
@@ -144,8 +148,6 @@ async function loadSpecDoc(db, path, label) {
   return null;
 }
 
-    };
-  }
 
  // ------------- Firestore load -------------
 async function loadRulesFromFirestore() {
