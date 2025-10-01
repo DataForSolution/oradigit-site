@@ -56,7 +56,22 @@
 
         <li><a href="/careers/">Careers</a></li>
         <li><a href="/contact/">Contact Us</a></li>
-        <li><a href="#" data-ora-panel-trigger class="nav-ai-summary">AI Summary</a></li>
+        <li>
+  <a href="#" class="nav-ai-summary"
+     onclick="
+       const box = document.getElementById('chatbot-box');
+       if (box) {
+         box.classList.toggle('hidden');
+         if (!box.classList.contains('hidden')) {
+           gtag('event','chatbot_open',{widget:'ai-summary-nav'});
+         }
+       }
+       return false;
+     ">
+    AI Summary
+  </a>
+</li>
+
 
       </ul>
          
