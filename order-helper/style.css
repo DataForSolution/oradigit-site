@@ -461,3 +461,16 @@ textarea:disabled {
   background: var(--oh-surface);
 }
 .oh-contrast legend { font-weight: 600; }
+#btnAI {
+  background-color: #007bff;  /* bright blue */
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+#btnAI:hover {
+  background-color: #0056b3;  /* darker blue on hover */
+}
