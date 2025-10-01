@@ -170,7 +170,17 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       <button id="copyReasonBtn" type="button" class="btn btn-light">Copy Reason</button>
       <button id="copyAllBtn" type="button" class="btn btn-secondary">Copy All</button>
       <button id="printBtn" type="button" class="btn btn-tertiary">Print</button>
+      
     </div>
+     <div class="actions" style="margin-top:1rem">
+  <button id="btnAI" type="button" class="btn btn-primary">Ask AI</button>
+</div>
+
+<div id="aiResponse" class="card" style="margin-top:1rem; display:none;">
+  <h3>AI Recommendation</h3>
+  <div id="aiText" class="indication-box">—</div>
+</div>
+
   </section>
 
   <!-- Debug note (Firestore now) -->
