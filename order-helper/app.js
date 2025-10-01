@@ -447,42 +447,42 @@ if (els.indication) {
       buildUI(RULES);
     }
   });
-    // --- Ask AI button wiring ---
-  const aiBtn = document.getElementById("btnAI");
-  if (aiBtn) {
-    aiBtn.addEventListener("click", async () => {
-      const aiBox = document.getElementById("aiResponse");
-      const aiText = document.getElementById("aiText");
+    
+     // --- Ask AI button wiring ---
+    const aiBtn = document.getElementById("btnAI");
+    if (aiBtn) {
+      aiBtn.addEventListener("click", async () => {
+        const aiBox = document.getElementById("aiResponse");
+        const aiText = document.getElementById("aiText");
 
-      aiBox.style.display = "block";
-      aiText.textContent = "Thinking…";
+        aiBox.style.display = "block";
+        aiText.textContent = "Thinking…";
 
-      try {
-        // Gather the current order preview into text
-        const orderDetails = `
-          Modality: ${els.modality?.value || ""}
-          Region: ${els.region?.value || ""}
-          Context: ${[...els.context.selectedOptions].map(o => o.value).join(", ")}
-          Condition: ${els.condition?.value || ""}
-          Indication: ${els.indication?.value || ""}
-          Reason: ${els.outReason?.value || ""}
-        `;
+        try {
+          // Gather the current order details as structured JSON
+          const review = {
+            modality: els.modality?.value || "",
+            region: els.region?.value || "",
+            context: [...els.context.selectedOptions].map(o => o.value),
+            condition: els.condition?.value || "",
+            indication: els.indication?.value || "",
+            reason: els.outReason?.value || ""
+          };
 
-        // Call your Firebase Cloud Function (to be implemented in backend step)
-        const res = await fetch("https://auth.oradigit.com/ai-helper", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ review: orderDetails })
-        });
+          // Call Firebase Cloud Function with structured JSON
+          const res = await fetch("https://auth.oradigit.com/ai-helper", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ review })
+          });
 
-        const data = await res.json();
-        aiText.textContent = data.answer || "No response from AI.";
-      } catch (err) {
-        console.error(err);
-        aiText.textContent = "Error: Could not reach AI service.";
-      }
-    });
-  }
+          const data = await res.json();
+          aiText.textContent = data.answer || "No response from AI.";
+        } catch (err) {
+          console.error("Ask AI failed:", err);
+          aiText.textContent = "Error: Could not reach AI service.";
+        }
+      });
+    }
 
 })();
-
