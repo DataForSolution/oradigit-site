@@ -106,13 +106,22 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
         <label for="indication">Clinical Indication</label>
         <textarea id="indication" name="indication" rows="3" placeholder="Auto-generated (you can edit)…"></textarea>
       </div>
-
       <div class="actions">
-        <button type="submit" class="btn-primary">Suggest Order</button>
-        <button type="button" id="copyIndication" class="btn-ghost" aria-label="Copy clinical indication">Copy Indication</button>
-        <span id="errMsg" role="alert" class="muted"></span>
-        <div id="dbg" aria-live="polite" class="muted" style="font-size:12px"></div>
-      </div>
+  <button type="submit" class="btn-primary">Suggest Order</button>
+  <button type="button" id="copyIndication" class="btn-ghost" aria-label="Copy clinical indication">Copy Indication</button>
+  <button id="btnAI" type="button" class="btn btn-primary">Ask AI</button>
+
+  <span id="errMsg" role="alert" class="muted"></span>
+  <div id="dbg" aria-live="polite" class="muted" style="font-size:12px"></div>
+</div>
+
+<!-- AI Recommendation box -->
+<div id="aiResponse" class="card" style="margin-top:1rem; display:none;">
+  <h3>AI Recommendation</h3>
+  <div id="aiText" class="indication-box">—</div>
+</div>
+
+      
     </form>
 
     <!-- ================= RIGHT: PREVIEW / SUGGESTIONS ================= -->
