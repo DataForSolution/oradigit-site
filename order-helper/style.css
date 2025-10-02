@@ -474,3 +474,24 @@ textarea:disabled {
 #btnAI:hover {
   background-color: #0056b3;  /* darker blue on hover */
 }
+/* Ask AI response box styling */
+#aiResponse {
+  background-color: #ffffff;   /* white background */
+  color: #000000;              /* black text */
+  padding: 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+#aiResponse h3 {
+  color: #000000;              /* ensure heading is black */
+  font-weight: bold;
+}
+
+#aiText {
+  background-color: #f9f9f9;   /* light gray inner box */
+  color: #000000;              /* black text */
+  padding: 0.75rem;
+  border-radius: 6px;
+  white-space: pre-wrap;       /* preserve line breaks */
+}
