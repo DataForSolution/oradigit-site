@@ -5,6 +5,9 @@
     const s = qs("#status");
     if (s) { s.textContent = msg; s.className = cls; }
   };
+  // put this near the top of the file or above the event listener:
+const AI_HELPER_URL = "https://us-central1-oradigit-ce343.cloudfunctions.net/aiHelper";
+
 
   // Surface runtime errors in the status bar
   window.addEventListener("error", (e) =>
@@ -447,7 +450,9 @@ if (els.indication) {
       buildUI(RULES);
     }
   });
-    
+     // Cloud Function endpoint (temporary until auth.oradigit.com is mapped)
+const AI_HELPER_URL = "https://us-central1-oradigit-ce343.cloudfunctions.net/aiHelper";
+
      // --- Ask AI button wiring ---
     const aiBtn = document.getElementById("btnAI");
     if (aiBtn) {
@@ -470,11 +475,11 @@ if (els.indication) {
           };
 
           // Call Firebase Cloud Function with structured JSON
-          const res = await fetch("https://auth.oradigit.com/ai-helper", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ review })
-          });
+          const res = await fetch(AI_HELPER_URL, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ review: orderDetails })
+});
 
           const data = await res.json();
           aiText.textContent = data.answer || "No response from AI.";

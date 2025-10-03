@@ -5,7 +5,9 @@
 (function () {
   'use strict';
 
-  var API_URL = 'https://auth.oradigit.com/api/chat'; // your HTTPS proxy
+  // TEMP: direct Cloud Function URL until auth.oradigit.com is mapped again
+var API_URL = "https://us-central1-oradigit-ce343.cloudfunctions.net/chat5";
+
   var _controller = null;
 
   // Insert a space if two alphanumerics would touch across token boundaries.

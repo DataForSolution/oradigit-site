@@ -212,7 +212,9 @@
   <script>
     (function() {
       // Use your Firebase‐hosted function on your custom domain
-      const CHAT_URL = "https://auth.oradigit.com/chat";
+      // TEMP: direct Cloud Function URL until auth.oradigit.com is mapped again
+const CHAT_URL = "https://us-central1-oradigit-ce343.cloudfunctions.net/chatGPTQuery";
+
       console.log("🛠 Widget loaded—CHAT_URL =", CHAT_URL);
 
       const toggleBtn = document.getElementById('chatbot-toggle');
