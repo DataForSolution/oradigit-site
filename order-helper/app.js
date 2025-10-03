@@ -449,10 +449,9 @@ if (els.indication) {
       buildUI(RULES);
     }
   });
-// Cloud Function endpoint (temporary until auth.oradigit.com is mapped)
+// --- Ask AI button wiring ---
 const AI_HELPER_URL = "https://us-central1-oradigit-ce343.cloudfunctions.net/aiHelper";
 
-// --- Ask AI button wiring ---
 const aiBtn = document.getElementById("btnAI");
 if (aiBtn) {
   aiBtn.addEventListener("click", async () => {
@@ -477,13 +476,8 @@ if (aiBtn) {
       const res = await fetch(AI_HELPER_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ review })  // fixed here
+        body: JSON.stringify({ review })
       });
-
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`AI helper HTTP ${res.status}: ${text.slice(0,200)}`);
-      }
 
       const data = await res.json();
       aiText.textContent = data.answer || "No response from AI.";
@@ -493,3 +487,5 @@ if (aiBtn) {
     }
   });
 }
+
+})();  // <-- this MUST be at the very end of the file
