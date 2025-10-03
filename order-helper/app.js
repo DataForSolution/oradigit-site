@@ -450,44 +450,47 @@ if (els.indication) {
       buildUI(RULES);
     }
   });
-     // Cloud Function endpoint (temporary until auth.oradigit.com is mapped)
+// Cloud Function endpoint (temporary until auth.oradigit.com is mapped)
 const AI_HELPER_URL = "https://us-central1-oradigit-ce343.cloudfunctions.net/aiHelper";
 
-     // --- Ask AI button wiring ---
-    const aiBtn = document.getElementById("btnAI");
-    if (aiBtn) {
-      aiBtn.addEventListener("click", async () => {
-        const aiBox = document.getElementById("aiResponse");
-        const aiText = document.getElementById("aiText");
+// --- Ask AI button wiring ---
+const aiBtn = document.getElementById("btnAI");
+if (aiBtn) {
+  aiBtn.addEventListener("click", async () => {
+    const aiBox = document.getElementById("aiResponse");
+    const aiText = document.getElementById("aiText");
 
-        aiBox.style.display = "block";
-        aiText.textContent = "Thinking…";
+    aiBox.style.display = "block";
+    aiText.textContent = "Thinking…";
 
-        try {
-          // Gather the current order details as structured JSON
-          const review = {
-            modality: els.modality?.value || "",
-            region: els.region?.value || "",
-            context: [...els.context.selectedOptions].map(o => o.value),
-            condition: els.condition?.value || "",
-            indication: els.indication?.value || "",
-            reason: els.outReason?.value || ""
-          };
+    try {
+      // Gather the current order details as structured JSON
+      const review = {
+        modality: els.modality?.value || "",
+        region: els.region?.value || "",
+        context: [...els.context.selectedOptions].map(o => o.value),
+        condition: els.condition?.value || "",
+        indication: els.indication?.value || "",
+        reason: els.outReason?.value || ""
+      };
 
-          // Call Firebase Cloud Function with structured JSON
-          const res = await fetch(AI_HELPER_URL, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ review: orderDetails })
-});
-
-          const data = await res.json();
-          aiText.textContent = data.answer || "No response from AI.";
-        } catch (err) {
-          console.error("Ask AI failed:", err);
-          aiText.textContent = "Error: Could not reach AI service.";
-        }
+      // Call Firebase Cloud Function with structured JSON
+      const res = await fetch(AI_HELPER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ review })  // fixed here
       });
-    }
 
-})();
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`AI helper HTTP ${res.status}: ${text.slice(0,200)}`);
+      }
+
+      const data = await res.json();
+      aiText.textContent = data.answer || "No response from AI.";
+    } catch (err) {
+      console.error("Ask AI failed:", err);
+      aiText.textContent = "Error: Could not reach AI service.";
+    }
+  });
+}
