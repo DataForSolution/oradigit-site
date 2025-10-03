@@ -1871,3 +1871,28 @@ textarea { resize:vertical; }
   #results { border: none; box-shadow: none; }
 }
 
+/* Ensure chatbot assistant replies are visible */
+#chatbot-messages .assistant {
+  background: #f9f9f9;   /* light gray bubble */
+  color: #000000;        /* black text */
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin: 4px 0;
+  text-align: left;
+  display: inline-block;
+  max-width: 90%;
+  line-height: 1.4;
+}
+
+/* User messages bubble */
+#chatbot-messages .user {
+  background: #007bff;
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin: 4px 0;
+  text-align: right;
+  display: inline-block;
+  max-width: 90%;
+  line-height: 1.4;
+}
