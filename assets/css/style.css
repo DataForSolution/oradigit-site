@@ -1048,6 +1048,18 @@ footer {
 .hidden {
   display: none !important;
 }
+/* Ensure chatbot messages are visible */
+#chatbot-messages .user {
+  color: #222222;      /* dark gray for user messages */
+  font-weight: 600;
+}
+
+#chatbot-messages .assistant {
+  color: #000000;      /* solid black for assistant replies */
+  font-weight: 400;
+  line-height: 1.4;
+}
+
 <style>
   /* Back-to-top arrow styling */
   #back-to-top {
