@@ -6,7 +6,6 @@
     if (s) { s.textContent = msg; s.className = cls; }
   };
   // put this near the top of the file or above the event listener:
-const AI_HELPER_URL = "https://us-central1-oradigit-ce343.cloudfunctions.net/aiHelper";
 
 
   // Surface runtime errors in the status bar
