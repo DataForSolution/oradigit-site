@@ -60,6 +60,7 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
   <label for="indication">Clinical Indication</label>
   <select id="indication" name="indication">
     <option value="">Select clinical indication…</option>
+
     <!-- app.js will populate Firestore templates here -->
     <option value="__other__">Other (type manually)</option>
   </select>
@@ -91,6 +92,69 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
         <datalist id="conditionList"></datalist>
         <small class="hint">Start typing to see common conditions for the chosen modality.</small>
       </div>
+       
+       <!-- Region -->
+<div class="field">
+  <label for="region">Region</label>
+  <select id="region" name="region">
+    <option value="">Select region…</option>
+    <!-- app.js will populate -->
+  </select>
+</div>
+
+<!-- Reason Header (aka coverage) -->
+<div class="field">
+  <label for="header">Header</label>
+  <input id="header" name="header" list="headerList" placeholder="e.g., Skull base to mid-thigh">
+  <datalist id="headerList"></datalist>
+  <small class="hint">Common coverage/region headers; you can also type your own.</small>
+</div>
+
+<!-- Reason Template -->
+<div class="field">
+  <label for="reasonTemplate">Reason Template</label>
+  <select id="reasonTemplate" name="reasonTemplate">
+    <option value="">Select template…</option>
+    <!-- app.js will populate from rules -->
+  </select>
+  <small class="hint">Pick a template; you can edit the final reason below.</small>
+</div>
+
+<!-- Keywords (multi-select) -->
+<div class="field">
+  <label for="keywords">Keywords</label>
+  <select id="keywords" name="keywords" multiple></select>
+  <small class="hint">Choose one or more relevant terms.</small>
+</div>
+
+<!-- Prep notes (multi-select) -->
+<div class="field">
+  <label for="prep">Prep</label>
+  <select id="prep" name="prep" multiple></select>
+  <small class="hint">Patient preparation / contraindications.</small>
+</div>
+
+<!-- Supporting docs (multi-select) -->
+<div class="field">
+  <label for="docs">Docs</label>
+  <select id="docs" name="docs" multiple></select>
+  <small class="hint">Guidelines, references, or payer policies.</small>
+</div>
+
+<!-- Clinical flags (multi-select) -->
+<div class="field">
+  <label for="flags">Flags</label>
+  <select id="flags" name="flags" multiple></select>
+  <small class="hint">Important clinical or operational flags.</small>
+</div>
+
+<!-- Tags (multi-select) -->
+<div class="field">
+  <label for="tags">Tags</label>
+  <select id="tags" name="tags" multiple></select>
+  <small class="hint">Topic tags for search/organization.</small>
+</div>
+
 
       <!-- Contrast (CT only; shown/hidden by JS) -->
       <fieldset id="contrastGroup" class="oh-contrast hidden">
@@ -102,10 +166,7 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       </fieldset>
 
       <!-- Indication (auto-built but editable) -->
-      <div class="field">
-        <label for="indication">Clinical Indication</label>
-        <textarea id="indication" name="indication" rows="3" placeholder="Auto-generated (you can edit)…"></textarea>
-      </div>
+     
       <div class="actions">
   <button type="submit" class="btn-primary">Suggest Order</button>
   <button type="button" id="copyIndication" class="btn-ghost" aria-label="Copy clinical indication">Copy Indication</button>
@@ -180,15 +241,7 @@ description: Evidence-based PET/CT, CT, and MRI order helper with validation and
       <button id="copyAllBtn" type="button" class="btn btn-secondary">Copy All</button>
       <button id="printBtn" type="button" class="btn btn-tertiary">Print</button>
       
-    </div>
-     <div class="actions" style="margin-top:1rem">
-  <button id="btnAI" type="button" class="btn btn-primary">Ask AI</button>
-</div>
-
-<div id="aiResponse" class="card" style="margin-top:1rem; display:none;">
-  <h3>AI Recommendation</h3>
-  <div id="aiText" class="indication-box">—</div>
-</div>
+    
 
   </section>
 

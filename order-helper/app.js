@@ -46,6 +46,14 @@
     printBtn: document.getElementById("printBtn"),
     suggestions: document.getElementById("suggestions"),
     dbg: document.getElementById("dbg"),
+   header: document.getElementById("header"),
+  reasonTemplate: document.getElementById("reasonTemplate"),
+  keywords: document.getElementById("keywords"),
+  prep: document.getElementById("prep"),
+  docs: document.getElementById("docs"),
+  flags: document.getElementById("flags"),
+  tags: document.getElementById("tags"),
+
   };
 
   // Map UI modality value -> Firestore doc id
@@ -209,18 +217,25 @@ const loadRulesFromFirestore = async () => {
 
   return out;
 };
+  
+   // ------------- UI build -------------
+function buildUI(cat) {
+  renderForMod(cat, els.modality?.value || "PET/CT");
+}
 
-
-  // ------------- UI build -------------
-  function buildUI(cat) {
-    renderForMod(cat, els.modality?.value || "PET/CT");
-  }
-   function renderForMod(cat, modality) {
+function renderForMod(cat, modality) {
   const spec = cat.modalities[modality] || { 
     regions: [], 
     contexts: [], 
     conditions: [], 
-    indication_templates: [] 
+    indication_templates: [],
+    reason_templates: [],
+    headers: [],
+    keywords: [],
+    prep: [],
+    docs: [],
+    flags: [],
+    tags: []
   };
 
   // Regions
@@ -240,12 +255,23 @@ const loadRulesFromFirestore = async () => {
     els.indication.placeholder = "Enter clinical indication (or auto-generate)";
   }
 
+  // ✅ New dropdowns
+  if (els.reasonTemplate) fillSelect(els.reasonTemplate, spec.reason_templates, "Select reason template…");
+  if (els.header) fillSelect(els.header, spec.headers, "Select header…");
+  if (els.keywords) fillSelect(els.keywords, spec.keywords, "Select keyword…");
+  if (els.prep) fillSelect(els.prep, spec.prep, "Select prep…");
+  if (els.docs) fillSelect(els.docs, spec.docs, "Select document…");
+  if (els.flags) fillSelect(els.flags, spec.flags, "Select flag…");
+  if (els.tags) fillSelect(els.tags, spec.tags, "Select tag…");
+
   // CT contrast visibility
   showContrast(modality === "CT");
 
   syncPreview();
 }
 
+   
+  
  
   function fillSelect(selectEl, values, placeholder) {
     if (!selectEl) return;
@@ -346,6 +372,41 @@ if (els.indication) {
   }
   qs("#pv-indication").textContent = val || "—";
 }
+  // Reason Template
+  qs("#pv-reasonTemplate") && (qs("#pv-reasonTemplate").textContent = els.reasonTemplate?.value || "—");
+
+  // Header
+  qs("#pv-header") && (qs("#pv-header").textContent = els.header?.value || "—");
+
+  // Keywords
+  if (qs("#pv-keywords")) {
+    const kw = els.keywords?.value || "";
+    qs("#pv-keywords").textContent = kw ? kw.split(",").map(k => k.trim()).filter(Boolean).join(", ") : "—";
+  }
+
+  // Prep
+  if (qs("#pv-prep")) {
+    const p = els.prep?.value || "";
+    qs("#pv-prep").textContent = p ? p.split(",").map(x => x.trim()).filter(Boolean).join(", ") : "—";
+  }
+
+  // Docs
+  if (qs("#pv-docs")) {
+    const d = els.docs?.value || "";
+    qs("#pv-docs").textContent = d ? d.split(",").map(x => x.trim()).filter(Boolean).join(", ") : "—";
+  }
+
+  // Flags
+  if (qs("#pv-flags")) {
+    const f = els.flags?.value || "";
+    qs("#pv-flags").textContent = f ? f.split(",").map(x => x.trim()).filter(Boolean).join(", ") : "—";
+  }
+
+  // Tags
+  if (qs("#pv-tags")) {
+    const t = els.tags?.value || "";
+    qs("#pv-tags").textContent = t ? t.split(",").map(x => x.trim()).filter(Boolean).join(", ") : "—";
+  }
 
   }
 }
@@ -464,13 +525,20 @@ if (aiBtn) {
     try {
       // Gather the current order details as structured JSON
       const review = {
-        modality: els.modality?.value || "",
-        region: els.region?.value || "",
-        context: [...els.context.selectedOptions].map(o => o.value),
-        condition: els.condition?.value || "",
-        indication: els.indication?.value || "",
-        reason: els.outReason?.value || ""
-      };
+  modality: els.modality?.value || "",
+  region: els.region?.value || "",
+  context: [...els.context.selectedOptions].map(o => o.value),
+  condition: els.condition?.value || "",
+  indication: els.indication?.value || "",
+  reason: els.outReason?.value || "",
+  reasonTemplate: els.reasonTemplate?.value || "",
+  header: els.header?.value || "",
+  keywords: els.keywords?.value || "",
+  prep: els.prep?.value || "",
+  docs: els.docs?.value || "",
+  flags: els.flags?.value || "",
+  tags: els.tags?.value || ""
+};
 
       // Call Firebase Cloud Function with structured JSON
       const res = await fetch(AI_HELPER_URL, {
