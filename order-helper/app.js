@@ -539,6 +539,9 @@ if (aiBtn) {
   flags: els.flags?.value || "",
   tags: els.tags?.value || ""
 };
+  console.log("[OH] Sending review:", review);
+window.lastReview = review;
+
 
       // Call Firebase Cloud Function with structured JSON
       const res = await fetch(AI_HELPER_URL, {
