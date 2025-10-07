@@ -167,7 +167,6 @@ const loadRulesFromFirestore = async () => {
 
   for (const [label, path] of Object.entries(MODALITY_MAP)) {
     try {
-      // 1) Try to load structured spec first
      for (const [label, path] of Object.entries(MODALITY_MAP)) {
   try {
     // 🔹 1) Try to load top-level document (your current Firestore structure)
@@ -194,8 +193,13 @@ const loadRulesFromFirestore = async () => {
       continue;
     }
 
-    // 🔹 2) Fallback to spec/spec (old format)
-    const specRef = db.collection("published_rules").doc(path).collection("spec").doc("spec");
+    // 🔹 2) Fallback to legacy spec/spec format
+    const specRef = db
+      .collection("published_rules")
+      .doc(path)
+      .collection("spec")
+      .doc("spec");
+
     const specSnap = await specRef.get();
     if (specSnap.exists) {
       const spec = specSnap.data();
@@ -223,42 +227,6 @@ const loadRulesFromFirestore = async () => {
   }
 }
 
-
-        out.modalities[label] = {
-          regions: spec.regions || [],
-          contexts: spec.contexts || (DEFAULT_CONTEXTS[label] || []),
-          conditions: spec.conditions || [],
-          indication_templates: spec.indication_templates || []
-        };
-        continue; // go to next modality
-      }
-
-      // 2) Fallback → use /records aggregation
-      const colRef = db.collection("published_rules").doc(path).collection("records");
-      const snap = await colRef.get();
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      console.log(`[OH] ${label} records: ${docs.length}`, docs.map(d => d.id));
-
-      const normalized = docs.map(r => normalizeRecord(r, label));
-      out.records.push(...normalized);
-
-      const regions = new Set(), contexts = new Set(), conditions = new Set();
-      normalized.forEach(r => {
-        if (r.region) regions.add(r.region);
-        (r.contexts || []).forEach(c => contexts.add(c));
-        (r.conditions || []).forEach(c => conditions.add(c));
-      });
-
-      out.modalities[label] = {
-        regions: [...regions],
-        contexts: contexts.size ? [...contexts] : (DEFAULT_CONTEXTS[label] || []),
-        conditions: [...conditions],
-        indication_templates: []
-      };
-    } catch (err) {
-      console.warn(`[OH] Failed to load ${label} rules`, err);
-    }
-  }
 
   if (!Object.keys(out.modalities).length) {
     setStatus("No Firestore rules found, using fallback", "status warn");
