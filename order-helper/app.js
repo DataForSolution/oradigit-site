@@ -159,31 +159,22 @@ const loadSpecDoc = async (db, path, label) => {
 
 // ------------- Firestore load -------------
 // ------------- Firestore load -------------
-const loadRulesFromFirestore = async () => {
+ // ------------- Firestore load -------------
+async function loadRulesFromFirestore() {
   const db =
     (window.OH_FIREBASE && window.OH_FIREBASE.db) ||
-    (window.firebase &&
-      window.firebase.firestore &&
-      window.firebase.firestore());
-
-  if (!db)
-    throw new Error(
-      "Firebase Firestore not initialized. Check index loader."
-    );
+    (window.firebase && window.firebase.firestore && window.firebase.firestore());
+  if (!db) throw new Error("Firebase Firestore not initialized. Check index loader.");
 
   const out = { modalities: {}, records: [] };
 
-  // Loop over modalities and pull their data
+  // We always store under the *label* key, e.g., "CT", "MRI", "PET/CT"
   for (const [label, path] of Object.entries(MODALITY_MAP)) {
     try {
-      // 🔹 1) Try to load top-level document (your current Firestore structure)
-      const topRef = db.collection("published_rules").doc(path);
-      const topSnap = await topRef.get();
-
+      // 1) Try your current structure: /published_rules/{path}
+      const topSnap = await db.collection("published_rules").doc(path).get();
       if (topSnap.exists) {
-        const doc = topSnap.data();
-        console.log(`[OH] Loaded top-level ${label}`, doc);
-
+        const doc = topSnap.data() || {};
         out.modalities[label] = {
           regions: doc.regions || [],
           contexts: doc.contexts || (DEFAULT_CONTEXTS[label] || []),
@@ -200,18 +191,11 @@ const loadRulesFromFirestore = async () => {
         continue;
       }
 
-      // 🔹 2) Fallback to legacy spec/spec format (if it exists)
-      const specRef = db
-        .collection("published_rules")
-        .doc(path)
-        .collection("spec")
-        .doc("spec");
-
-      const specSnap = await specRef.get();
+      // 2) Legacy fallback: /published_rules/{path}/spec/spec
+      const specSnap = await db.collection("published_rules").doc(path)
+        .collection("spec").doc("spec").get();
       if (specSnap.exists) {
-        const spec = specSnap.data();
-        console.log(`[OH] ${label} spec loaded (legacy)`, spec);
-
+        const spec = specSnap.data() || {};
         out.modalities[label] = {
           regions: spec.regions || [],
           contexts: spec.contexts || (DEFAULT_CONTEXTS[label] || []),
@@ -228,7 +212,7 @@ const loadRulesFromFirestore = async () => {
         continue;
       }
 
-      console.warn(`[OH] No Firestore rules found for ${label}`);
+      console.warn(`[OH] No rules for ${label} (path ${path})`);
     } catch (err) {
       console.warn(`[OH] Failed to load ${label} rules`, err);
     }
@@ -239,32 +223,21 @@ const loadRulesFromFirestore = async () => {
     return FALLBACK_RULES;
   }
 
+  console.log("[OH] Loaded modalities:", Object.keys(out.modalities));
   return out;
-};
+}
 
-
+   // ------------- UI build -------------
    // ------------- UI build -------------
 function buildUI(cat) {
   renderForMod(cat, els.modality?.value || "PET/CT");
 }
- function renderForMod(cat, modality) {
-  // Normalize modality key to match Firestore doc name
-  const map = {
-    "PET/CT": "PET_CT",
-    "CT": "CT",
-    "MRI": "MRI",
-    "X-Ray": "X_Ray",
-    "Ultrasound": "Ultrasound",
-    "Mammography": "Mammography",
-    "Nuclear Medicine": "Nuclear_Medicine"
-  };
 
-  const firestoreKey = map[modality] || modality;
-  const modData = cat.modalities[firestoreKey] || {};
+function renderForMod(cat, modality) {
+  // Read back by *label* (matches how we stored it above)
+  const modData = cat.modalities[modality] || {};
 
-  console.log(`[OH] Rendering for ${modality} (using Firestore key ${firestoreKey}):`, modData);
-
-  // Merge with defaults to prevent undefined errors
+  // Merge with defaults to avoid undefineds
   const spec = {
     regions: modData.regions || [],
     contexts: modData.contexts || (DEFAULT_CONTEXTS[modality] || []),
@@ -278,6 +251,8 @@ function buildUI(cat) {
     flags: modData.flags || [],
     tags: modData.tags || [],
   };
+
+  console.log(`[OH] Rendering for ${modality}:`, spec);
 
   // --- Fill UI elements ---
   fillSelect(els.region, spec.regions, "Select region…");
@@ -293,12 +268,12 @@ function buildUI(cat) {
 
   // Extended dropdowns
   if (els.reasonTemplate) fillSelect(els.reasonTemplate, spec.reason_templates, "Select reason template…");
-  if (els.header) fillSelect(els.header, spec.headers, "Select header…");
-  if (els.keywords) fillSelect(els.keywords, spec.keywords, "Select keyword…");
-  if (els.prep) fillSelect(els.prep, spec.prep, "Select prep…");
-  if (els.docs) fillSelect(els.docs, spec.docs, "Select document…");
-  if (els.flags) fillSelect(els.flags, spec.flags, "Select flag…");
-  if (els.tags) fillSelect(els.tags, spec.tags, "Select tag…");
+  if (els.header)         fillSelect(els.header,         spec.headers,          "Select header…");
+  if (els.keywords)       fillSelect(els.keywords,       spec.keywords,         "Select keyword…");
+  if (els.prep)           fillSelect(els.prep,           spec.prep,             "Select prep…");
+  if (els.docs)           fillSelect(els.docs,           spec.docs,             "Select document…");
+  if (els.flags)          fillSelect(els.flags,          spec.flags,            "Select flag…");
+  if (els.tags)           fillSelect(els.tags,           spec.tags,             "Select tag…");
 
   // CT-specific contrast section
   showContrast(modality === "CT");
@@ -306,7 +281,6 @@ function buildUI(cat) {
   syncPreview();
 }
 
-   
   
  
   function fillSelect(selectEl, values, placeholder) {
