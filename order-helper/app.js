@@ -158,75 +158,81 @@ const loadSpecDoc = async (db, path, label) => {
 };
 
 // ------------- Firestore load -------------
+// ------------- Firestore load -------------
 const loadRulesFromFirestore = async () => {
-  const db = (window.OH_FIREBASE && window.OH_FIREBASE.db) || 
-             (window.firebase && window.firebase.firestore && window.firebase.firestore());
-  if (!db) throw new Error("Firebase Firestore not initialized. Check index loader.");
+  const db =
+    (window.OH_FIREBASE && window.OH_FIREBASE.db) ||
+    (window.firebase &&
+      window.firebase.firestore &&
+      window.firebase.firestore());
+
+  if (!db)
+    throw new Error(
+      "Firebase Firestore not initialized. Check index loader."
+    );
 
   const out = { modalities: {}, records: [] };
 
+  // Loop over modalities and pull their data
   for (const [label, path] of Object.entries(MODALITY_MAP)) {
     try {
-     for (const [label, path] of Object.entries(MODALITY_MAP)) {
-  try {
-    // 🔹 1) Try to load top-level document (your current Firestore structure)
-    const topRef = db.collection("published_rules").doc(path);
-    const topSnap = await topRef.get();
+      // 🔹 1) Try to load top-level document (your current Firestore structure)
+      const topRef = db.collection("published_rules").doc(path);
+      const topSnap = await topRef.get();
 
-    if (topSnap.exists) {
-      const doc = topSnap.data();
-      console.log(`[OH] Loaded top-level ${label}`, doc);
+      if (topSnap.exists) {
+        const doc = topSnap.data();
+        console.log(`[OH] Loaded top-level ${label}`, doc);
 
-      out.modalities[label] = {
-        regions: doc.regions || [],
-        contexts: doc.contexts || (DEFAULT_CONTEXTS[label] || []),
-        conditions: doc.conditions || [],
-        indication_templates: doc.indication_templates || [],
-        reason_templates: doc.reason_templates || [],
-        headers: doc.headers || [],
-        keywords: doc.keywords || [],
-        prep: doc.prep || [],
-        docs: doc.docs || [],
-        flags: doc.flags || [],
-        tags: doc.tags || []
-      };
-      continue;
+        out.modalities[label] = {
+          regions: doc.regions || [],
+          contexts: doc.contexts || (DEFAULT_CONTEXTS[label] || []),
+          conditions: doc.conditions || [],
+          indication_templates: doc.indication_templates || [],
+          reason_templates: doc.reason_templates || [],
+          headers: doc.headers || [],
+          keywords: doc.keywords || [],
+          prep: doc.prep || [],
+          docs: doc.docs || [],
+          flags: doc.flags || [],
+          tags: doc.tags || [],
+        };
+        continue;
+      }
+
+      // 🔹 2) Fallback to legacy spec/spec format (if it exists)
+      const specRef = db
+        .collection("published_rules")
+        .doc(path)
+        .collection("spec")
+        .doc("spec");
+
+      const specSnap = await specRef.get();
+      if (specSnap.exists) {
+        const spec = specSnap.data();
+        console.log(`[OH] ${label} spec loaded (legacy)`, spec);
+
+        out.modalities[label] = {
+          regions: spec.regions || [],
+          contexts: spec.contexts || (DEFAULT_CONTEXTS[label] || []),
+          conditions: spec.conditions || [],
+          indication_templates: spec.indication_templates || [],
+          reason_templates: spec.reason_templates || [],
+          headers: spec.headers || [],
+          keywords: spec.keywords || [],
+          prep: spec.prep || [],
+          docs: spec.docs || [],
+          flags: spec.flags || [],
+          tags: spec.tags || [],
+        };
+        continue;
+      }
+
+      console.warn(`[OH] No Firestore rules found for ${label}`);
+    } catch (err) {
+      console.warn(`[OH] Failed to load ${label} rules`, err);
     }
-
-    // 🔹 2) Fallback to legacy spec/spec format
-    const specRef = db
-      .collection("published_rules")
-      .doc(path)
-      .collection("spec")
-      .doc("spec");
-
-    const specSnap = await specRef.get();
-    if (specSnap.exists) {
-      const spec = specSnap.data();
-      console.log(`[OH] ${label} spec loaded (legacy)`, spec);
-
-      out.modalities[label] = {
-        regions: spec.regions || [],
-        contexts: spec.contexts || (DEFAULT_CONTEXTS[label] || []),
-        conditions: spec.conditions || [],
-        indication_templates: spec.indication_templates || [],
-        reason_templates: spec.reason_templates || [],
-        headers: spec.headers || [],
-        keywords: spec.keywords || [],
-        prep: spec.prep || [],
-        docs: spec.docs || [],
-        flags: spec.flags || [],
-        tags: spec.tags || []
-      };
-      continue;
-    }
-
-    console.warn(`[OH] No Firestore rules found for ${label}`);
-  } catch (err) {
-    console.warn(`[OH] Failed to load ${label} rules`, err);
   }
-}
-
 
   if (!Object.keys(out.modalities).length) {
     setStatus("No Firestore rules found, using fallback", "status warn");
@@ -235,7 +241,8 @@ const loadRulesFromFirestore = async () => {
 
   return out;
 };
-  
+
+
    // ------------- UI build -------------
 function buildUI(cat) {
   renderForMod(cat, els.modality?.value || "PET/CT");
