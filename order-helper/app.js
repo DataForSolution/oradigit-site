@@ -247,10 +247,24 @@ const loadRulesFromFirestore = async () => {
 function buildUI(cat) {
   renderForMod(cat, els.modality?.value || "PET/CT");
 }
-  function renderForMod(cat, modality) {
-  const modData = cat.modalities[modality] || {};
+ function renderForMod(cat, modality) {
+  // Normalize modality key to match Firestore doc name
+  const map = {
+    "PET/CT": "PET_CT",
+    "CT": "CT",
+    "MRI": "MRI",
+    "X-Ray": "X_Ray",
+    "Ultrasound": "Ultrasound",
+    "Mammography": "Mammography",
+    "Nuclear Medicine": "Nuclear_Medicine"
+  };
 
-  // Normalize and safely merge known keys
+  const firestoreKey = map[modality] || modality;
+  const modData = cat.modalities[firestoreKey] || {};
+
+  console.log(`[OH] Rendering for ${modality} (using Firestore key ${firestoreKey}):`, modData);
+
+  // Merge with defaults to prevent undefined errors
   const spec = {
     regions: modData.regions || [],
     contexts: modData.contexts || (DEFAULT_CONTEXTS[modality] || []),
@@ -265,8 +279,6 @@ function buildUI(cat) {
     tags: modData.tags || [],
   };
 
-  console.log(`[OH] Rendering for ${modality}:`, spec);
-
   // --- Fill UI elements ---
   fillSelect(els.region, spec.regions, "Select region…");
   renderContextChips(spec.contexts);
@@ -279,7 +291,7 @@ function buildUI(cat) {
     els.indication.placeholder = "Enter clinical indication (or auto-generate)";
   }
 
-  // New dropdowns
+  // Extended dropdowns
   if (els.reasonTemplate) fillSelect(els.reasonTemplate, spec.reason_templates, "Select reason template…");
   if (els.header) fillSelect(els.header, spec.headers, "Select header…");
   if (els.keywords) fillSelect(els.keywords, spec.keywords, "Select keyword…");
@@ -288,12 +300,11 @@ function buildUI(cat) {
   if (els.flags) fillSelect(els.flags, spec.flags, "Select flag…");
   if (els.tags) fillSelect(els.tags, spec.tags, "Select tag…");
 
-  // CT-specific fields
+  // CT-specific contrast section
   showContrast(modality === "CT");
 
   syncPreview();
 }
-
 
    
   
