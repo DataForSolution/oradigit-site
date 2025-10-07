@@ -247,40 +247,39 @@ const loadRulesFromFirestore = async () => {
 function buildUI(cat) {
   renderForMod(cat, els.modality?.value || "PET/CT");
 }
+  function renderForMod(cat, modality) {
+  const modData = cat.modalities[modality] || {};
 
-function renderForMod(cat, modality) {
-  const spec = cat.modalities[modality] || { 
-    regions: [], 
-    contexts: [], 
-    conditions: [], 
-    indication_templates: [],
-    reason_templates: [],
-    headers: [],
-    keywords: [],
-    prep: [],
-    docs: [],
-    flags: [],
-    tags: []
+  // Normalize and safely merge known keys
+  const spec = {
+    regions: modData.regions || [],
+    contexts: modData.contexts || (DEFAULT_CONTEXTS[modality] || []),
+    conditions: modData.conditions || [],
+    indication_templates: modData.indication_templates || [],
+    reason_templates: modData.reason_templates || [],
+    headers: modData.headers || [],
+    keywords: modData.keywords || [],
+    prep: modData.prep || [],
+    docs: modData.docs || [],
+    flags: modData.flags || [],
+    tags: modData.tags || [],
   };
 
-  // Regions
+  console.log(`[OH] Rendering for ${modality}:`, spec);
+
+  // --- Fill UI elements ---
   fillSelect(els.region, spec.regions, "Select region…");
-
-  // Contexts -> chips
   renderContextChips(spec.contexts);
-
-  // Conditions -> datalist
   fillDatalist(els.conditionList, spec.conditions);
 
-  // Clinical Indications -> select dropdown
+  // Clinical Indications
   if (els.indication && els.indication.tagName === "SELECT") {
     fillSelect(els.indication, spec.indication_templates, "Select clinical indication…");
   } else if (els.indication) {
-    // fallback if it's still a textarea or input
     els.indication.placeholder = "Enter clinical indication (or auto-generate)";
   }
 
-  // ✅ New dropdowns
+  // New dropdowns
   if (els.reasonTemplate) fillSelect(els.reasonTemplate, spec.reason_templates, "Select reason template…");
   if (els.header) fillSelect(els.header, spec.headers, "Select header…");
   if (els.keywords) fillSelect(els.keywords, spec.keywords, "Select keyword…");
@@ -289,11 +288,12 @@ function renderForMod(cat, modality) {
   if (els.flags) fillSelect(els.flags, spec.flags, "Select flag…");
   if (els.tags) fillSelect(els.tags, spec.tags, "Select tag…");
 
-  // CT contrast visibility
+  // CT-specific fields
   showContrast(modality === "CT");
 
   syncPreview();
 }
+
 
    
   
