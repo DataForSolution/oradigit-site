@@ -1,25 +1,49 @@
-OPENAI_KEY.txt
-OPenAI-sk-proj-*.txt
+# =========================================================
+# OraDigit.com Project — Secure and Clean Git Ignore
+# =========================================================
 
+# 🔒 API Keys and Secrets
 OPENAI_KEY.txt
 OPenAI-sk-proj-*.txt
-
-OPENAI_KEY.txt
-OPenAI-sk-proj-*.txt
-OPENAI_KEY.txt
-OPenAI-sk-proj-*.txt
-OPENAI_KEY.txt
-OPenAI-sk-proj-*.txt
-# OraDigit local backups
-order-helper/*.bak.*
-order-helper/*.backup.html
 firebase-admin-key.json
+.env
+.env.*
 
-# OraDigit local backups
+# 🔥 Firebase Local Config
+.firebase/
+.firebaserc
+firebase-debug.log
+
+# ⚙️ Node / Build Artifacts
+node_modules/
+dist/
+build/
+.cache/
+*.log
+
+# 🧩 Local Backups & Temporary Files
 order-helper/*.bak.*
 order-helper/*.backup.html
-o r d e r - h e l p e r . b a k . * / 
- 
- 
 order-helper.bak.*
+*.bak
+*.backup.*
+reflog.txt
 
+# ⚙️ JSON Rules — ignore all except the needed ones
+*.json
+!firebase.json
+!order-helper/data/rules.json
+!order-helper/data/ct_rules.json
+!order-helper/data/mri_rules.json
+!order-helper/data/*.json
+
+# 🧾 System / Editor Files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+~$*
+
+# 📁 Local Notes / Misc
+cd~OneDriveDesktoporadigit-site.txt
+*.local.txt
