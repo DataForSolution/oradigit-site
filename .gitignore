@@ -11,7 +11,7 @@ firebase-admin-key.json
 
 # 🔥 Firebase Local Config
 .firebase/
-.firebaserc
+
 firebase-debug.log
 
 # ⚙️ Node / Build Artifacts
