@@ -419,50 +419,65 @@ const CHAT_URL = "https://us-central1-oradigit-ce343.cloudfunctions.net/chatGPTQ
   </style>
 {% endif %}
  <!-- 🔹 OraDigit AI Summary Panel (non-overlapping with Chatbot) -->
-<!-- 🔹 OraDigit AI Agent Panel -->
-<div id="ai-agent-toggle" title="Open OraDigit AI Assistant">🤖</div>
+  <!-- 🔹 OraDigit AI Agent Panel -->
+<div id="ai-agent-toggle" title="Open OraDigit AI Assistant"></div>
+
 <div id="ai-agent-panel">
-  <div id="ai-agent-header">OraDigit AI Assistant</div>
-  <div id="ai-agent-body">Initializing...</div>
-  <div id="ai-agent-footer">Powered by <strong>OraDigit AI Healthcare</strong></div>
+  <div id="ai-agent-header">
+    OraDigit AI Assistant
+    <button id="ai-agent-close" title="Close">✖</button>
+  </div>
+
+  <div id="ai-agent-body">
+    <div id="ai-chat-messages"></div>
+    <input id="ai-chat-input" type="text" placeholder="Ask me anything…" />
+  </div>
+
+  <div id="ai-agent-footer">
+    Powered by <strong>OraDigit AI Healthcare</strong>
+  </div>
 </div>
 
 <script>
-(function() {
-  document.addEventListener("DOMContentLoaded", function() {
-    const toggle = document.getElementById("ai-agent-toggle");
-    const panel  = document.getElementById("ai-agent-panel");
-    const bodyEl = document.getElementById("ai-agent-body");
+document.addEventListener("DOMContentLoaded", () => {
+  const toggle = document.getElementById("ai-agent-toggle");
+  const panel = document.getElementById("ai-agent-panel");
+  const closeBtn = document.getElementById("ai-agent-close");
+  const input = document.getElementById("ai-chat-input");
+  const messages = document.getElementById("ai-chat-messages");
 
-    if (!toggle || !panel) return;
+  function addMessage(role, text) {
+    const msg = document.createElement("div");
+    msg.className = "msg " + role;
+    msg.textContent = text;
+    messages.appendChild(msg);
+    messages.scrollTop = messages.scrollHeight;
+  }
 
-    toggle.addEventListener("click", async () => {
-      panel.classList.toggle("visible");
-      if (!panel.classList.contains("visible")) return;
+  toggle.addEventListener("click", () => panel.classList.add("visible"));
+  closeBtn.addEventListener("click", () => panel.classList.remove("visible"));
 
-      bodyEl.textContent = "Generating AI summary...";
-      try {
-        const res = await fetch("/api/summarize-v1", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: document.title,
-            text: document.body.innerText.slice(0, 5000),
-            url: window.location.href,
-            cache: true
-          })
-        });
-        const data = await res.json();
-        if (data.summary) bodyEl.innerText = data.summary;
-        else bodyEl.innerText = data.error || "No summary available.";
-      } catch (err) {
-        console.error("AI Agent error:", err);
-        bodyEl.textContent = "AI Agent failed to load.";
-      }
-    });
+  input.addEventListener("keydown", async e => {
+    if (e.key !== "Enter") return;
+    const prompt = input.value.trim();
+    if (!prompt) return;
+    addMessage("user", prompt);
+    input.value = "";
+    try {
+      const res = await fetch("/api/chat-v2", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt })
+      });
+      const data = await res.json();
+      addMessage("assistant", data.reply || "No reply.");
+    } catch (err) {
+      addMessage("error", "Error: " + err.message);
+    }
   });
-})();
+});
 </script>
 <!-- 🔹 End OraDigit AI Agent Panel -->
+
 </body>
 </html>
