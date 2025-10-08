@@ -418,6 +418,103 @@ const CHAT_URL = "https://us-central1-oradigit-ce343.cloudfunctions.net/chatGPTQ
     select:disabled { color:#64748b; }
   </style>
 {% endif %}
+ <!-- 🔹 OraDigit AI Summary Panel (non-overlapping with Chatbot) -->
+<div id="ai-summary-toggle" title="Show AI Summary">📄</div>
+<div id="ai-summary-panel" class="hidden">
+  <div id="ai-summary-header">AI Summary</div>
+  <div id="ai-summary-content">Generating summary...</div>
+  <div id="ai-summary-footer">
+    Powered by <strong>OraDigit AI Healthcare</strong>
+  </div>
+</div>
+
+<style>
+  /* === AI Summary Styles (positioned safely above chatbot) === */
+  #ai-summary-toggle {
+    position: fixed;
+    bottom: 180px;  /* pushes it above your 💬 chatbot */
+    right: 25px;
+    background: #0b3fff;
+    color: #fff;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    z-index: 9980;
+  }
+  #ai-summary-panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: 350px; height: 100%;
+    background: #fff;
+    border-left: 1px solid #ccc;
+    box-shadow: -4px 0 12px rgba(0,0,0,0.1);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 9990;
+    display: flex; flex-direction: column;
+  }
+  #ai-summary-panel.visible { transform: translateX(0); }
+  #ai-summary-header {
+    background: #0b3fff; color: #fff;
+    padding: 12px; font-weight: 600; text-align: center;
+  }
+  #ai-summary-content {
+    flex: 1; overflow-y: auto;
+    padding: 14px; font-size: 0.95rem;
+    line-height: 1.5; white-space: pre-wrap;
+  }
+  #ai-summary-footer {
+    padding: 8px 12px; font-size: 0.8rem;
+    text-align: center; color: #555;
+    border-top: 1px solid #eee;
+  }
+</style>
+
+<script>
+(function() {
+  const panel  = document.getElementById("ai-summary-panel");
+  const toggle = document.getElementById("ai-summary-toggle");
+  const content = document.getElementById("ai-summary-content");
+
+  // Toggle button click
+  toggle.addEventListener("click", async () => {
+    panel.classList.toggle("visible");
+    if (!panel.classList.contains("visible")) return;
+
+    content.textContent = "Generating AI summary...";
+    try {
+      const res = await fetch("/api/summarize-v1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: document.title,
+          text: document.body.innerText.slice(0, 5000),
+          url: window.location.href,
+          cache: true
+        })
+      });
+      const data = await res.json();
+      if (data.summary) content.innerText = data.summary;
+      else content.innerText = data.error || "No summary available.";
+    } catch (err) {
+      console.error("AI Summary error:", err);
+      content.textContent = "AI Summary failed to load.";
+    }
+  });
+
+  // Allow nav-bar “AI Summary” item to trigger this panel too
+  const navTrigger = document.querySelector("[data-ora-panel-trigger='summary']");
+  if (navTrigger) {
+    navTrigger.addEventListener("click", e => {
+      e.preventDefault();
+      toggle.click();
+    });
+  }
+})();
+</script>
+<!-- 🔹 End OraDigit AI Summary Panel -->
 
 </body>
 </html>
