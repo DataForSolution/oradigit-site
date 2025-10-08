@@ -1991,3 +1991,38 @@ textarea { resize:vertical; }
   color: #444;
   border-top: 1px solid #eee;
 }
+/* === OraDigit AI Agent visibility fix === */
+.msg {
+  margin-bottom: 8px;
+  padding: 8px;
+  border-radius: 6px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.msg.user {
+  background: #e3edff;
+  color: #000;
+  align-self: flex-end;
+}
+
+.msg.assistant {
+  background: #ffffff;
+  color: #000;
+  border: 1px solid #ccc;
+}
+
+.msg.error {
+  background: #ffe6e6;
+  color: #900;
+  border: 1px solid #ffaaaa;
+}
+
+#ai-agent-body {
+  background: #f8f9fb;
+  color: #000;
+}
+#ai-chat-input {
+  background: #fff;
+  color: #000;
+}
