@@ -1,5 +1,6 @@
 // oh-app/src/ui/radiologyForm.tsx
 import React, { useState } from "react";
+import "./radiologyForm.css";
 
 type Props = {
   callTool: (name: string, args: Record<string, unknown>) => Promise<any>;
@@ -35,7 +36,8 @@ export default function RadiologyForm({ callTool }: Props) {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
+    <form onSubmit={onSubmit} className="radiology-ai-form">
+
       <textarea
         placeholder="Enter clinical question or indication…"
         value={query}
