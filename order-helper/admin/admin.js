@@ -127,7 +127,8 @@ function addRuleRow(rule = {}){
     warn('Firebase: loading SDK…');
 
     // 2) Import Firebase modular SDK (v9)
-    const [{ initializeApp, getApps }, { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut }, { getFirestore, collection, getDocs, writeBatch, doc }] =
+    const [{ initializeApp, getApps }, { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut }, { getFirestore, collection, getDocs, writeBatch, doc, setDoc }] =
+
       await Promise.all([
         import('https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js'),
         import('https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js'),
@@ -246,6 +247,20 @@ batch.set(metaRef, {
 
     ok(`Saved ${toAdd.length} rule(s) + spec for ${MOD}.`);
     saveMsg.textContent = `Saved ${toAdd.length} rule(s) + spec for ${MOD}.`;
+    // 4) Also publish a flattened version for public API (e.g., suggest / rules_search)
+try {
+  const pubRef = doc(db, 'published_rules', `${MOD.toLowerCase()}_v1`);
+  await setDoc(pubRef, {
+    records: toAdd,
+    updatedAt: Date.now(),
+    updatedBy: spec.updatedBy || null
+  });
+  console.log(`Published flat spec: published_rules/${MOD.toLowerCase()}_v1`);
+} catch (pubErr) {
+  console.error("Publish step failed:", pubErr);
+  warn(`Publish failed for ${MOD}: ${pubErr.message}`);
+}
+
   } catch (e) {
     console.error(e);
     err('Save failed: ' + e.message);
