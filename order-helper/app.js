@@ -192,10 +192,13 @@ async function loadRulesFromFirestore() {
       }
 
       // 2) Legacy fallback: /published_rules/{path}/spec/spec
-      const specSnap = await db.collection("published_rules").doc(path)
-        .collection("spec").doc("spec").get();
+      // fallback: /published_rules/{MOD}/spec/spec
+      const specSnap = await db.doc(`published_rules/${path}/spec/spec`).get();
+
       if (specSnap.exists) {
         const spec = specSnap.data() || {};
+        console.log(`[OH] Loaded spec for ${label}:`, Object.keys(spec));
+
         out.modalities[label] = {
           regions: spec.regions || [],
           contexts: spec.contexts || (DEFAULT_CONTEXTS[label] || []),
