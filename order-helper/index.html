@@ -327,14 +327,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // 2) SDKs (Compat)
-    await loadScript('https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js');
-    await loadScript('https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js');
+    // 2) SDKs (Compat)
+await loadScript('https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js');
+await loadScript('https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js');
 
-    // 3) Init
-    const cfg = window.ORADIGIT_FIREBASE_CONFIG || window.FIREBASE_CONFIG;
-    if (!firebase.apps.length) firebase.initializeApp(cfg);
-    window.OH_FIREBASE = { app: firebase.app(), db: firebase.firestore() };
-    set('Firebase ready.', 'status success');
+// 3) Wait for Firebase global to exist
+if (typeof firebase === 'undefined' || !firebase.initializeApp) {
+  throw new Error('Firebase SDK failed to load.');
+}
+
+// 4) Init Firebase safely
+const cfg = window.ORADIGIT_FIREBASE_CONFIG || window.FIREBASE_CONFIG;
+if (!cfg) throw new Error('Firebase config missing.');
+
+if (!firebase.apps.length) {
+  firebase.initializeApp(cfg);
+}
+
+window.OH_FIREBASE = { app: firebase.app(), db: firebase.firestore() };
+set('Firebase ready.', 'status success');
+
 
     // 4) Load app.js dynamically
     await loadScript("{{ '/order-helper/app.js' | relative_url }}?v=20250922");
