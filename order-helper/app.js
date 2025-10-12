@@ -172,24 +172,27 @@ async function loadRulesFromFirestore() {
   for (const [label, path] of Object.entries(MODALITY_MAP)) {
     try {
       // 1) Try your current structure: /published_rules/{path}
-      const topSnap = await db.collection("published_rules").doc(path).get();
-      if (topSnap.exists) {
-        const doc = topSnap.data() || {};
-        out.modalities[label] = {
-          regions: doc.regions || [],
-          contexts: doc.contexts || (DEFAULT_CONTEXTS[label] || []),
-          conditions: doc.conditions || [],
-          indication_templates: doc.indication_templates || [],
-          reason_templates: doc.reason_templates || [],
-          headers: doc.headers || [],
-          keywords: doc.keywords || [],
-          prep: doc.prep || [],
-          docs: doc.docs || [],
-          flags: doc.flags || [],
-          tags: doc.tags || [],
-        };
-        continue;
-      }
+         // 1) Preferred structure: /published_rules/{path} (root fields)
+const topSnap = await db.collection("published_rules").doc(path).get();
+if (topSnap.exists) {
+  const doc = topSnap.data() || {};
+  out.modalities[label] = {
+    regions: doc.regions || [],
+    contexts: doc.contexts || (DEFAULT_CONTEXTS[label] || []),
+    conditions: doc.conditions || [],
+    indication_templates: doc.indication_templates || [],
+    reason_templates: doc.reason_templates || [],
+    headers: doc.headers || [],
+    keywords: doc.keywords || [],
+    prep: doc.prep || [],
+    docs: doc.docs || [],
+    flags: doc.flags || [],
+    tags: doc.tags || [],
+  };
+  console.log(`[OH] Loaded root rules for ${label}`);
+  continue;
+}
+
 
       // 2) Legacy fallback: /published_rules/{path}/spec/spec
       // fallback: /published_rules/{MOD}/spec/spec
