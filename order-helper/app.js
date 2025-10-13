@@ -158,8 +158,7 @@ const loadSpecDoc = async (db, path, label) => {
 };
 
 // ------------- Firestore load -------------
-// ------------- Firestore load -------------
- // ------------- Firestore load -------------
+   // ------------- Firestore load -------------
 async function loadRulesFromFirestore() {
   const db =
     (window.OH_FIREBASE && window.OH_FIREBASE.db) ||
@@ -171,33 +170,55 @@ async function loadRulesFromFirestore() {
   // We always store under the *label* key, e.g., "CT", "MRI", "PET/CT"
   for (const [label, path] of Object.entries(MODALITY_MAP)) {
     try {
-      // 1) Try your current structure: /published_rules/{path}
-         // 1) Preferred structure: /published_rules/{path} (root fields)
-const topSnap = await db.collection("published_rules").doc(path).get();
-if (topSnap.exists) {
-  const doc = topSnap.data() || {};
-  out.modalities[label] = {
-    regions: doc.regions || [],
-    contexts: doc.contexts || (DEFAULT_CONTEXTS[label] || []),
-    conditions: doc.conditions || [],
-    indication_templates: doc.indication_templates || [],
-    reason_templates: doc.reason_templates || [],
-    headers: doc.headers || [],
-    keywords: doc.keywords || [],
-    prep: doc.prep || [],
-    docs: doc.docs || [],
-    flags: doc.flags || [],
-    tags: doc.tags || [],
-  };
-  console.log(`[OH] Loaded root rules for ${label}`);
-  continue;
-}
+      // 1️⃣ Preferred structure: /published_rules/{path} (root fields)
+      const topSnap = await db.collection("published_rules").doc(path).get();
+      if (topSnap.exists) {
+        const doc = topSnap.data() || {};
 
+        // 🔹 NEW: Flatten Firestore-style "records" array into summary lists
+        if (Array.isArray(doc.records)) {
+          const grouped = {
+            regions: [], contexts: [], conditions: [], indication_templates: [],
+            reason_templates: [], headers: [], keywords: [],
+            prep: [], docs: [], flags: [], tags: []
+          };
 
-      // 2) Legacy fallback: /published_rules/{path}/spec/spec
-      // fallback: /published_rules/{MOD}/spec/spec
+          for (const r of doc.records) {
+            if (r.region) grouped.regions.push(r.region);
+            if (Array.isArray(r.contexts)) grouped.contexts.push(...r.contexts);
+            if (Array.isArray(r.conditions)) grouped.conditions.push(...r.conditions);
+            if (Array.isArray(r.reasons)) grouped.reason_templates.push(...r.reasons);
+            if (Array.isArray(r.keywords)) grouped.keywords.push(...r.keywords);
+            if (Array.isArray(r.prep_notes)) grouped.prep.push(...r.prep_notes);
+            if (Array.isArray(r.supporting_docs)) grouped.docs.push(...r.supporting_docs);
+            if (Array.isArray(r.flags)) grouped.flags.push(...r.flags);
+            if (Array.isArray(r.tags)) grouped.tags.push(...r.tags);
+            if (r.header_coverage) grouped.headers.push(r.header_coverage);
+          }
+          // De-duplicate
+          for (const k in grouped) grouped[k] = [...new Set(grouped[k].filter(Boolean))];
+          Object.assign(doc, grouped);
+        }
+
+        out.modalities[label] = {
+          regions: doc.regions || [],
+          contexts: doc.contexts || (DEFAULT_CONTEXTS[label] || []),
+          conditions: doc.conditions || [],
+          indication_templates: doc.indication_templates || [],
+          reason_templates: doc.reason_templates || [],
+          headers: doc.headers || [],
+          keywords: doc.keywords || [],
+          prep: doc.prep || [],
+          docs: doc.docs || [],
+          flags: doc.flags || [],
+          tags: doc.tags || [],
+        };
+        console.log(`[OH] Loaded root rules for ${label}`);
+        continue;
+      }
+
+      // 2️⃣ Legacy fallback: /published_rules/{path}/spec/spec
       const specSnap = await db.doc(`published_rules/${path}/spec/spec`).get();
-
       if (specSnap.exists) {
         const spec = specSnap.data() || {};
         console.log(`[OH] Loaded spec for ${label}:`, Object.keys(spec));
@@ -233,6 +254,7 @@ if (topSnap.exists) {
   return out;
 }
 
+  
    // ------------- UI build -------------
    // ------------- UI build -------------
 function buildUI(cat) {
