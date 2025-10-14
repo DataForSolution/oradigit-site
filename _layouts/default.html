@@ -213,7 +213,7 @@
     (function() {
       // Use your Firebase‐hosted function on your custom domain
       // TEMP: direct Cloud Function URL until auth.oradigit.com is mapped again
-const CHAT_URL = "https://us-central1-oradigit-ce343.cloudfunctions.net/chatGPTQuery";
+         const CHAT_URL = "https://chatgptquery-5oghy3c5lq-uc.a.run.app";
 
       console.log("🛠 Widget loaded—CHAT_URL =", CHAT_URL);
 
@@ -259,7 +259,8 @@ async function sendMessage() {
 
     const reply = data.reply || "(No reply)";
     gtag('event', 'chatbot_reply', { reply_length: reply.length, widget: 'assistant' });
-    messages.innerHTML += `<div><strong>Assistant:</strong> ${reply}</div>`;
+    messages.innerHTML += `<div style="color:red;white-space:pre-wrap;"><strong>Error:</strong> ${err.message}</div>`;
+
     messages.scrollTop = messages.scrollHeight;
 
   } catch (err) {
